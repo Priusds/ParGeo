@@ -1,5 +1,5 @@
 from ..geo_utils.utils import write_geo
-from .bubble import Sphere, clip
+from .bubble import Sphere, clip, StarBubble
 
 class Glue:
     # naming anti clockwise

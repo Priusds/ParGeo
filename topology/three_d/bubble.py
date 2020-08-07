@@ -55,10 +55,29 @@ class StarBubble(Bubble):
         self.coefficients = coefficients
 
     def trafo(self, theta, phi):
-        raise NotImplementedError
+        #TODO: This is not working.
+        n = 5
+        coefficients = np.random.uniform(0,1,(4,n))
+        #new_radius = np.exp(sum([coefficients[0,:][i]*np.cos(phi*i)*(1./(i**0.8+1))    for i in range(n)])) # Problem
+        #new_radius += np.exp(sum([coefficients[1,:][i]*np.sin(phi*i)*(1./(i**0.8+1))    for i in range(n)])) # Problem
+        new_radius = np.exp(sum([coefficients[2,:][i]*np.cos(theta*i)*(1./(i**0.8+1))    for i in range(n)])) # gut
+        new_radius += np.exp(sum([coefficients[3,:][i]*np.sin(theta*i)*(1./(i**0.8+1))    for i in range(n)])) # ok
+        #new_radius = 1
+        #new_x = new_radius*np.sin(theta)*np.cos(phi)
+        #new_y = new_radius*np.sin(theta)*np.sin(phi)
+        #new_z = new_radius*np.cos(theta)
+        return new_radius*.07
     
-    def discretize(self, accuracy, point_id=1,line_id=1,lineLoop_id=1):
-        return discretize_reference(self.trafo, accuracy,point_id,line_id,lineLoop_id)
+    def discretize(self, accuracy=.1, point_id=1,line_id=1,lineLoop_id=1):
+        geo = discretize_reference(self.trafo, accuracy,point_id,line_id,lineLoop_id)
+        new_points = []
+        for point in geo["points"]:
+            x,y,z = point["coords"]
+            mx,my,mz = self.midpoint
+            new_point = {"id":point["id"], "coords":[x+mx, y+my,z+mz], "lc":None}
+            new_points.append(new_point)
+        geo["points"] = new_points
+        return geo
 
 def clip(geo, h):
     finalPoints = []
