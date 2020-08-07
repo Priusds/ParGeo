@@ -1,2 +1,5 @@
 *__init__.py
 *.geo
+topology/three_d/bubble_old.py
+*.msh
+*.xml

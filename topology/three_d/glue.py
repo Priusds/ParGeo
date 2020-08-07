@@ -1,5 +1,5 @@
 from ..geo_utils.utils import write_geo
-from .bubble import Ellipsoid3D, clip
+from .bubble import Sphere, clip
 
 class Glue:
     # naming anti clockwise
@@ -42,7 +42,7 @@ class Glue:
         self.exterior_surfaces = []
         self.bubbles_on = {"up_interior":[],"down_interior":[]}    
 
-        self.geo = {"point_id":9,"line_id":13,"lineLoop_id":7,"surface_id":1}
+        self.geo = {"free_point_id":9,"free_line_id":13,"free_lineLoop_id":7,"free_surface_id":1}
 
         # make points
         points = [{"id":i+1,"coords":lcoords[i],"lc":None} for i in range(4)]
@@ -90,36 +90,35 @@ class Glue:
         
 
     def _localize_bubble(self, bubble):
-        return "up", True 
+        return "inside", True 
 
-    def add_bubble(self, bubble):
-        loc, valid = self._localize_bubble(bubble)
+    def add_bubble(self, bubble, loc, accuracy=.5):
+
+        loc_, valid = self._localize_bubble(bubble)
         if valid:
             if loc == "inside":
                 #self.bubbles_in.append(bubble)
-                data = bubble.discretize_full(self.geo["point_id"], self.geo["line_id"], self.geo["lineLoop_id"])
+                data = bubble.discretize(accuracy, self.geo["free_point_id"], self.geo["free_line_id"], self.geo["free_lineLoop_id"])
                
-                for point in data["points"]:
-                    coords = [point["x"], point["y"], point["z"]]
-                    self.geo["points"].append({"id":point["id"],"coords":coords,"lc":None})
-
-                
+                self.geo["points"] += data["points"]
                 self.geo["lines"] += data["lines"]
                 lineLoops = []
-                for triangle in data["triangles"]:
+                for triangle in data["lineLoops"]:
 
-                    l1, l2, l3 = triangle["l1"], triangle["l2"], triangle["l3"]
-                    lines = [l1, l2, l3]
-                    lineLoops.append({"id":triangle["id"], "lines":lines})
+                    lineLoops.append({"id":triangle["id"], "lines":triangle["lines"]})
 
-                self.geo["lineLoops"] += lineLoops
+                self.geo["lineLoops"] += data["lineLoops"]
                 self.interior_lineLoops += lineLoops
+
+                self.geo["free_point_id"] += len(data["points"]) # TODO: correct this
+                self.geo["free_line_id"] += len(data["lines"])
+                self.geo["free_lineLoop_id"] += len(lineLoops)
 
             elif loc == "up":
                 cut_height = self.height_up
-                bubble_geo = bubble.get_geo(self.geo["point_id"], self.geo["line_id"], self.geo["lineLoop_id"])
+                bubble_geo = bubble.discretize(accuracy, self.geo["free_point_id"], self.geo["free_line_id"], self.geo["free_lineLoop_id"])
                 clip_bubble, intersectionLoop = clip(bubble_geo, cut_height)
-                
+                #print(clip_bubble["points"])
                 self.geo["points"] += clip_bubble["points"]
 
                 
@@ -128,26 +127,10 @@ class Glue:
                 self.geo["lineLoops"].append(intersectionLoop)
 
                 self.faces[5]["bubbles"].append({"clip_geo":clip_bubble,"intersectionLoop":intersectionLoop})
-                #self.faces[5]["lineLoops_inside"] += [ll["id"] for ll in clip_bubble["lineLoops"]]
-
-                # Old Ansatz
-                # cut bubble at self.height_up
-                #data = bubble.discretize_cut_up(self.height_up,self.geo["point_id"], self.geo["line_id"], self.geo["lineLoop_id"])
-                #for point in data["points"]:
-                #    coords = [point["x"], point["y"], point["z"]]
-                #    self.geo["points"].append({"id":point["id"],"coords":coords,"lc":None})
-
                 
-                #self.geo["lines"] += data["lines"]
-                #lineLoops = []
-                #for triangle in data["triangles"]:
-
-                    #l1, l2, l3 = triangle["l1"], triangle["l2"], triangle["l3"]
-                    #lines = [l1, l2, l3]
-                    #lineLoops.append({"id":triangle["id"], "lines":lines})
-
-                #self.geo["lineLoops"] += lineLoops
-                #self.interior_lineLoops += lineLoops
+                self.geo["free_point_id"] = (max([p["id"] for p in clip_bubble["points"]])+1)
+                self.geo["free_line_id"] = (max([l["id"] for l in clip_bubble["lines"]])+1)
+                self.geo["free_lineLoop_id"]  = (max([ll["id"] for ll in clip_bubble["lineLoops"]])+2)
                 
         else:
             print("Bubble could not be added")
