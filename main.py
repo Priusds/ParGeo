@@ -21,20 +21,21 @@ lcoords = [
 depth = 2
 glue = Glue(lcoords, depth)
 
+
 # DEFINE/ADD BUBBLES
-s1 = Sphere(.1, (1.2,.5,-1))
-glue.add_bubble(s1,"inside")
+#s1 = Sphere(.1, (1.2,.5,-1))
+#glue.add_bubble(s1)
 
 
 
-s3 = Sphere(.1, (.12,1,-1))
-glue.add_bubble(s3,"up")
+#s3 = StarBubble(.1, (1,.4,-1), None)
+#glue.add_bubble(s3,.1)
 
-s4 = Sphere(.1, (1.89,1,-1.2))
-glue.add_bubble(s4,"up")
+s4 = StarBubble(.1, (1.8,1,-1.2),None)
+glue.add_bubble(s4)
 
-s2 = Sphere(.1, (.8,.5,-1))
-glue.add_bubble(s2,"inside")
+s2 = StarBubble(.1, (.8,1,-1),None)
+glue.add_bubble(s2,.5)
 
 
 # WRITE GEO

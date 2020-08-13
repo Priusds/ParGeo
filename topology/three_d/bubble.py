@@ -9,10 +9,11 @@ class Bubble(ABC):
     @abstractmethod
     def trafo(self, theta, phi):
         """
+            Centerd in (0,0,0)
             Returns the mapping from spheric coordinates to radius
-          Implements the underlying geometric mapping from
+            Implements the underlying geometric mapping from
           
-           p = (theta, phi) in (0,pi) x (0, 2pi) --> F(p) in IR^3
+            p = (theta, phi) in (0,pi) x (0, 2pi) --> F(p) in IR^3
 
         """
         pass
@@ -26,6 +27,13 @@ class Bubble(ABC):
                 - "lineLoops"   *
                 - "surfaces"
             * these keys are obliged
+        """
+        pass
+
+    @abstractmethod
+    def getBoundingBox(self):
+        """
+            Returns [max_x, max_y, max_z, min_x, min_y, min_z]
         """
         pass
 
@@ -48,14 +56,35 @@ class Sphere(Bubble):
         geo["points"] = new_points
         return geo
 
+    def getBoundingBox(self):
+        return [x + self.radius for x in self.midpoint] + [x - self.radius for x in self.midpoint]
+
+
 class StarBubble(Bubble):
-    def __init__(self, midpoint, size, coefficients):
+    def __init__(self, size, midpoint, coefficients):
         self.midpoint = midpoint
         self.size = size
         self.coefficients = coefficients
 
     def trafo(self, theta, phi):
-        raise NotImplementedError
+        """
+            @param p = (theta, phi)   theta in (0,pi)
+                                      phi   in (0,2pi)
+
+
+                  p[0] is an array of thetas etc
+
+                  p in IR^(2 x N)
+
+        """
+        p = (theta,phi)
+        res = np.zeros(3)
+        a,b,c = 1,1,1
+        res[0] = (1+0.2*np.sin(3*p[0]) + .3*np.cos(5*p[1]))*a * np.sin(p[0]) * np.cos(p[1]) # (1+0.2*np.sin(3*p[0]) + .3*np.cos(5*p[1]))*
+        res[1] = b*(1+0.2*np.sin(3*p[0]) + .3*np.cos(5*p[1])) * np.sin(p[0]) * np.sin(p[1])
+        res[2] = c * np.cos(p[0])
+
+        return np.linalg.norm(res)*.1
     
     def discretize(self, accuracy=.1, point_id=1,line_id=1,lineLoop_id=1):
         geo = discretize_reference(self.trafo, accuracy,point_id,line_id,lineLoop_id)
@@ -68,110 +97,153 @@ class StarBubble(Bubble):
         geo["points"] = new_points
         return geo
 
-def clip(geo, h):
-    finalPoints = []
-    finalLines = []
-    finalLineLoops = []
-    clip_geo = {"points":finalPoints, "lines":finalLines, "lineLoops":finalLineLoops}
-    triangles_total = geo["lineLoops"]
-    triangles_inside = []
-    triangles_outside = []
-    triangles_inout = []
-    L_out = []
-    L_on = []
-    L_in = []
-    P_out = []
-    P_on = []
-    P_in = []
-    P_ = []
-    lineLoop = []
-    i = 1
+    def getBoundingBox(self, nsample=40):
+        # sample based
+        mx,my,mz = self.midpoint
+        ltheta = np.linspace(0,np.pi,nsample)
+        lphi = np.linspace(0,2*np.pi,nsample)
+        points = [_targetPoint(theta,phi,self.trafo(theta, phi))  for theta, phi in zip(ltheta,lphi)]
+        points = [(p[0]+mx, p[1]+my, p[2]+mz) for p in points]
 
-    for triangle in geo["lineLoops"]:
+        max_x = max(points, key=lambda x: x[0])[0]
+        max_y = max(points, key=lambda x: x[1])[1]
+        max_z = max(points, key=lambda x: x[2])[2]
+
+        min_x = min(points, key=lambda x: x[0])[0]
+        min_y = min(points, key=lambda x: x[1])[1]
+        min_z = min(points, key=lambda x: x[2])[2]
+
+        return [max_x, max_y, max_z, min_x, min_y, min_z]
+
+def _targetPoint(theta, phi, radius):
+    x = radius*np.sin(theta)*np.cos(phi)
+    y = radius*np.sin(theta)*np.sin(phi)
+    z = radius*np.cos(theta)
+    return (x,y,z)
+
+def euclidean_projection(triangles_boundary,geo,remainingPoints, h, axis, section,P_):
+    """
+        changes remainingPoints
+    """
+    for p in P_:
+        for pp in remainingPoints:
+            if pp["id"] == p:
+                coords = pp["coords"]
+                pp["coords"][axis]
+
+def minimization_projection(triangles_boundary,geo,remainingPoints, h, axis, section,P_):
+    """
+        geo = {"points":[...], "lines":[...], "lineLoops":[...]}
+        triangles_boundary is a list containing indices of geo["lineLoops"] corresponding to triangles on the boundary
+    """
+    raise NotImplementedError
+
+def new_clip(old_geo, clippingPlane, orientation, clippingRule):
+    """
+        clips old_geo at the clippingPlane, orientation tells us which halfspace is the one to be clipped away
+
+
+    """
+    # iterate over all triangles, check which one is in the good halfspace,
+    #  bad halfspace or intersects with the clippingPlane
+    for j,triangle in enumerate(geo["lineLoops"]):
+        lline_id = triangle["lines"]
+        lline_index = [old_geo["lines"][search_index("id",abs(l),geo["lines"])] for l in [l1,l2,l3]]
+        points = list(set([l["start"] for l in lines] + [l["end"] for l in lines]))
+
+def clip(geo, h, axis, section, project=euclidean_projection):
+    """
+    axis in [0,1,2]
+    section > 0 or < 0
+    if >0 cuts everything above h
+    """
+    if axis in [0,2]:
+        raise NotImplementedError
+    
+    remainingPoints = []
+    remainingLines = []
+    remainingLineLoops = []
+    clip_geo = {"points":remainingPoints, "lines":remainingLines, "lineLoops":remainingLineLoops}
+    triangles_inside = []
+    triangles_boundary = []
+
+    L_in = []
+    P_on = [] # list of point IDs of vertices of triangles which are on the boundary
+    P_in = []
+    P_ = [] # list of point IDs of vertices of triangles which are on the boundary and are outside
+    lineLoop = [] # intersection lineLoop with cutting plane
+
+
+    for j,triangle in enumerate(geo["lineLoops"]):
         
         l1, l2, l3 = triangle["lines"]
         lines = [geo["lines"][search_index("id",abs(l),geo["lines"])] for l in [l1,l2,l3]]
-        #print([geo["lines"][l-1] for l in [l1,l2,l3]])
-        #points = list(set([geo["lines"][abs(l)-1]["start"] for l in triangle["lines"]] + [geo["lines"][abs(l)-1]["end"] for l in triangle["lines"]]))
         points = list(set([l["start"] for l in lines] + [l["end"] for l in lines]))
         
-        loc_sum,loc = locate(geo, points, h) # 1 in, 0 mix, -1 out
+        loc_sum,loc = locate(geo, points,h, axis, section) # 1 in, 0 mix, -1 out
+        
         
         if loc_sum == 1: # IN
-            triangles_inside.append(triangle["id"])
+            triangles_inside.append(j)
             L_in += [abs(l) for l in triangle["lines"]]
             P_in += points
-        elif loc_sum == -1: # OUT
-            triangles_outside.append(triangle["id"])
-            P_out += points
-            L_out += [abs(l) for l in triangle["lines"]]
-        else: # IN/OUT
+
+        elif loc_sum == 0: # IN/OUT
+            # TODO: at this point decide between projecting the points or removing this triangle (project up)
             lines_on = [abs(l) for l in triangle["lines"]]
-            L_on += lines_on
-            triangles_inout.append(triangle["id"])
+            triangles_boundary.append(j)
             P_on += points
-            for i,boolean in enumerate(loc):
-                if not boolean:
+            for i,inside in enumerate(loc):
+                if not inside:
                     P_.append(points[i])
             
             for l in lines_on:
                 p1 = geo["lines"][search_index("id",l,geo["lines"])]["start"]
                 p2 = geo["lines"][search_index("id",l,geo["lines"])]["end"]
-                #p1 = geo["lines"][l-1]["start"]
-                #p2 = geo["lines"][l-1]["end"]
+
                 if ((not locate_point(geo, p1, h)) and (not locate_point(geo, p2, h))):
                     lineLoop.append(l)
-
-
-    for triangle in triangles_inout:
-        triangle_index = search_index("id",triangle,geo["lineLoops"])
-        lines = geo["lineLoops"][triangle_index]["lines"] # lines = geo["lineLoops"][triangle -1 ]["lines"] 
+        else: # OUT
+            pass
+    for triangle in triangles_boundary:
+        lines = geo["lineLoops"][triangle]["lines"] 
         lines = [abs(l) for l in lines]
         L_in += lines
 
-    L_out = set(L_out)
-    L_on = set(L_on)
+
     L_in = set(L_in)
-    P_out = set(P_out)
     P_in = set(P_in)
     P_on = set(P_on)
+    P_ = set(P_)
 
-    L_tot = L_in # .union(L_out.intersection(L_on))
+    L_tot = L_in
 
 
-    finalPoints += [geo["points"][search_index("id",i,geo["points"])] for i in list(P_in.union(P_on))]
-    #finalPoints += [geo["points"][i-1] for i in list(P_in.union(P_on))]
+    remainingPoints += [geo["points"][search_index("id",i,geo["points"])] for i in list(P_in.union(P_on))]
 
-    # Process finalPoints # TODO: Write application
-    for p in P_:
-        for pp in finalPoints:
-            if pp["id"] == p:
-                coords = pp["coords"]
-                pp["coords"] = [coords[0], h ,coords[2]]
+    # Projection
+    project(triangles_boundary,geo,remainingPoints,h,axis,section,P_) # changes remainingPoints
     
-    finalLines += [geo["lines"][search_index("id",i,geo["lines"])] for i in list(L_tot)]
-    #finalLines += [geo["lines"][i-1] for i in list(L_tot)]
-    finalLineLoops += [geo["lineLoops"][search_index("id",i,geo["lineLoops"])] for i in (triangles_inside + triangles_inout)]
-    #finalLineLoops += [geo["lineLoops"][i-1] for i in (triangles_inside + triangles_inout)]
+    remainingLines += [geo["lines"][search_index("id",i,geo["lines"])] for i in list(L_tot)]
+    remainingLineLoops += [geo["lineLoops"][j] for j in (triangles_inside + triangles_boundary)]
+
 
     # Sort line Loop
     sorted_lineLoop = sort_lineLoop(geo, list(set(lineLoop)))
     free_lineLoop_id = max([i["id"] for i in geo["lineLoops"]])
     intersectionLoop = {"id":free_lineLoop_id+1,"lines":sorted_lineLoop}
-    #clip_geo["lineLoops"].append(intersectionLoop)
-    #clip_geo["surfaces"] = [{"id":ll["id"], "lineLoops":ll["id"]} for ll in clip_geo["lineLoops"]]
-    #write_geo(clip_geo, "test_bubbly")
+
     return clip_geo, intersectionLoop
 
 
 def discretize_reference(trafo, accuracy, point_id=1,line_id=1,lineLoop_id=1):
     # 1: Write geo
     # 2: Write xml
-    # 3: Load xml
+    # 3: Load xml TODO: speed up
     # 4: transform
     # return geomerty: dict containing points,lines,lineLoops
 
-    # 1:
+    # 1: Write geo
     reference_sphere = open("sphere.geo", "r")
 
     finer_sphere = open("sphere_finer.geo", "w")
@@ -193,7 +265,7 @@ def discretize_reference(trafo, accuracy, point_id=1,line_id=1,lineLoop_id=1):
     os.system("gmsh -2 " + "sphere_finer" + ".geo")  # -v 0
     os.system("dolfin-convert " + "sphere_finer" + ".msh " + "sphere_finer" + ".xml")
     
-    # 3:    LOAD XML
+    # 3:    LOAD XML 
     tree = ET.parse('sphere_finer.xml')
 
     root = tree.getroot()
@@ -243,7 +315,6 @@ def discretize_reference(trafo, accuracy, point_id=1,line_id=1,lineLoop_id=1):
     
 
     # TRANSFORM GEO
-
     
     #phis = []
     #thetas = []
@@ -265,22 +336,30 @@ def discretize_reference(trafo, accuracy, point_id=1,line_id=1,lineLoop_id=1):
         new_coords = [new_x, new_y, new_z]
         new_point = {"id":point["id"], "coords":new_coords, "lc":None}
         new_points.append(new_point)
-    #print(min(phis), max(phis))
-    #print(min(thetas), max(thetas))
+
     geo["points"] = new_points
     return geo
     
-def locate(geo, lpoint_id,h=-.06):
+def locate(geo, lpoint_id,h,axis,section):
+    """
+        lpoint_id is a list of three point Id, representing a triangle
+
+        returns tuple = (t1, t2)
+        t1 in {-1,0,1}
+        t2 = loc
+    """
     # TODO: point ID not -1
-    #self.geo["point_id"], self.geo["line_id"], self.geo["lineLoop_id"]print(geo["points"])
     lpoint_index = [search_index("id",Id,geo["points"]) for Id in lpoint_id]
     lpoint = [geo["points"][i] for i in lpoint_index]
-    loc = [p["coords"][1] < h for p in lpoint] # false if out
+    loc = [p["coords"][axis] < h for p in lpoint] if section > 0 else [p["coords"][axis] > h for p in lpoint]
     if sum(loc) == 3:
+        # triangle is inside
         return 1,loc
     elif sum(loc) == 0:
+        # triangle is outside
         return -1,loc
     else:
+        #triangle is on border
         return 0,loc
 
 def locate_point(geo, point, h):

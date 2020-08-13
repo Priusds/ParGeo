@@ -36,6 +36,12 @@ class Glue:
         /
         z coordinate
         """
+        self.max_x = lcoords[1][0]
+        self.max_y = lcoords[2][1]
+        self.max_z = 0
+        self.min_x = lcoords[0][0]
+        self.min_y = lcoords[0][1]
+        self.min_z = -depth
         self.height_up = lcoords[2][1]
         self.bubbles_in = []
         self.interior_lineLoops = []
@@ -43,7 +49,6 @@ class Glue:
         self.bubbles_on = {"up_interior":[],"down_interior":[]}    
 
         self.geo = {"free_point_id":9,"free_line_id":13,"free_lineLoop_id":7,"free_surface_id":1}
-
         # make points
         points = [{"id":i+1,"coords":lcoords[i],"lc":None} for i in range(4)]
 
@@ -88,13 +93,156 @@ class Glue:
         #self.faces["up"] = {"points":[4,3,7,8], "lines":[3,9,7,11], "lineLoops":[5]}
         #self.faces["down"] = {"points":[1,2,6,5],"lines":[1,10,5,12],"lineLoops":[6]}
         
+        self.geometry = {"points":{p["id"]: {"coords":p["coords"], "lc":None} for p in points}}
+        print(self.geo)
+        print(self.geometry)
 
     def _localize_bubble(self, bubble):
-        return "inside", True 
+        # Assume midpoint is inside of the box and the bubble is small enough not to intersect with opposite facets
+        max_x,max_y,max_z,min_x,min_y,min_z = bubble.getBoundingBox()
+        valid = True
+        loc = ""
+        if max_x >= self.max_x:
+            #intersection with right
+            if max_y >= self.max_y:
+                #intersection with up
+                if max_z >= self.max_z:
+                    #intersection with front
+                    # cornercase
+                    loc += "right_up_front"
+                    valid = False
+                elif min_z <= self.min_z:
+                    #intersection with back
+                    # cornercase
+                    loc += "right_up_back"
+                    valid = False
+                else:
+                    loc += "right_up"
+                    valid = False
+                #no intersection with right/left
+            elif min_y <= self.min_y:
+                #intersection with down
+                if max_z >= self.max_z:
+                    #intersection with front
+                    # cornercase
+                    loc += "right_down_front"
+                    valid = False
+                elif min_z <= self.min_z:
+                    #intersection with back
+                    # cornercase
+                    loc += "right_down_back"
+                    valid = False
+                else:
+                    #no intersection with front/back
+                    loc += "right_down"
+                    valid = False
+            else:
+                #no intersection with up/down
+                if max_z >= self.max_z:
+                    #intersection with front
+                    loc += "right_front"
+                    valid = False
+                elif min_z <= self.min_z:
+                    #intersection with back
+                    loc += "right_back"
+                    valid = False
+                else:
+                    #no intersection with front/back
+                    loc += "right"
+                    valid = True
+                
+        elif min_x <= self.min_x:
+            #intersection with left
+            if max_y >= self.max_y:
+                #intersection with up
+                if max_z >= self.max_z:
+                    #intersection with front
+                    #cornercase
+                    loc += "left_up_front"
+                    valid = False
+                elif min_z <= self.min_z:
+                    #intersection with back
+                    #cornercase
+                    loc += "left_up_back"
+                    valid = False
+                else:
+                    #no intersection with front/back
+                    valid = False
 
-    def add_bubble(self, bubble, loc, accuracy=.5):
+                #intersection with up
+            elif min_y <= self.min_y:
+                #intersection with down
+                if max_z >= self.max_z:
+                    #intersection with front
+                    #cornercase
+                    loc += "left_down_front"
+                    valid = False
+                elif min_z <= self.min_z:
+                    #intersection with back
+                    #cornercase
+                    loc += "left_down_back"
+                    valid = False
+                else:
+                    #no intersection with front/back
+                    valid = False
 
-        loc_, valid = self._localize_bubble(bubble)
+            else:
+                #no intersection with up/down
+                if max_z >= self.max_z:
+                    #intersection with front
+                    valid = False
+                elif min_z <= self.min_z:
+                    #intersection with back
+                    valid = False
+                else:
+                    #no intersection with front/back
+                    valid = True
+                    loc += "left"
+        else:
+            # no intersection with left/right
+            if max_y >= self.max_y:
+                #intersection with up
+                if max_z >= self.max_z:
+                    #intersection with front
+                    loc += "up_front"
+                    valid = False
+                elif min_z <= self.min_z:
+                    #intersection with back
+                    loc += "up_back"
+                    valid = False
+                else:
+                    #no intersection with front/back
+                    loc = "up"
+            elif min_y <= self.min_y:
+                #intersection with down
+                if max_z >= self.max_z:
+                    #intersection with front
+                    loc += "down_front"
+                    valid = False
+                elif min_z <= self.min_z:
+                    #intersection with back
+                    loc += "down_back"
+                    valid = False
+                else:
+                    #no intersection with front/back
+                    loc = "down"
+            else:
+                #no intersection with up/down
+                if max_z >= self.max_z:
+                    #intersection with front
+                    loc += "front"
+                elif min_z <= self.min_z:
+                    #intersection with back
+                    loc += "back"
+                else:
+                    #no intersection with anyside
+                    loc += "inside"
+        
+        return loc, valid
+
+    def add_bubble(self, bubble, accuracy=.5):
+
+        loc, valid = self._localize_bubble(bubble)
         if valid:
             if loc == "inside":
                 #self.bubbles_in.append(bubble)
@@ -117,7 +265,7 @@ class Glue:
             elif loc == "up":
                 cut_height = self.height_up
                 bubble_geo = bubble.discretize(accuracy, self.geo["free_point_id"], self.geo["free_line_id"], self.geo["free_lineLoop_id"])
-                clip_bubble, intersectionLoop = clip(bubble_geo, cut_height)
+                clip_bubble, intersectionLoop = clip(bubble_geo, cut_height, 1,1)
                 #print(clip_bubble["points"])
                 self.geo["points"] += clip_bubble["points"]
 
@@ -131,9 +279,10 @@ class Glue:
                 self.geo["free_point_id"] = (max([p["id"] for p in clip_bubble["points"]])+1)
                 self.geo["free_line_id"] = (max([l["id"] for l in clip_bubble["lines"]])+1)
                 self.geo["free_lineLoop_id"]  = (max([ll["id"] for ll in clip_bubble["lineLoops"]])+2)
-                
+            else:
+                raise NotImplementedError(loc)
         else:
-            print("Bubble could not be added")
+            print("Bubble could not be added", loc, valid)
             
     def _finish_geometry(self):
         self.geo["surfaces"] = []
