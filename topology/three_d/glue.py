@@ -1,6 +1,6 @@
 from ..geo_utils.utils import write_geo
 from .bubble import Sphere, clip, StarBubble
-
+from .clip import EasyClip, EuclideanProjection
 class Glue:
     # naming anti clockwise
     def __init__(self, lcoords, depth):
@@ -46,17 +46,18 @@ class Glue:
         self.bubbles_in = []
         self.interior_lineLoops = []
         self.exterior_surfaces = []
-        self.bubbles_on = {"up_interior":[],"down_interior":[]}    
+        self.bubbles_on = {"up_interior":[],"down_interior":[]}   
 
-        self.geo = {"free_point_id":9,"free_line_id":13,"free_lineLoop_id":7,"free_surface_id":1}
+        self.freePointId = 9
+        self.freeLineId = 13
+        self.freeLineLoopId = 7
+        self.freeSurfaceId = 1
+
         # make points
         points = [{"id":i+1,"coords":lcoords[i],"lc":None} for i in range(4)]
 
         for i in range(4,8):
             points.append({"id":i+1,"coords":(lcoords[i%4][0],lcoords[i%4][1],lcoords[i%4][2]-depth), "lc":None})
-
-
-        self.geo["points"]=points
 
 
         # make lines
@@ -72,8 +73,6 @@ class Glue:
 
         lines.append({"id":11,"start":4,"end":8})
         lines.append({"id":12,"start":1,"end":5})
-            
-        self.geo["lines"] = lines
 
         # make line loops
         line_loops = []
@@ -85,17 +84,21 @@ class Glue:
         line_loops.append({"id":5,"lines":[-3,9,7,-11]})
         line_loops.append({"id":6,"lines":[5,-10,-1,12]})
 
-        self.geo["lineLoops"] = line_loops
+        self.faces_names = {"up":5,"down":6,"right":3,"left":4,"front":1,"back":2}
+        self.faces = {i: {"bubbles_in":[]} for i in range(1,7)}
+        self.faces[1]["hyperplane"] = ((0,0,1), (0,0,self.max_z))
+        self.faces[2]["hyperplane"] = ((0,0,-1),(0,0,self.min_z))
+        self.faces[3]["hyperplane"] = ((1,0,0),(self.max_x,0,0))
+        self.faces[4]["hyperplane"] = ((-1,0,0),(self.min_x,0,0))
+        self.faces[5]["hyperplane"] = ((0,1,0),(0,self.max_y,0))
+        self.faces[6]["hyperplane"] = ((0,-1,0),(0,self.min_y,0))
 
-        #self.faces = {i:{"lineLoop_main":i, "lineLoops_inside":[]} for i in range(1,7)}
-        self.faces = {i: {"bubbles":[]} for i in range(1,7)}
-        #self.faces = {"front":{},"back":{},"right":{},"left":{},"up":{},"down":{}}
-        #self.faces["up"] = {"points":[4,3,7,8], "lines":[3,9,7,11], "lineLoops":[5]}
-        #self.faces["down"] = {"points":[1,2,6,5],"lines":[1,10,5,12],"lineLoops":[6]}
         
         self.geometry = {"points":{p["id"]: {"coords":p["coords"], "lc":None} for p in points}}
-        print(self.geo)
-        print(self.geometry)
+        self.geometry["lines"] = {l["id"]:(l["start"], l["end"]) for l in lines}
+        self.geometry["lineLoops"] = {ll["id"]:ll["lines"] for ll in line_loops}
+
+
 
     def _localize_bubble(self, bubble):
         # Assume midpoint is inside of the box and the bubble is small enough not to intersect with opposite facets
@@ -241,92 +244,88 @@ class Glue:
         return loc, valid
 
     def add_bubble(self, bubble, accuracy=.5):
-
         loc, valid = self._localize_bubble(bubble)
         if valid:
             if loc == "inside":
                 #self.bubbles_in.append(bubble)
-                data = bubble.discretize(accuracy, self.geo["free_point_id"], self.geo["free_line_id"], self.geo["free_lineLoop_id"])
-               
-                self.geo["points"] += data["points"]
-                self.geo["lines"] += data["lines"]
+                data = bubble.discretize(accuracy, self.freePointId, self.freeLineId, self.freeLineLoopId)
+                
+                self.geometry["points"] = {**self.geometry["points"],**data["points"]}
+                self.geometry["lines"] = {**self.geometry["lines"],**data["lines"]}
                 lineLoops = []
                 for triangle in data["lineLoops"]:
 
-                    lineLoops.append({"id":triangle["id"], "lines":triangle["lines"]})
+                    lineLoops.append({"id":triangle, "lines":data["lineLoops"][triangle]})
 
-                self.geo["lineLoops"] += data["lineLoops"]
+                self.geometry["lineLoops"] = {**self.geometry["lineLoops"], **data["lineLoops"]}
                 self.interior_lineLoops += lineLoops
 
-                self.geo["free_point_id"] += len(data["points"]) # TODO: correct this
-                self.geo["free_line_id"] += len(data["lines"])
-                self.geo["free_lineLoop_id"] += len(lineLoops)
+                self.freePointId += len(data["points"]) # TODO: correct this
+                self.freeLineId += len(data["lines"])
+                self.freeLineLoopId += len(lineLoops)
 
-            elif loc == "up":
+            elif loc in ["up","down","right","left","front","back"]:
+                clippingPlane = self.faces[self.faces_names[loc]]["hyperplane"]
                 cut_height = self.height_up
-                bubble_geo = bubble.discretize(accuracy, self.geo["free_point_id"], self.geo["free_line_id"], self.geo["free_lineLoop_id"])
-                clip_bubble, intersectionLoop = clip(bubble_geo, cut_height, 1,1)
-                #print(clip_bubble["points"])
-                self.geo["points"] += clip_bubble["points"]
+                bubble_geo = bubble.discretize(accuracy, self.freePointId, self.freeLineId, self.freeLineLoopId)
 
-                
-                self.geo["lines"] += clip_bubble["lines"]
-                self.geo["lineLoops"] += clip_bubble["lineLoops"]
-                self.geo["lineLoops"].append(intersectionLoop)
 
-                self.faces[5]["bubbles"].append({"clip_geo":clip_bubble,"intersectionLoop":intersectionLoop})
+                clip_bubble, intersectionLoop = clip(bubble_geo, clippingPlane, EuclideanProjection, EasyClip)
                 
-                self.geo["free_point_id"] = (max([p["id"] for p in clip_bubble["points"]])+1)
-                self.geo["free_line_id"] = (max([l["id"] for l in clip_bubble["lines"]])+1)
-                self.geo["free_lineLoop_id"]  = (max([ll["id"] for ll in clip_bubble["lineLoops"]])+2)
+                
+                self.geometry["points"] = {**self.geometry["points"], **clip_bubble["points"]}
+                self.geometry["lines"] = {**self.geometry["lines"], **clip_bubble["lines"]}
+                self.geometry["lineLoops"] = {**self.geometry["lineLoops"],**clip_bubble["lineLoops"],**{intersectionLoop[0]:intersectionLoop[1]}}
+
+                self.faces[self.faces_names[loc]]["bubbles_in"].append({"clip_geo":clip_bubble,"intersectionLoop":intersectionLoop})
+                
+                self.freePointId = (max([p for p in clip_bubble["points"]])+1)
+                self.freeLineId = (max([l for l in clip_bubble["lines"]])+1)
+                self.freeLineLoopId  = (max([ll for ll in clip_bubble["lineLoops"]])+2)
             else:
                 raise NotImplementedError(loc)
         else:
             print("Bubble could not be added", loc, valid)
             
     def _finish_geometry(self):
-        self.geo["surfaces"] = []
+        self.geometry["surfaces"] = dict()
         # Write exterior surfaces
         for face in self.faces:
             lintersectionLoops = []
             
-            for bubble in self.faces[face]["bubbles"]:
-                lintersectionLoops.append(bubble["intersectionLoop"]["id"])
+            for bubble in self.faces[face]["bubbles_in"]:
+                lintersectionLoops.append(bubble["intersectionLoop"][0])
 
             main_surface = {"id":face,"lineLoops":[face] + lintersectionLoops}
-            self.geo["surfaces"].append(main_surface)
+            
+            
             self.exterior_surfaces.append(main_surface)
+            
+            self.geometry["surfaces"][face] = [face]+lintersectionLoops
 
-            for bubble in self.faces[face]["bubbles"]:
+
+            for bubble in self.faces[face]["bubbles_in"]:
                 llineLoops = bubble["clip_geo"]["lineLoops"]
+                
                 for lineLoop in llineLoops:
-                    Id = lineLoop["id"]
+                    Id = lineLoop
                     surface = {"id":Id,"lineLoops":[Id]}
-                    self.geo["surfaces"].append(surface)
 
+                    self.geometry["surfaces"][lineLoop] = [lineLoop]
                     self.exterior_surfaces.append(surface)
-            
-
-            
-
-            #lineLoops = [self.faces[i]["lineLoop_main"]] + self.faces[i]["lineLoops_inside"]
-            #surface = {"id":i, "lineLoops":lineLoops}
-            #self.geo["surfaces"].append(surface)
             
         
         # Write interior surfaces
         for lineLoop in self.interior_lineLoops:
-            self.geo["surfaces"].append({"id":lineLoop["id"], "lineLoops":[lineLoop["id"]]})
-        
+            self.geometry["surfaces"][lineLoop["id"]] = [lineLoop["id"]]
         # Write exterior surface loop
-        self.geo["surfaceLoops"] = [{"id":1,"surfaces":[surface["id"] for surface in self.exterior_surfaces]}]
-        #self.geo["surfaceLoops"] = [{"id":face, "surfaces":self.faces[face]["surfaces"]}for face in self.faces]
-        # Write interior surface loop
-        self.geo["surfaceLoops"].append({"id":2, "surfaces": [lineLoop["id"] for lineLoop in self.interior_lineLoops]})
+        self.geometry["surfaceLoops"] = {1:[surface["id"] for surface in self.exterior_surfaces]}
         
+        # Write interior surface loop
+        self.geometry["surfaceLoops"][2] = [lineLoop["id"] for lineLoop in self.interior_lineLoops]
         # Write volume
-        self.geo["volumes"] = [{"id":1, "surfaceLoops":[1,2]}]
+        self.geometry["volumes"] = {1:[1,2]}
 
     def to_geo(self, file_name):
         self._finish_geometry()
-        write_geo(self.geo, file_name)
+        write_geo(self.geometry, file_name)
