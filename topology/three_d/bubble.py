@@ -11,7 +11,7 @@ class Bubble(ABC):
     @abstractmethod
     def trafo(self, theta, phi):
         """
-            Centerd in (0,0,0)
+            Centered in (0,0,0)
             Returns the mapping from spheric coordinates to radius
             Implements the underlying geometric mapping from
           
@@ -124,15 +124,19 @@ def _targetPoint(theta, phi, radius):
     return (x,y,z)
 
 
-def clip(geometry, clippingPlane, pointProjection,clippingRule):
+def clip(geometry, clippingPlane, pointProjection,clippingRule,  args = None):
     """
         clips old_geo at the clippingPlane, orientation tells us which halfspace is the one to be clipped away
 
 
     """
+
     # iterate over all triangles, check which one is in the good halfspace,
     #  bad halfspace or intersects with the clippingPlane
-    clipper = clippingRule(pointProjection(clippingPlane))
+    if args is not None : 
+        clipper = clippingRule(pointProjection(clippingPlane, args))
+    else:
+        clipper = clippingRule(pointProjection(clippingPlane))
 
     normalVector, supportVector = clippingPlane
 
