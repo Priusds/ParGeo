@@ -2,6 +2,20 @@ from topology.three_d.glue import *
 from topology.three_d.clip import *
 from topology.three_d.utils import locate, merge_loops
 from topology.three_d.bubble import Sphere,clip
+from topology.three_d.utils import locate
+from topology.three_d.bubble import Sphere,clip, _targetPoint
+
+
+import mystic as my
+# tools
+from mystic.monitors import VerboseMonitor
+from mystic.math.measures import mean, impose_mean
+from mystic.math import almostEqual
+from mystic.penalty import quadratic_equality
+
+import numpy as np
+
+
 def test1():
     # DEFINE GLUE BOX
     lcoords = [
@@ -157,3 +171,39 @@ def test6():
 
     print(loop0)
     write_geo(geo1, "test")
+
+
+
+
+def testProjectionClipping():
+
+    s1 = Sphere(1, (0,0,0))
+    geo = s1.discretize(0.1)
+
+    myProjection= NumericPointProjection
+    myClipping = EasyClip
+    clippingPlane = ((0,1,0), (0,0.5,0))
+
+    phi = lambda p : np.array(_targetPoint(p[0],p[1],s1.trafo(p[0],p[1])))
+
+    geo2, loop = clip(geo, clippingPlane   = clippingPlane,
+                          pointProjection = myProjection,
+                          clippingRule    = myClipping,
+                          args = phi)
+    write_geo(geo2, "testClipping")
+
+
+
+    myProjection= EuclideanProjection
+    myClipping = EasyClip
+    clippingPlane = ((0,1,0), (0,0.5,0))
+
+    geo3, loop = clip(geo, clippingPlane   = clippingPlane,
+                          pointProjection = myProjection,
+                          clippingRule    = myClipping,
+                          args = None)
+    write_geo(geo3, "testClipping_eucl")
+
+
+
+                                                  

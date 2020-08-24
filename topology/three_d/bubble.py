@@ -11,7 +11,7 @@ class Bubble(ABC):
     @abstractmethod
     def trafo(self, theta, phi):
         """
-            Centerd in (0,0,0)
+            Centered in (0,0,0)
             Returns the mapping from spheric coordinates to radius
             Implements the underlying geometric mapping from
           
@@ -124,15 +124,19 @@ def _targetPoint(theta, phi, radius):
     return (x,y,z)
 
 
-def clip(geometry, clippingPlane, pointProjection,clippingRule, sort = True):
+def clip(geometry, clippingPlane, pointProjection,clippingRule, args = None):
     """
         clips old_geo at the clippingPlane, orientation tells us which halfspace is the one to be clipped away
 
 
     """
+
     # iterate over all triangles, check which one is in the good halfspace,
     #  bad halfspace or intersects with the clippingPlane
-    clipper = clippingRule(pointProjection(clippingPlane))
+    if args is not None : 
+        clipper = clippingRule(pointProjection(clippingPlane, args))
+    else:
+        clipper = clippingRule(pointProjection(clippingPlane))
 
     normalVector, supportVector = clippingPlane
 
@@ -186,14 +190,13 @@ def clip(geometry, clippingPlane, pointProjection,clippingRule, sort = True):
     clip_geometry["lineLoops"] = {**{Id:geometry["lineLoops"][Id] for Id in ltriangle_inside}, **{Id:geometry["lineLoops"][Id] for Id in ltriangle_boundary}}
     
     assert len(lineLoop) >= 3
-    if sort:
-        sorted_lineLoop = sort_lineLoop(geometry, list(lineLoop))
-        free_lineLoop_id = max([Id+1 for Id in geometry["lineLoops"]])
-        intersectionLoop = (free_lineLoop_id,sorted_lineLoop) 
+    
+    sorted_lineLoop = sort_lineLoop(geometry, list(lineLoop))
+    free_lineLoop_id = max([Id+1 for Id in geometry["lineLoops"]])
+    intersectionLoop = (free_lineLoop_id,sorted_lineLoop) 
 
-        return clip_geometry, intersectionLoop  
-    else: 
-        return clip_geometry
+    return clip_geometry, intersectionLoop  
+    
 
 def get_key(val,my_dict): 
     for key, value in my_dict.items(): 
