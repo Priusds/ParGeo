@@ -124,7 +124,7 @@ def _targetPoint(theta, phi, radius):
     return (x,y,z)
 
 
-def clip(geometry, clippingPlane, pointProjection,clippingRule):
+def clip(geometry, clippingPlane, pointProjection,clippingRule, sort = True):
     """
         clips old_geo at the clippingPlane, orientation tells us which halfspace is the one to be clipped away
 
@@ -185,12 +185,15 @@ def clip(geometry, clippingPlane, pointProjection,clippingRule):
     clip_geometry["lines"] = {**{Id:geometry["lines"][Id] for Id in lline_inside}, **{Id:geometry["lines"][Id] for Id in lline_boundary}}
     clip_geometry["lineLoops"] = {**{Id:geometry["lineLoops"][Id] for Id in ltriangle_inside}, **{Id:geometry["lineLoops"][Id] for Id in ltriangle_boundary}}
     
-    sorted_lineLoop = sort_lineLoop(geometry, list(lineLoop))
-    free_lineLoop_id = max([Id+1 for Id in geometry["lineLoops"]])
-    intersectionLoop = (free_lineLoop_id,sorted_lineLoop) 
+    assert len(lineLoop) >= 3
+    if sort:
+        sorted_lineLoop = sort_lineLoop(geometry, list(lineLoop))
+        free_lineLoop_id = max([Id+1 for Id in geometry["lineLoops"]])
+        intersectionLoop = (free_lineLoop_id,sorted_lineLoop) 
 
-    return clip_geometry, intersectionLoop
-
+        return clip_geometry, intersectionLoop  
+    else: 
+        return clip_geometry
 
 def get_key(val,my_dict): 
     for key, value in my_dict.items(): 
@@ -290,13 +293,40 @@ def discretize_reference(trafo, accuracy, point_id=1,line_id=1,lineLoop_id=1):
 
 def sort_lineLoop(geometry, lines_id):
     nlines = len(lines_id)
-    free_lines = lines_id
+    free_lines = lines_id.copy()
 
     sorted_lines = [free_lines[0]]
     free_lines.pop(0)
 
+    maxIter = 1000
+    i=0
+    while len(free_lines)>0 and i<maxIter:
+        head_ID = sorted_lines[0]
+        tail_ID = sorted_lines[-1]
+
+        head = set(geometry["lines"][head_ID])
+        tail = set(geometry["lines"][tail_ID])
+
+
+        cond = True
+        j = 0
+        while cond and j < len(free_lines):
+            candidate = set(geometry["lines"][free_lines[j]])
+
+            if len(candidate.intersection(tail)) > 0:
+                sorted_lines.append(free_lines[j])
+                free_lines.remove(free_lines[j])
+                cond = False
+            elif len(candidate.intersection(head)) > 0:
+                sorted_lines = [free_lines[j]] + sorted_lines
+                free_lines.remove(free_lines[j])
+                cond = False
+            j += 1
+        
+        i+=1
+
     i = 0
-    while len(sorted_lines) < nlines and i < 1000:
+    while len(sorted_lines) < nlines and i < 0:
         i+=1
         current = set([geometry["lines"][sorted_lines[-1]][0],geometry["lines"][sorted_lines[-1]][1]])
         cond = True
@@ -309,7 +339,6 @@ def sort_lineLoop(geometry, lines_id):
                 free_lines.remove(free_lines[j])
                 cond = False
             j += 1
-
     if len(sorted_lines) != nlines:
         raise ValueError("Problem with clipping: no sorting for lineLoop")
 

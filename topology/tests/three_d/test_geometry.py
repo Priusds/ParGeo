@@ -1,6 +1,6 @@
 from topology.three_d.glue import *
 from topology.three_d.clip import *
-from topology.three_d.utils import locate
+from topology.three_d.utils import locate, merge_loops
 from topology.three_d.bubble import Sphere,clip
 def test1():
     # DEFINE GLUE BOX
@@ -55,32 +55,41 @@ def test4():
 
 
     # DEFINE/ADD BUBBLES
-    s1 = Sphere(.1, (1,.05,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
+  #  s1 = Sphere(.1, (1,.05,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+  #  glue.add_bubble(s1)
 
-    s1 = Sphere(.1, (1,.95,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
+   # s1 = Sphere(.1, (1,.95,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+   # glue.add_bubble(s1)
 
-    s1 = Sphere(.1, (1.95,.5,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
+    #s1 = Sphere(.1, (1.95,.5,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+   # glue.add_bubble(s1)
 
-    s1 = Sphere(.1, (.01,.5,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
+    #s1 = Sphere(.1, (.01,.5,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+    #glue.add_bubble(s1)
 
-    s1 = Sphere(.1, (1,.5,-1.95)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
-
-    s1 = Sphere(.1, (1,.5,-.01)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
-
-    s1 = Sphere(.1, (1,.5,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
-   # s1 = Sphere(.1, (1,.5,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+    #s1 = Sphere(.1, (1,.5,-1.96)) # TODO: check problem with Sphere(.3, (1,"1",-1))
     #glue.add_bubble(s1)
 
     #s1 = Sphere(.1, (.5,.5,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
     #glue.add_bubble(s1)
 
+    #s1 = Sphere(.1, (1,1.97,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+    #glue.add_bubble(s1,1)
+
+    s1 = Sphere(.1, (0.01,.05,-.5)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+    glue.add_bubble(s1)
+
+    s1 = Sphere(.1, (0.01,.05,-1.5)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+    glue.add_bubble(s1)
+
+
+    s1 = Sphere(.1, (.5,.05,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+    glue.add_bubble(s1)
+
+    s1 = Sphere(.1, (1.2,.05,-.2)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+    glue.add_bubble(s1)
+
+    
 
     #s3 = StarBubble(.1, (1,.4,-1), None)
     #glue.add_bubble(s3,.1)
@@ -98,3 +107,53 @@ def test4():
 
 
 
+def test5():
+    s1 = Sphere(1, (0,0,0))
+    geoB = s1.discretize(.3)
+    h1 = (0,0,1)
+    h2 = (1,1,0)
+    h3 = (0,1,0)
+    geo0, loop0 = clip(geoB, (h1,(0,0,0)), pointProjection = EuclideanProjection,
+                            clippingRule = EasyClip)
+   
+    geo1, loop1 = clip(geoB, (h2,(0,0,0)), pointProjection = EuclideanProjection,
+                            clippingRule = EasyClip)
+
+    p0 = [geoB["lines"][abs(l)][0] for l in loop0[1]]
+    p1 = [geoB["lines"][abs(l)][0] for l in loop1[1]]
+    print(set(p0).intersection(set(p1)))
+    #write_geo(geo, "test")
+
+def test6():
+    s1 = Sphere(1, (0.05,0.05,0.05))
+    geoB = s1.discretize(.7)
+    h0 = (0,0,1.6)
+    h1 = (1.6,0,0)
+
+    geo0,loop0 = clip(geoB, (h0,(0,0,0)), pointProjection = EuclideanProjection,
+                            clippingRule = EasyClip)
+    #print(loop0)
+    geo1, loop1 = clip(geo0, (h1,(0.1,0,0)), pointProjection = EuclideanProjection,
+                            clippingRule = EasyClip)
+   # print(loop1)
+
+
+
+    p0 = [geoB["lines"][abs(l)][0] for l in loop0[1]]+[geoB["lines"][abs(l)][1] for l in loop0[1]]
+    p1 = [geoB["lines"][abs(l)][0] for l in loop1[1]]+[geoB["lines"][abs(l)][1] for l in loop1[1]]
+    #print(set(p0).intersection(set(p1)))
+
+    loop0_clip0 = []
+    loop0_clip1 = []
+    out = False
+    for i,l in enumerate(loop0[1]):
+        if abs(l) in geo1["lines"] and not out:
+            loop0_clip0.append(l)
+        elif abs(l) in geo1["lines"] and out:
+            loop0_clip1.append(l)
+        else:
+            out = True
+    loop0 = loop0_clip1 + loop0_clip0
+
+    print(loop0)
+    write_geo(geo1, "test")
