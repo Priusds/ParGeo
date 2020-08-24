@@ -6,3 +6,4 @@ topology/three_d/bubble_old.py
 topology/three_d/__pycache__/bubble.cpython-36.pyc
 topology/three_d/__pycache__/glue.cpython-36.pyc
 topology/three_d/__pycache__/bubble_new.cpython-36.pyc
+*.pyc
