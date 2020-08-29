@@ -4,6 +4,9 @@ from topology.three_d.utils import locate, merge_loops
 from topology.three_d.bubble import Sphere,clip
 from topology.three_d.utils import locate
 from topology.three_d.bubble import Sphere,clip, _targetPoint
+#from topology.three_d.geometry import *
+from topology.three_d.layers import *
+from topology.three_d.merge import merge
 
 
 import mystic as my
@@ -90,18 +93,18 @@ def test4():
     #s1 = Sphere(.1, (1,1.97,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
     #glue.add_bubble(s1,1)
 
-    s1 = Sphere(.1, (0.01,.05,-.5)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
+   # s1 = Sphere(.1, (0.01,.05,-.5)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+   # glue.add_bubble(s1)
 
-    s1 = Sphere(.1, (0.01,.05,-1.5)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
+   # s1 = Sphere(.1, (0.01,.05,-1.5)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+   # glue.add_bubble(s1)
 
 
-    s1 = Sphere(.1, (.5,.05,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
+    #s1 = Sphere(.1, (.5,.05,-1)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+    #glue.add_bubble(s1)
 
-    s1 = Sphere(.1, (1.2,.05,-.2)) # TODO: check problem with Sphere(.3, (1,"1",-1))
-    glue.add_bubble(s1)
+    #s1 = Sphere(.1, (1.2,.05,-.2)) # TODO: check problem with Sphere(.3, (1,"1",-1))
+    #glue.add_bubble(s1)
 
     
 
@@ -207,3 +210,69 @@ def testProjectionClipping():
 
 
                                                   
+def test7():
+    f1 = Facet(3)
+    f2 = FacetWithBubbles(4)
+    f3 = FacetWithLayers(5)
+    print(isinstance(f2, Facet))#, issubclass(f2, Facet))
+    print(isinstance(f1, FacetWithBubbles))
+    f3 + f2
+    #f3 = f1 + f2 
+    #print(f3.a)
+
+def test8():
+    w = Waffle(lcoords = [(0,0,0),(2,0,0)],
+                depth = 3,
+                nLayers = 5,
+                hightLayer = .5)
+    w.to_geo("Waffle")
+
+def test9():
+    depth = 2
+    x = 0
+    y = 0
+    z = 0
+
+    width = 2
+    hight = 1
+
+    lcoords = [
+        (x,y,z),
+        (x+width,y,z),
+        (x+width,y+hight,z),
+        (x,y+hight,z)
+    ]
+
+    glue = Glue(lcoords, depth)
+   # s = Sphere(.1, (0.01,.95,-1.5))
+
+    #glue = Glue(lcoords, depth)
+    #s = Sphere(.1, (1.95,.95,-1.5))
+
+    
+    #glue.add_bubble(s)
+    s = Sphere(.1, (1,.95,-1.5))
+    glue.add_bubble(s)
+
+    s = Sphere(.1, (.6,.95,-.75))
+    glue.add_bubble(s)
+
+    s = Sphere(.1, (1,.5,-1.5))
+    glue.add_bubble(s)
+
+    s = Sphere(.1, (.75,.5,-.5))
+    glue.add_bubble(s)
+
+    s = Sphere(.1, (1.95,.5,-1.95))
+    glue.add_bubble(s)
+
+    s = Sphere(.1, (.75,.05,-.5))
+    glue.add_bubble(s)
+
+
+    glue._finish_geometry()
+    w = Waffle(lcoords = [(x,y+hight,z),(x+width,y+hight,z)],
+                depth = depth,
+                nLayers = 5,
+                hightLayer = .1)
+    merge(glue, w)
