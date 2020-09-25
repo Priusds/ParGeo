@@ -6,7 +6,7 @@ from topology.three_d.utils import locate
 from topology.three_d.bubble import Sphere,clip, _targetPoint
 #from topology.three_d.geometry import *
 from topology.three_d.layers import *
-from topology.three_d.merge import  mergeToSandwich, Sanwich, makeSomeSandwiches, mergeGeometries, Blade
+from topology.three_d.merge import   Sandwich, makeSomeSandwiches, mergeGeometries, Blade
 
 
 import mystic as my
@@ -18,28 +18,6 @@ from mystic.penalty import quadratic_equality
 
 import numpy as np
 
-
-def test1():
-    # DEFINE GLUE BOX
-    lcoords = [
-        (0,0,0),
-        (2,0,0),
-        (2,1,0),
-        (0,1,0)
-    ]
-
-    depth = 2
-    glue = Glue(lcoords, depth)
-
-def test2():
-
-    n = (0,1,0)
-    s = (66,1,12)
-    p = (4,5,6)
-
-
-    e = EasyClip(EuclideanProjection(n,s))
-    print(e.projectPoint(p))
 
 def test3():
     s = Sphere(1,(0,0,0))
@@ -210,15 +188,7 @@ def testProjectionClipping():
 
 
                                                   
-def test7():
-    f1 = Facet(3)
-    f2 = FacetWithBubbles(4)
-    f3 = FacetWithLayers(5)
-    print(isinstance(f2, Facet))#, issubclass(f2, Facet))
-    print(isinstance(f1, FacetWithBubbles))
-    f3 + f2
-    #f3 = f1 + f2 
-    #print(f3.a)
+
 
 def test8():
     w = Waffle(lcoords = [(0,0,0),(2,0,0)],
@@ -227,120 +197,12 @@ def test8():
                 hightLayer = .5)
     w.to_geo("Waffle")
 
-def test9():
-    depth = 2
-    x = 0
-    y = 0
-    z = 0
-
-    width = 2
-    hight = 1
-
-    lcoords = [
-        (x,y,z),
-        (x+width,y,z),
-        (x+width,y+hight,z),
-        (x,y+hight,z)
-    ]
-
-    glue = Glue(lcoords, depth)
-   # s = Sphere(.1, (0.01,.95,-1.5))
-
-    #glue = Glue(lcoords, depth)
-    #s = Sphere(.1, (1.95,.95,-1.5))
-
-    
-    #glue.add_bubble(s)
-    s = Sphere(.1, (1,.95,-1.5))
-    glue.add_bubble(s)
-
-    #s = Sphere(.1, (.6,.95,-.75))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (1,.5,-1.5))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (.75,.5,-.5))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (1.95,.5,-1.95))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (.75,.05,-.5))
-    #glue.add_bubble(s)
 
 
-    glue._finish_geometry()
-    w = Waffle(lcoords = [(x,y+hight,z),(x+width,y+hight,z)],
-                depth = depth,
-                nLayers = 5,
-                hightLayer = .1)
-    merge(glue, w)
-
-def test10():
-    depth = 2
-    x = 0
-    y = 0
-    z = 0
-
-    width = 2
-    hight = 1
-
-    lcoords = [
-        (x,y,z),
-        (x+width,y,z),
-        (x+width,y+hight,z),
-        (x,y+hight,z)
-    ]
-
-    
-
-    glue = Glue(lcoords, depth)
-    #s = Sphere(.1, (1,.95,-1.5))
-    #glue.add_bubble(s)
-
-
-   # s = Ellipse((.1,.2,.1), (1.95,.95,-1.5))
-   # glue.add_bubble(s)
-
-    #s = Sphere(.1, (.6,.95,-.75))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (1,.5,-1.5))
-    #glue.add_bubble(s)
-
-  #  s = Ellipse((.1,.2,.1), (.75,.5,-.5))
-  #  glue.add_bubble(s)
-  #  s = Sphere(.1, (1.5,.5,-1.5))
-  #  glue.add_bubble(s,1)
-
-   # s = Sphere(.1, (1.5,.05,-1.5))
-   # glue.add_bubble(s)
-
-    #s = Sphere(.1, (1.5,.95,-1.5))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (1.5,.3,-1))
-    #glue.add_bubble(s)
-
-    glue._finish_geometry()
-
-    w1 = Waffle(lcoords = [(x,y-3*.1,z),(x+width,y-3*.1,z)],
-                depth = depth,
-                nLayers = 3,
-                hightLayer = .1)
-
-    w2 = Waffle(lcoords = [(x,y+hight,z),(x+width,y+hight,z)],
-                depth = depth,
-                nLayers = 3,
-                hightLayer = .1)
-    
-    sandwich = mergeToSandwich(w1, glue, w2)
-
-    write_geo(sandwich, "Saaandwich")
 
 
 def test11():
+    # Make Glue
     depth = 2
     x = 0
     y = 0
@@ -382,32 +244,8 @@ def test12():
     
 
     glue = Glue(lcoords, depth)
-    #s = Sphere(.1, (1,.95,-1.5))
-    #glue.add_bubble(s)
 
 
-   # s = Ellipse((.1,.2,.1), (1.95,.95,-1.5))
-   # glue.add_bubble(s)
-
-    #s = Sphere(.1, (.6,.95,-.75))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (1,.5,-1.5))
-    #glue.add_bubble(s)
-
-    #s = Ellipse((.1,.2,.1), (.75,.5,-.5))
-    #glue.add_bubble(s)
-  #  s = Sphere(.1, (1.5,.5,-1.5))
-  #  glue.add_bubble(s,1)
-
-    s = Sphere(.1, (1.5,.05,-1.5))
-    glue.add_bubble(s)
-
-    #s = Sphere(.1, (1.5,.95,-1.5))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (1.5,.3,-1))
-    #glue.add_bubble(s)
 
     glue._finish_geometry()
 
@@ -421,7 +259,7 @@ def test12():
                 nLayers = 1,
                 hightLayer = .1)
     
-    sandwich = mergeToSandwich(w1, glue, w2)
+    sandwich = Sandwich(w1, glue, w2).geometry
 
     for pointID, pointDict in sandwich["points"].items():
         pointCoords = pointDict["coords"]
@@ -431,6 +269,7 @@ def test12():
     write_geo(sandwich, "julubu")
 
 def test13():
+    # Make Layer
     depth = 2
     x = 0
     y = 0
@@ -444,58 +283,7 @@ def test13():
                 hightLayer = .1)
     write_geo(w1.geometry, "waffleWonder")
 
-def test14():
-    depth = 2
-    x = 0
-    y = 0
-    z = 0
 
-    width = 2
-    hight = 1
-
-    lcoords = [
-        (x,y,z),
-        (x+width,y,z),
-        (x+width,y+hight,z),
-        (x,y+hight,z)
-    ]
-
-    
-
-    glue = Glue(lcoords, depth)
-
-
-    #    s = Sphere(.1, (1.5,.05,-1.5))
-    #    glue.add_bubble(s,1)
-
-        #s = Sphere(.1, (1.95,.05,-1.5)) # TODO: CHeck why error
-        #glue.add_bubble(s,.5)
-
-    s = Sphere(.1, (1.95,.05,-1.5)) 
-    glue.add_bubble(s,.2)
-
-    s = Sphere(.1, (1.95,.05,-.5)) 
-    glue.add_bubble(s,.2)
-
-    glue._finish_geometry()
-
-    write_geo(glue.geometry, "jalamalka")
-
-def test15():
-    depth = 2
-    x = 0
-    y = 0
-    z = 0
-
-    width = 2
-    hight = 1
-
-
-    w1 = Waffle(lcoords = [(x,y-3*.1,z),(x+width,y-3*.1,z)],
-            depth = depth,
-            nLayers = 3,
-            hightLayer = .1)
-    write_geo(w1.geometry,"layerr")
 
 def test16():
     depth = 2
@@ -516,21 +304,7 @@ def test16():
     
 
     glue = Glue(lcoords, depth)
-    #s = Sphere(.1, (1,.05,-1.5))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (1.4,.05,-1.7))
-    #glue.add_bubble(s)
-
-    #s = Sphere(.1, (1.4,.95,-1.7))
-    #glue.add_bubble(s)
-   # s = Ellipse((.1,.2,.1), (1.95,.95,-1.5))
-   # glue.add_bubble(s)
-
-    #s = Sphere(.1, (.6,.95,-.75))
-    #glue.add_bubble(s)
-
-
+    
 
     glue._finish_geometry()
 
@@ -544,7 +318,7 @@ def test16():
                 nLayers = 3,
                 hightLayer = .1)
     
-    sandwich = Sanwich(w1, glue, w2)
+    sandwich = Sandwich(w1, glue, w2)
 
     write_geo(sandwich.geometry, "SaaandwichClass")
 
@@ -620,5 +394,5 @@ def test19():
                 nLayers = nLayer2,
                 hightLayer = hightLayer2/nLayer2)
     
-    sandwich1 = Sanwich(w1, glue, w2)
+    sandwich1 = Sandwich(w1, glue, w2)
     write_geo(sandwich1.geometry, "Badabuff")

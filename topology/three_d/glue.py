@@ -132,7 +132,6 @@ class Glue:
             4: {"adjacentFace":4,"lines":[12],"lineLoops":[], "connections":[]}
         }
         for i in range(1,7):
-            self.faces[i]["merge"]={"mainLoop":None,"mainSurfaceId":None}
             for j in range(1,5):
                 self.faces[i]["outerLoop"][j]["edgeLines"] = {}
         
@@ -283,8 +282,6 @@ class Glue:
             After Bubbles have been added to the Box write LineLoops defining the 6 faces.
         """
         # Write exterior surface loop
-
-     #   print(json.dumps(self.faces[6]["outerLoop"], indent=3))
         
         JunkLines = set() # lines to be removed
         # Iterate over faces
@@ -296,7 +293,6 @@ class Glue:
                 edgeLoop = []
                 if len(self.faces[i]["outerLoop"][j]["lineLoops"]) == 0: # No intersection with Edges
                     lineID = self.faces[i]["outerLoop"][j]["lines"][0]
-                   # faceLineLoop.append(lineID)
                     edgeLoop.append(lineID)
                     edgeLines.append((lineID, self.geometry["lines"][abs(lineID)]))
                 else:
@@ -304,7 +300,6 @@ class Glue:
                     JunkLines.add(line_id)
                     # sort list of LineLoops for correct orientation, anticlockwise
                     self.faces[i]["outerLoop"][j]["lineLoops"].sort(key=sortLineLoops(self.faces[i]["outerLoop"][j]["lines"][0], self.geometry))
-                 #   print("============ ",self.faces[i]["outerLoop"][j]["lineLoops"])
                     
                     if len(self.faces[i]["outerLoop"][j]["connections"]) == 0:  #len(self.faces[i]["outerLoop"][j]["connections"]) == 0:
                         # write connection Lines, e.g. lines which connect the holes
@@ -329,9 +324,9 @@ class Glue:
                             self.geometry["lines"][newLineID] = newLine
                             connections.append(newLineID)
                             self.freeLineId += 1
-                  #          faceLineLoop.append(newLineID)
+                  #
                             edgeLoop.append(newLineID)
-                     #       faceLineLoop = faceLineLoop + self.faces[i]["outerLoop"][j]["lineLoops"][m]
+
                             edgeLoop = edgeLoop + self.faces[i]["outerLoop"][j]["lineLoops"][m]
                             edgeLines.append((newLineID, self.geometry["lines"][abs(newLineID)]))
                             a = self.faces[i]["outerLoop"][j]["lineLoops"][m][0]
@@ -345,7 +340,7 @@ class Glue:
                         self.geometry["lines"][newLineID] = newLine
                         connections.append(newLineID)
                         self.freeLineId += 1
-                    #    faceLineLoop.append(newLineID)
+
                         edgeLoop.append(newLineID)
                         edgeLines.append((newLineID,self.geometry["lines"][abs(newLineID)]))
 
@@ -366,12 +361,12 @@ class Glue:
                         self.faces[adjacentFaceId]["outerLoop"][t]["connections"] = [-l for l in reversed(connections)]
                         connections = self.faces[adjacentFaceId]["outerLoop"][t]["connections"]
                         for m in range(len(connections)-1):
-                   #         faceLineLoop.append(connections[m])
+
                             edgeLoop.append(connections[m])
-                       #     faceLineLoop = faceLineLoop + self.faces[i]["outerLoop"][j]["lineLoops"][m]
+
                             edgeLoop = edgeLoop + self.faces[i]["outerLoop"][j]["lineLoops"][m]
                             edgeLines.append((connections[m], self.geometry["lines"][abs(connections[m])]))
-                            #edgeLines = edgeLines + self.faces[i]["outerLoop"][j]["lineLoops"][m]
+
                             a = self.faces[i]["outerLoop"][j]["lineLoops"][m][0]
                             a = self.geometry["lines"][a][0] if a > 0 else  self.geometry["lines"][-a][1]
                             b = self.faces[i]["outerLoop"][j]["lineLoops"][m][-1]
@@ -379,7 +374,6 @@ class Glue:
                             newLineMerge = (a,b)
                             edgeLines.append((None, (a,b)))
                         
-                    #    faceLineLoop.append(connections[-1])
                         edgeLoop.append(connections[-1])
                         edgeLines.append((connections[-1], self.geometry["lines"][abs(connections[-1])]))
                 
@@ -399,10 +393,8 @@ class Glue:
             self.geometry["surfaceLoops"][1].append(self.freeSurfaceId)
             self.freeSurfaceId += 1
             
-            self.faces[i]["merge"]["mainLoop"] = (self.freeLineLoopId-1,faceLineLoop)
-            self.faces[i]["merge"]["mainSurface"] = (self.freeSurfaceId-1, [self.freeLineLoopId-1] + self.faces[i]["innerLoops"])
-        #print(self.merge[6]["mainLoopLayer"][3])
-        #print(self.merge[6]["mainLoopGlue"][3])
+
+
 
         for lineId in JunkLines:
             self.geometry["lines"].pop(lineId)

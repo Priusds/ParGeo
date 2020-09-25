@@ -131,7 +131,7 @@ def replaceSurface(oldID, newSurface, geometry):
         else:
             pass
 
-class Sanwich:
+class Sandwich:
     def __init__(self, layers1, glue, layers2):
         """
            444 LAYER2 333
@@ -234,7 +234,7 @@ class Sanwich:
         #=============================================
         # NOW ELIMINATE DUPLICATES
         #=============================================
-        case = 1
+        case = 2
         if case == 1: # Glue and layers are aligned
             
 
@@ -656,298 +656,6 @@ class Blade:
                 freeVolumeId += 1
 
 
-def mergeToSandwich(layers1, glue, layers2):
-    assert glue.ready == True
-    dockStations = {
-        "upRight":layers2.dockRight,
-        "upLeft":layers2.dockLeft,
-        "downRight":layers1.dockRight,
-        "downLeft":layers1.dockLeft
-    }
-
-    sandwich = {
-        "points":{},
-        "lines":{},
-        "lineLoops":{},
-        "surfaces":{},
-        "surfaceLoops":{},
-        "volumes":{}
-    }
-    
-    # First we add the middle part, e.g. the glue
-    GluePart = glue.geometry
-    sandwich = {
-        "points":{**sandwich["points"], ** GluePart["points"]},
-        "lines":{**sandwich["lines"], ** GluePart["lines"]},
-        "lineLoops":{**sandwich["lineLoops"], ** GluePart["lineLoops"]},
-        "surfaces":{**sandwich["surfaces"], ** GluePart["surfaces"]},
-        "surfaceLoops":{**sandwich["surfaceLoops"], ** GluePart["surfaceLoops"]},
-        "volumes":{**sandwich["volumes"], ** GluePart["volumes"]}
-    }
-    
-    freePointId=max(sandwich["points"].keys())+1
-    freeLineId=max(sandwich["lines"].keys())+1
-    freeLineLoopId=max(sandwich["lineLoops"].keys())+1
-    freeSurfaceId=max(sandwich["surfaces"].keys())+1
-    freeSurfaceLoopId=max(sandwich["surfaceLoops"].keys())+1
-    freeVolumeId=max(sandwich["volumes"].keys())+1
-
-
-    # =====================================================
-    for j in range(2):
-        layers = [layers2, layers1][j]
-        if j == 0:
-            #dockStations["upRight"]["points"] = {freePointId+Id:dockStations["upRight"]["points"][Id] for Id in dockStations["upRight"]["points"]} 
-            dockStations["upRight"]["localGlobalPoints"] = {Id: freePointId+Id for Id in dockStations["upRight"]["points"]} 
-        shiftPoints = {freePointId+Id:layers.geometry["points"][Id] for Id in layers.geometry["points"].keys()}
-        shiftLines = {Id+freeLineId:(layers.geometry["lines"][Id][0]+freePointId,layers.geometry["lines"][Id][1]+freePointId) for Id in layers.geometry["lines"].keys()}
-        shiftLineLoops = {Id+freeLineLoopId:[i+freeLineId if i > 0 else i - freeLineId for i in layers.geometry["lineLoops"][Id]] for Id in layers.geometry["lineLoops"].keys()}
-        shiftSurfaces = {Id+freeSurfaceId:[i+freeLineLoopId if i > 0 else i - freeLineLoopId for i in layers.geometry["surfaces"][Id]] for  Id in layers.geometry["surfaces"].keys()}
-        shiftSurfaceLoops = {Id+freeSurfaceLoopId:[i+freeSurfaceId if i > 0 else i - freeSurfaceId for i in layers.geometry["surfaceLoops"][Id]] for Id in layers.geometry["surfaceLoops"].keys()}
-        shiftVolumes = {Id+freeVolumeId:[i+freeSurfaceLoopId if i > 0 else i - freeSurfaceLoopId for i in layers.geometry["volumes"][Id]] for Id in layers.geometry["volumes"].keys()}
-
-        sandwich = {
-            "points":{**sandwich["points"], ** shiftPoints},
-            "lines":{**sandwich["lines"], ** shiftLines},
-            "lineLoops":{**sandwich["lineLoops"], ** shiftLineLoops},
-            "surfaces":{**sandwich["surfaces"], ** shiftSurfaces},
-            "surfaceLoops":{**sandwich["surfaceLoops"], ** shiftSurfaceLoops},
-            "volumes":{**sandwich["volumes"], ** shiftVolumes}
-        }
-
-        intersectionFacet = [5,6][j]
-
-        lnewPointID = [[4,3,7,8],[1,2,6,5]][j]
-        for point,newID in zip(layers2.PointsDown, lnewPointID) if j == 0 else zip(layers1.PointsUp, lnewPointID):
-
-            replacePoint(point+freePointId, (newID, GluePart["points"][newID]), sandwich)
-            if j == 90: # TODO: CONTINUE HIERE
-                print(dockStations["upRight"]["points"])
-                assert False
-                if point+freePointId in dockStations["upRight"]["points"]:
-                    #print(point+freePointId, newID)
-                    #dockStations["upRight"]["localGlobalPoints"][newID] = dockStations["upRight"]["points"][point+freePointId] 
-                    dockStations["upRight"]["points"].pop(point+freePointId)
-
-        # Replace lines
-        if j == 1:
-            oldLineIds = [l +freeLineId for l in layers1.LinesUp]
-            temp = oldLineIds[0]
-            oldLineIds[0] = oldLineIds[2]
-            oldLineIds[2] = temp
-        
-        newEdges = []
-        for i in range(1,5):
-            newLines =  list(zip(*glue.faces[intersectionFacet]["outerLoop"][i]["edgeLines"]))
-            newEdge = replaceLine([l +freeLineId for l in layers2.LinesDown][i-1],newLines, sandwich) if j == 0 else replaceLine(oldLineIds[i-1],newLines, sandwich)
-            newEdges= newEdges + newEdge
-
-        # TODO: Problems with main Loop, new connerection Line is Wrong (hole on Kante)
-
-        if sum([len(glue.faces[intersectionFacet]["outerLoop"][i]["edgeLines"]) for i in range(1,5)]) > 4:   
-            # TODO: correct this
-            pass
-        else:
-            oldLineLoopId = layers2.LineLoopDown+freeLineLoopId if j == 0 else (layers1.LineLoopUp+freeLineLoopId-1)
-            newLineLoopId = glue.faces[intersectionFacet]["merge"]["mainLoop"]
-            replaceLineLoop(oldLineLoopId, newLineLoopId, sandwich)
-            # surface:
-            replaceSurface(oldLineLoopId - freeLineLoopId + freeSurfaceId,glue.faces[intersectionFacet]["merge"]["mainSurface"], sandwich)
-
-        # Now make inner surfaces
-        freeSurfaceId = max(sandwich["surfaces"].keys())+1
-        for innerLoop in glue.faces[intersectionFacet]["innerLoops"]:
-            sandwich["surfaces"][freeSurfaceId] = [innerLoop]
-            freeSurfaceId += 1
-        nHoles = len(glue.faces[intersectionFacet]["innerLoops"])
-        newSurfaceIDs = list(range(freeSurfaceId-nHoles, freeSurfaceId))
-        sandwich["surfaceLoops"][max(sandwich["surfaceLoops"].keys())] = sandwich["surfaceLoops"][max(sandwich["surfaceLoops"].keys())] + newSurfaceIDs
-
-        if j == 0:
-            freePointId=max(sandwich["points"].keys())+1
-            freeLineId=max(sandwich["lines"].keys())+1
-            freeLineLoopId=max(sandwich["lineLoops"].keys())+1
-            freeSurfaceId=max(sandwich["surfaces"].keys())+1
-            freeSurfaceLoopId=max(sandwich["surfaceLoops"].keys())+1
-            freeVolumeId=max(sandwich["volumes"].keys())+1
- 
-    dockStations = {
-        "upRight":layers2.dockRight,
-        "upLeft":layers2.dockLeft,
-        "downRight":layers1.dockRight,
-        "downLeft":layers1.dockLeft
-    }
-    #print(dockStations["upRight"]["localGlobalPoints"])
-    #print()
-    return sandwich
-
-def mergeToSandwichOld(layers1, glue, layers2):
-    """
-        layers2
-        glue
-        layers1
-
-        assume common orientation, layers is up
-
-        First do all surfaceLoops of holes in glue, then layer2, then layer1
-    """     
-    assert glue.ready == True
-    sandwich = {
-        "points":{},
-        "lines":{},
-        "lineLoops":{},
-        "surfaces":{},
-        "surfaceLoops":{},
-        "volumes":{}
-    }
-    
-    # First we add the middle part, e.g. the glue
-    GluePart = glue.geometry
-    sandwich = {
-        "points":{**sandwich["points"], ** GluePart["points"]},
-        "lines":{**sandwich["lines"], ** GluePart["lines"]},
-        "lineLoops":{**sandwich["lineLoops"], ** GluePart["lineLoops"]},
-        "surfaces":{**sandwich["surfaces"], ** GluePart["surfaces"]},
-        "surfaceLoops":{**sandwich["surfaceLoops"], ** GluePart["surfaceLoops"]},
-        "volumes":{**sandwich["volumes"], ** GluePart["volumes"]}
-    }
-    
-    freePointId=max(sandwich["points"].keys())+1
-    freeLineId=max(sandwich["lines"].keys())+1
-    freeLineLoopId=max(sandwich["lineLoops"].keys())+1
-    freeSurfaceId=max(sandwich["surfaces"].keys())+1
-    freeSurfaceLoopId=max(sandwich["surfaceLoops"].keys())+1
-    freeVolumeId=max(sandwich["volumes"].keys())+1
-
-    # ======== NEW MODULE ===========
-    # Now we add the upper Layers, e.g. layers2
-    # fist we need to shift layers2
-    
-    shiftPoints2 = {freePointId+Id:layers2.geometry["points"][Id] for Id in layers2.geometry["points"].keys()}
-    shiftLines2 = {Id+freeLineId:(layers2.geometry["lines"][Id][0]+freePointId,layers2.geometry["lines"][Id][1]+freePointId) for Id in layers2.geometry["lines"].keys()}
-    shiftLineLoops2 = {Id+freeLineLoopId:[i+freeLineId if i > 0 else i - freeLineId for i in layers2.geometry["lineLoops"][Id]] for Id in layers2.geometry["lineLoops"].keys()}
-    shiftSurfaces2 = {Id+freeSurfaceId:[i+freeLineLoopId if i > 0 else i - freeLineLoopId for i in layers2.geometry["surfaces"][Id]] for  Id in layers2.geometry["surfaces"].keys()}
-    shiftSurfaceLoops2 = {Id+freeSurfaceLoopId:[i+freeSurfaceId if i > 0 else i - freeSurfaceId for i in layers2.geometry["surfaceLoops"][Id]] for Id in layers2.geometry["surfaceLoops"].keys()}
-    shiftVolumes2 = {Id+freeVolumeId:[i+freeSurfaceLoopId if i > 0 else i - freeSurfaceLoopId for i in layers2.geometry["volumes"][Id]] for Id in layers2.geometry["volumes"].keys()}
-
-    sandwich = {
-        "points":{**sandwich["points"], ** shiftPoints2},
-        "lines":{**sandwich["lines"], ** shiftLines2},
-        "lineLoops":{**sandwich["lineLoops"], ** shiftLineLoops2},
-        "surfaces":{**sandwich["surfaces"], ** shiftSurfaces2},
-        "surfaceLoops":{**sandwich["surfaceLoops"], ** shiftSurfaceLoops2},
-        "volumes":{**sandwich["volumes"], ** shiftVolumes2}
-    }
-    
-    intersectionFacet = 5
-
-    lnewPointID = [4,3,7,8] 
-    for point,newID in zip(layers2.PointsDown, lnewPointID):
-        replacePoint(point+freePointId, (newID, GluePart["points"][newID]), sandwich)
-    
-    # Replace lines
-    newEdges = []
-    for i in range(1,5):
-        newLines =  list(zip(*glue.faces[intersectionFacet]["outerLoop"][i]["edgeLines"]))
-        newEdge = replaceLine([l +freeLineId for l in layers2.LinesDown][i-1],newLines, sandwich)
-        newEdges= newEdges + newEdge
-
-    # Make new LineLoop and surface
-    if sum([len(glue.faces[intersectionFacet]["outerLoop"][i]["edgeLines"]) for i in range(1,5)]) > 4:   
-        oldLineLoopId = layers2.LineLoopDown+freeLineLoopId
-        freeLineLoopId=max(sandwich["lineLoops"].keys())+1
-        newLoop = (freeLineLoopId, newEdges)
-      #  replaceLineLoop(oldLineLoopId, newLoop,sandwich) TODO: correct
-    else:
-        oldLineLoopId = layers2.LineLoopDown+freeLineLoopId
-        newLoop = glue.faces[intersectionFacet]["merge"]["mainLoop"]
-        replaceLineLoop(oldLineLoopId, newLoop, sandwich)
-        # surface:
-        replaceSurface(oldLineLoopId - freeLineLoopId + freeSurfaceId,glue.faces[intersectionFacet]["merge"]["mainSurface"], sandwich)
-
-    # Now make inner surfaces
-    freeSurfaceId = max(sandwich["surfaces"].keys())+1
-    for innerLoop in glue.faces[intersectionFacet]["innerLoops"]:
-        sandwich["surfaces"][freeSurfaceId] = [innerLoop]
-        freeSurfaceId += 1
-    nHoles = len(glue.faces[intersectionFacet]["innerLoops"])
-    newSurfaceIDs = list(range(freeSurfaceId-nHoles, freeSurfaceId))
-    sandwich["surfaceLoops"][max(sandwich["surfaceLoops"].keys())] = sandwich["surfaceLoops"][max(sandwich["surfaceLoops"].keys())] + newSurfaceIDs
-
-
-
-    freePointId=max(sandwich["points"].keys())+1
-    freeLineId=max(sandwich["lines"].keys())+1
-    freeLineLoopId=max(sandwich["lineLoops"].keys())+1
-    freeSurfaceId=max(sandwich["surfaces"].keys())+1
-    freeSurfaceLoopId=max(sandwich["surfaceLoops"].keys())+1
-    freeVolumeId=max(sandwich["volumes"].keys())+1
-
-    # ======== NEW MODULE ===========
-    # Now we add the lower layer, e.g. layer1
-    shiftPoints1 = {freePointId+Id:layers1.geometry["points"][Id] for Id in layers1.geometry["points"].keys()}
-    shiftLines1 = {Id+freeLineId:(layers1.geometry["lines"][Id][0]+freePointId,layers1.geometry["lines"][Id][1]+freePointId) for Id in layers1.geometry["lines"].keys()}
-    shiftLineLoops1 = {Id+freeLineLoopId:[i+freeLineId if i > 0 else i - freeLineId for i in layers1.geometry["lineLoops"][Id]] for Id in layers1.geometry["lineLoops"].keys()}
-    shiftSurfaces1 = {Id+freeSurfaceId:[i+freeLineLoopId if i > 0 else i - freeLineLoopId for i in layers1.geometry["surfaces"][Id]] for  Id in layers1.geometry["surfaces"].keys()}
-    shiftSurfaceLoops1 = {Id+freeSurfaceLoopId:[i+freeSurfaceId if i > 0 else i - freeSurfaceId for i in layers1.geometry["surfaceLoops"][Id]] for Id in layers1.geometry["surfaceLoops"].keys()}
-    shiftVolumes1 = {Id+freeVolumeId:[i+freeSurfaceLoopId if i > 0 else i - freeSurfaceLoopId for i in layers1.geometry["volumes"][Id]] for Id in layers1.geometry["volumes"].keys()}
-
-    sandwich = {
-        "points":{**sandwich["points"], ** shiftPoints1},
-        "lines":{**sandwich["lines"], ** shiftLines1},
-        "lineLoops":{**sandwich["lineLoops"], ** shiftLineLoops1},
-        "surfaces":{**sandwich["surfaces"], ** shiftSurfaces1},
-        "surfaceLoops":{**sandwich["surfaceLoops"], ** shiftSurfaceLoops1},
-        "volumes":{**sandwich["volumes"], ** shiftVolumes1}
-    }
-    intersectionFacet = 6
-    lnewPointID = [1,2,6,5] 
-    for point,newID in zip(layers1.PointsUp, lnewPointID):
-        replacePoint(point+freePointId, (newID, GluePart["points"][newID]), sandwich)
-
-    # Replace lines
-    # TODO: Problems with main Loop, new connection Line is Wrong (hole on Kante)
-    oldLineIds = [l +freeLineId for l in layers1.LinesUp]
-    temp = oldLineIds[0]
-    oldLineIds[0] = oldLineIds[2]
-    oldLineIds[2] = temp
-    
-    newEdges = []
-    for i in range(1,5):
-        newLines =  list(zip(*glue.faces[intersectionFacet]["outerLoop"][i]["edgeLines"]))
-        newEdge = replaceLine(oldLineIds[i-1],newLines, sandwich)
-        
-
-
-    # Replace LineLoop
-    if sum([len(glue.faces[intersectionFacet]["outerLoop"][i]["edgeLines"]) for i in range(1,5)]) > 4:   
-        pass # TODO: correct this shit
-
-    else:
-        oldLineLoopId = layers1.LineLoopUp+freeLineLoopId-1
-        newLineLoopId = glue.faces[intersectionFacet]["merge"]["mainLoop"]
-        replaceLineLoop(oldLineLoopId, newLineLoopId, sandwich)
-        # surface:
-        replaceSurface(oldLineLoopId - freeLineLoopId + freeSurfaceId,glue.faces[intersectionFacet]["merge"]["mainSurface"], sandwich)
-
-    # Now make inner surfaces
-    freeSurfaceId = max(sandwich["surfaces"].keys())+1
-    for innerLoop in glue.faces[intersectionFacet]["innerLoops"]:
-        sandwich["surfaces"][freeSurfaceId] = [innerLoop]
-        freeSurfaceId += 1
-
-    nHoles = len(glue.faces[intersectionFacet]["innerLoops"])
-    newSurfaceIDs = list(range(freeSurfaceId-nHoles, freeSurfaceId))
-    sandwich["surfaceLoops"][max(sandwich["surfaceLoops"].keys())] = sandwich["surfaceLoops"][max(sandwich["surfaceLoops"].keys())] + newSurfaceIDs
-
-    dockStations = {
-        "upRight":{},
-        "upLeft":{},
-        "downRight":{},
-        "downLeft":{}
-        }
-
-    return sandwich
 
 def makeSomeSandwiches(nLayers=5):
     depth = 10
@@ -1003,7 +711,7 @@ def makeSomeSandwiches(nLayers=5):
                 nLayers = nLayer2,
                 hightLayer = hightLayer2/nLayer2)
     
-    sandwich1 = Sanwich(w1, glue, w2)
+    sandwich1 = Sandwich(w1, glue, w2)
     
     #=================================
     # SECOND SANDWICH
@@ -1023,7 +731,7 @@ def makeSomeSandwiches(nLayers=5):
                 nLayers = nLayer2,
                 hightLayer = hightLayer2/nLayer2)
     
-    sandwich2 = Sanwich(w1, glue, w2)
+    sandwich2 = Sandwich(w1, glue, w2)
     sandwich2.shift(sandwich1.maxId())
 
     for pointID, pointDict in sandwich2.geometry["points"].items():
@@ -1049,7 +757,7 @@ def makeSomeSandwiches(nLayers=5):
                 nLayers = nLayer2,
                 hightLayer = hightLayer2/nLayer2)
     
-    sandwich3 = Sanwich(w1, glue, w2)
+    sandwich3 = Sandwich(w1, glue, w2)
     sandwich3.shift(sandwich2.maxId())
 
     for pointID, pointDict in sandwich3.geometry["points"].items():
@@ -1076,7 +784,7 @@ def makeSomeSandwiches(nLayers=5):
                 nLayers = nLayer2,
                 hightLayer = hightLayer2/nLayer2)
     
-    sandwich4 = Sanwich(w1, glue, w2)
+    sandwich4 = Sandwich(w1, glue, w2)
     sandwich4.shift(sandwich3.maxId())
 
     for pointID, pointDict in sandwich4.geometry["points"].items():
