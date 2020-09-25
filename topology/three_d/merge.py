@@ -794,6 +794,148 @@ def makeSomeSandwiches(nLayers=5):
 
     return sandwich1, sandwich2, sandwich3, sandwich4
 
+def makeSomeSandwiches2(nLayers=5):
+    depth = 2
+    width = 2
+
+    hightGlue = .2
+    hightLayer1 = 1
+    hightLayer2 = 1
+
+    totalHight = hightGlue+hightLayer1+hightLayer2
+    nLayer1 = 2
+    nLayer2 = nLayer1
+
+
+    x = 0
+    y = 0
+    z = 0
+
+    
+    lcoordsGlue = [
+        (x+.1, hightLayer1, z),
+        (x+width-.1, hightLayer1, z),
+        (x+width-.1, hightLayer1+hightGlue,z),
+        (x+.1,hightLayer1+hightGlue,z)
+    ]
+
+    lcoordLayer1 = [
+        (x,y,z),
+        (x+width,y,z)
+    ]
+
+    lcoordLayer2 = [
+        (x,y+hightLayer1+hightGlue,z),
+        (x+width, y+hightLayer1+hightGlue,z)
+    ]
+
+    #=================================
+    # FIRST SANDWICH
+    #=================================
+
+    glue = Glue(lcoordsGlue, depth)
+    for i in range(4):
+        glue.sampleBubble()
+    glue._finish_geometry()
+
+    w1 = Waffle(lcoords = lcoordLayer1,
+                depth = depth,
+                nLayers = nLayer1,
+                hightLayer = hightLayer1/nLayer1)
+
+    w2 = Waffle(lcoords = lcoordLayer2,
+                depth = depth,
+                nLayers = nLayer2,
+                hightLayer = hightLayer2/nLayer2)
+    
+    sandwich1 = Sandwich(w1, glue, w2)
+    
+    #=================================
+    # SECOND SANDWICH
+    #=================================
+
+    glue = Glue(lcoordsGlue, depth)
+    for i in range(4):
+        glue.sampleBubble()
+
+    glue._finish_geometry()
+
+    w1 = Waffle(lcoords = lcoordLayer1,
+                depth = depth,
+                nLayers = nLayer1,
+                hightLayer = hightLayer1/nLayer1)
+
+    w2 = Waffle(lcoords = lcoordLayer2,
+                depth = depth,
+                nLayers = nLayer2,
+                hightLayer = hightLayer2/nLayer2)
+    
+    sandwich2 = Sandwich(w1, glue, w2)
+    sandwich2.shift(sandwich1.maxId())
+
+    for pointID, pointDict in sandwich2.geometry["points"].items():
+        pointCoords = pointDict["coords"]
+        newCoords = (pointCoords[1]+width+1, -pointCoords[0]-1, pointCoords[2])
+        sandwich2.geometry["points"][pointID]["coords"] = newCoords
+
+    #=================================
+    # THIRD SANDWICH
+    #=================================
+
+    glue = Glue(lcoordsGlue, depth)
+    for i in range(4):
+        glue.sampleBubble()
+
+    glue._finish_geometry()
+
+    w1 = Waffle(lcoords = lcoordLayer1,
+                depth = depth,
+                nLayers = nLayer1,
+                hightLayer = hightLayer1/nLayer1)
+
+    w2 = Waffle(lcoords = lcoordLayer2,
+                depth = depth,
+                nLayers = nLayer2,
+                hightLayer = hightLayer2/nLayer2)
+    
+    sandwich3 = Sandwich(w1, glue, w2)
+    sandwich3.shift(sandwich2.maxId())
+
+    for pointID, pointDict in sandwich3.geometry["points"].items():
+        pointCoords = pointDict["coords"]
+        newCoords = (-pointCoords[0]+width, -pointCoords[1]-width-2, pointCoords[2])
+        sandwich3.geometry["points"][pointID]["coords"] = newCoords
+
+    #=================================
+    # FOURTH SANDWICH
+    #=================================
+
+
+    glue = Glue(lcoordsGlue, depth)
+    for i in range(4):
+        glue.sampleBubble()
+
+    glue._finish_geometry()
+
+    w1 = Waffle(lcoords = lcoordLayer1,
+                depth = depth,
+                nLayers = nLayer1,
+                hightLayer = hightLayer1/nLayer1)
+
+    w2 = Waffle(lcoords = lcoordLayer2,
+                depth = depth,
+                nLayers = nLayer2,
+                hightLayer = hightLayer2/nLayer2)
+    
+    sandwich4 = Sandwich(w1, glue, w2)
+    sandwich4.shift(sandwich3.maxId())
+
+    for pointID, pointDict in sandwich4.geometry["points"].items():
+        pointCoords = pointDict["coords"]
+        newCoords = (-pointCoords[1]-1, pointCoords[0]-width-1, pointCoords[2])
+        sandwich4.geometry["points"][pointID]["coords"] = newCoords
+
+    return sandwich1, sandwich2, sandwich3, sandwich4
 
 def mergeGeometries(lGeometries):
     lpoints = [geo["points"] for geo in lGeometries]

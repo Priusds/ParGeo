@@ -6,7 +6,7 @@ from topology.three_d.utils import locate
 from topology.three_d.bubble import Sphere,clip, _targetPoint
 #from topology.three_d.geometry import *
 from topology.three_d.layers import *
-from topology.three_d.merge import   Sandwich, makeSomeSandwiches, mergeGeometries, Blade
+from topology.three_d.merge import   Sandwich, makeSomeSandwiches, mergeGeometries, Blade, makeSomeSandwiches2
 
 
 import mystic as my
@@ -396,3 +396,10 @@ def test19():
     
     sandwich1 = Sandwich(w1, glue, w2)
     write_geo(sandwich1.geometry, "Badabuff")
+
+
+def test20():
+    s1, s2, s3, s4 = makeSomeSandwiches2()
+    rotorBlade = Blade(s1,s2,s3,s4)
+    geometry = rotorBlade.geometry
+    write_geo(geometry, "UUhh")
