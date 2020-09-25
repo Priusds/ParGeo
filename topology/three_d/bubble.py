@@ -61,6 +61,33 @@ class Sphere(Bubble):
     def getBoundingBox(self):
         return [x + self.radius for x in self.midpoint] + [x - self.radius for x in self.midpoint]
 
+class Ellipse(Bubble):
+    def __init__(self, radii, midpoint):
+        self.radii = radii
+        self.midpoint = midpoint
+
+    def trafo(self, theta, phi):
+        """
+            theta in (0, pi)
+            phi in (0, 2pi)
+        """
+        theta = theta - np.pi/2
+        a,b,c = self.radii
+        return (a*b*c)/np.sqrt(c**2*(b**2*np.cos(phi)**2 + a**2*np.sin(phi)**2)*np.cos(theta)**2+a**2*b**2*np.sin(theta)**2)
+    
+    def discretize(self, accuracy, point_id=1,line_id=1,lineLoop_id=1):
+        geometry = discretize_reference(self.trafo, accuracy,point_id,line_id,lineLoop_id)
+
+        for point in geometry["points"]:
+            x,y,z = geometry["points"][point]["coords"]
+            mx,my,mz = self.midpoint
+            new_coords = [x+mx, y+my,z+mz]
+            geometry["points"][point]["coords"] = new_coords
+     
+        return geometry
+
+    def getBoundingBox(self):
+        return [x + max(self.radii) for x in self.midpoint] + [x - max(self.radii) for x in self.midpoint]
 
 class StarBubble(Bubble):
     def __init__(self, size, midpoint, coefficients):
