@@ -1,9 +1,39 @@
 from ..geo_utils.utils import write_geo
-
+import json
 
 class Waffle:
 
     def __init__(self, lcoords, depth, nLayers,hightLayer):
+        """
+                    lines, loops etc everything anticlockwise, from outside perspektive
+
+
+              c8__________c7
+             / |         /|
+            / c5        / |
+            c4---------c3  c6
+            | /         | /
+            c1---------c2/
+            
+            lcoords = [c1, c2, c3, c4]
+
+            faces naming:
+
+            front: 1
+            back: 2
+            right:3
+            left:4
+            up:5
+            down:6
+
+            point = (x,y,z)
+        """
+        self.merge = {
+            3:{"points":{"left":[],"right":[]},"lines":{"left":[],"middle":[],"right":[]},"lineLoops":[],"surfaces":[]},
+            4:{"points":{"left":[],"right":[]},"lines":{"left":[],"middle":[],"right":[]},"lineLoops":[],"surfaces":[]},
+            5:{"points":[],"lines":[],"lineLoop":None,"surface":None,"surfaceLoop":None},
+            6:{"points":[],"lines":[],"lineLoop":None,"surface":None,"surfaceLoop":None}
+        }
         # lcoords = [c1, c2]
         self.geometry = {
             "points":dict(),
@@ -13,6 +43,7 @@ class Waffle:
             "surfaceLoops":{}, # 1 is outside, 0 is inside
             "volumes":{}
         }
+        self.nLayers = nLayers
         self.min_y = min(lcoords[0][1], lcoords[1][1])
         self.layerHights = [n*hightLayer for n in range(nLayers+1)]
         self.max_y = self.layerHights[-1]+hightLayer
@@ -21,7 +52,7 @@ class Waffle:
         self.max_z = lcoords[1][2]
         self.min_x = lcoords[0][0]
         
-        self.min_z = -depth
+        self.min_z = lcoords[0][2]-depth
 
         
 
@@ -31,6 +62,19 @@ class Waffle:
         self.freeSurfaceId = 1
         self.freeSurfaceLoopId = 1
         self.freeVolumeId = 1
+
+        self.dockRight = {
+            "points":{},
+            "lines":{},
+            "lineLoops":{},
+            "surfaces":{}
+        }
+        self.dockLeft = {
+            "points":{},
+            "lines":{},
+            "lineLoops":{},
+            "surfaces":{}
+        }
 
         # =====     POINTS      =======
 
@@ -51,6 +95,10 @@ class Waffle:
             self.freePointId += 1
             self.geometry["points"][Id]=pointLeft
             self.geometry["points"][Id+nLayers+1]=pointRight
+            self.merge[3]["points"]["left"].append(Id+nLayers+1)
+            self.merge[4]["points"]["right"].append(Id)
+            self.dockRight["points"][Id+nLayers+1]=pointRight
+            self.dockLeft["points"][Id]=pointLeft
 
         self.freePointId+=nLayers+1
 
@@ -70,6 +118,12 @@ class Waffle:
             self.freePointId += 1
             self.geometry["points"][Id]=pointLeft
             self.geometry["points"][Id+nLayers+1]=pointRight
+
+            self.merge[3]["points"]["right"].append(Id)
+            self.merge[4]["points"]["left"].append(Id+nLayers+1)
+            
+            self.dockRight["points"][Id]=pointLeft
+            self.dockLeft["points"][Id+nLayers+1]=pointRight
         self.freePointId+=nLayers+1
 
 
@@ -83,11 +137,14 @@ class Waffle:
             startLeft = firstPointFrontLeftId + i
             endLeft = firstPointFrontLeftId + i +1
             self.geometry["lines"][IdLeft] = (endLeft, startLeft)
-
+            self.dockLeft["lines"][IdLeft] = (endLeft, startLeft)
             IdRight = IdLeft + nLayers
             startRight = startLeft + nLayers+1
             endRight = startRight +1
             self.geometry["lines"][IdRight] = (startRight,endRight)
+           # self.dockRight["lines"][IdRight] = (startRight,endRight)
+            self.merge[3]["lines"]["left"].append(IdRight)
+            self.merge[4]["lines"]["right"].append(IdLeft)
             self.freeLineId+=1
 
         self.freeLineId += nLayers
@@ -106,11 +163,14 @@ class Waffle:
             startLeft = firstPointBackLeftId + i
             endLeft = firstPointBackLeftId + i +1
             self.geometry["lines"][IdLeft] = (endLeft, startLeft)
-
+            self.dockRight["lines"][IdLeft] = (endLeft, startLeft)
             IdRight = IdLeft + nLayers
             startRight = startLeft + nLayers+1
             endRight = startRight +1
             self.geometry["lines"][IdRight] = (startRight,endRight)
+            self.dockLeft["lines"][IdRight] = (startRight,endRight)
+            self.merge[4]["lines"]["left"].append(IdRight)
+            self.merge[3]["lines"]["right"].append(IdLeft)
             self.freeLineId+=1
             
         self.freeLineId += nLayers
@@ -127,12 +187,16 @@ class Waffle:
             start = firstPointFrontLeftId+i
             end = firstPointBackRightId+i
             self.geometry["lines"][self.freeLineId] = (start, end)
+            self.dockLeft["lines"][self.freeLineId] = (start, end)
+            self.merge[4]["lines"]["middle"].append(self.freeLineId)
             self.freeLineId+=1
         firstConnectionRight = self.freeLineId
         for i in range(nLayers+1):
             start = firstPointFrontRightId+i
             end = firstPointBackLeftId+i
             self.geometry["lines"][self.freeLineId] = (start, end)
+            self.merge[3]["lines"]["middle"].append(self.freeLineId)
+            self.dockRight["lines"][self.freeLineId] = (start, end)
             self.freeLineId+=1
 
         # ===== LINELOOPS   =======
@@ -164,6 +228,8 @@ class Waffle:
             l2 = -(firstLineFrontLeftVId+i)
             l4 = -(firstLineBackRightVId+i)
             self.geometry["lineLoops"][self.freeLineLoopId]=[l1,l2,l3,l4]
+            self.dockLeft["lineLoops"][self.freeLineLoopId]=[l1,l2,l3,l4]
+            self.merge[4]["lineLoops"].append(self.freeLineLoopId)
             self.freeLineLoopId+=1
 
         # LineLoopsRight
@@ -174,11 +240,14 @@ class Waffle:
             l2 = -(firstLineFrontRightVId+i)
             l4 = -(firstLineBackLeftVId+i)
             self.geometry["lineLoops"][self.freeLineLoopId]=[l1,l2,l3,l4]
+            self.merge[3]["lineLoops"].append(self.freeLineLoopId)
+            self.dockRight["lineLoops"][self.freeLineLoopId]=[l1,l2,l3,l4]
             self.freeLineLoopId+=1
 
 
         # LineLoopCrossSection
         firstLineLoopCrossSection = self.freeLineLoopId
+        self.merge[6]["lineLoop"] = firstLineLoopCrossSection
         for i in range(nLayers+1):
             l1 = firstLineFrontHId+i
             l2 = firstConnectionRight+i
@@ -187,6 +256,7 @@ class Waffle:
 
             self.geometry["lineLoops"][self.freeLineLoopId]=[l1,l2,l3,l4]
             self.freeLineLoopId+=1
+        self.merge[5]["lineLoop"] = self.freeLineLoopId-1
         # ====== SURFACES ==========
         # Front Facet
         for i in range(nLayers):
@@ -199,20 +269,26 @@ class Waffle:
         # Left Facet
         for i in range(nLayers):
             self.geometry["surfaces"][self.freeSurfaceId]=[firstLineLoopLeft+i]
+            self.merge[4]["surfaces"].append(self.freeSurfaceId)
+            self.dockLeft["surfaces"][self.freeSurfaceId]=[firstLineLoopLeft+i]
             self.freeSurfaceId+=1
         # right Facet
         for i in range(nLayers):
             self.geometry["surfaces"][self.freeSurfaceId]=[firstLineLoopRight+i]
+            self.merge[3]["surfaces"].append(self.freeSurfaceId)
+            self.dockRight["surfaces"][self.freeSurfaceId]=[firstLineLoopRight+i]
             self.freeSurfaceId+=1
         
         # Cross Sections from bottom to top
         firstCrossSurface = self.freeSurfaceId
+        self.merge[6]["surface"] = firstCrossSurface
         for i in range(nLayers+1):
             self.geometry["surfaces"][self.freeSurfaceId]=[firstLineLoopCrossSection+i]
             self.freeSurfaceId+=1
-
+        self.merge[5]["surface"] = self.freeSurfaceId-1
         # ======= SURFACELOOPS ========
         firstSurfaceLoop = self.freeSurfaceLoopId
+        self.merge[6]["surfaceLoop"] = firstSurfaceLoop
         for i in range(nLayers):
             fdown = firstLineLoopCrossSection+i
             fup = firstLineLoopCrossSection+i+1
@@ -223,15 +299,17 @@ class Waffle:
             surfaceLoop = [ffront, fback, fright, fleft, fup, fdown]
             self.geometry["surfaceLoops"][self.freeSurfaceLoopId] = surfaceLoop
             self.freeSurfaceLoopId+=1
-        
-        # ========== VOLUMES ==========0
+        self.merge[5]["surfaceLoop"] = self.freeSurfaceLoopId-1
+        # ========== VOLUMES ==========
         for i in range(nLayers):
             self.geometry["volumes"][self.freeVolumeId]=[firstSurfaceLoop+i]
             self.freeVolumeId+=1
 
         # For merge with Bubbles
         self.PointsDown = [firstPointFrontLeftId, firstPointFrontRightId, firstPointBackLeftId, firstPointBackRightId]
+        self.PointsUp = [Id + nLayers for Id in self.PointsDown]
         self.LinesDown = [firstLineFrontHId, firstConnectionRight,firstLineBackHId,firstConnectionLeft]
+        self.LinesUp = [Id + nLayers for Id in self.LinesDown]
         self.LineLoopDown = firstLineLoopCrossSection
         self.LineLoopUp = self.LineLoopDown + nLayers + 1
         self.SurfaceDown = firstCrossSurface
@@ -240,6 +318,17 @@ class Waffle:
         self.SurfaceLoopUp = firstSurfaceLoop + nLayers
         #VolumeDown = self.freeVolumeId - nLayers
         #VolumeUp = self.freeVolumeId-1
+        self.merge[6]["points"]=self.PointsDown
+        self.merge[6]["lines"] = self.LinesDown
+       
+       # self.merge[6]["surfaceLoop"] = self.SurfaceLoopDown
+
+        self.merge[5]["points"]=self.PointsUp
+        self.merge[5]["lines"] = self.LinesUp
+       
+       # self.merge[5]["surfaceLoop"] = self.SurfaceLoopUp
+
+        #print(json.dumps(self.merge, indent=3))
 
     def to_geo(self, file_name):
         write_geo(self.geometry, file_name)
