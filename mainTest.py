@@ -1,5 +1,6 @@
 from topology.tests.three_d.test_geometry import *
 
-test9()
+test19()
 #testProjectionClipping() 
-
+#test12()
+#test13()
