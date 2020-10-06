@@ -20,10 +20,13 @@ class DomainWithHoles(WriteGeo):
         assert flag == "filled" or flag == "hole"
         self.write("lc_in = " + str(lc_in))
         self.write("lc_out = " + str(lc_out))
-
+        
         holes_rects = {}
         for rect_ID, rect_in in topology.rects_in.items():
             if rect_ID > 0:
+                self.comment("=========================")
+                self.comment("Write inner rect:")
+                self.comment("=========================")
                 # Iterate over inner rects:
                 # write points, lines, line loops, surfaces and physical surfaces
                 rect_in = topology.rects_in[rect_ID]
@@ -41,8 +44,11 @@ class DomainWithHoles(WriteGeo):
 
                 holes_rects[rect_ID] = holes_in + holes_interior_in
 
-
+        
         if flag == "filled":
+            self.comment("=========================")
+            self.comment("Write surfaces of rects")
+            self.comment("=========================")
             for rect_ID, holes in holes_rects.items():
                 physical_surfaces = []
                 for hole in holes:
@@ -52,7 +58,16 @@ class DomainWithHoles(WriteGeo):
                 tag = str(rect_ID)+str(rect_ID)
                 self.write_physical_surface(tag, physical_surfaces)
 
+        self.comment("=========================")
+        self.comment("Write boundary outer rect:")
+        self.comment("=========================")
+
         self.write_boundary_out(topology)
+
+        self.comment("=========================")
+        self.comment("Write holes between rects and outer rect:")
+        self.comment("=========================")
+
         self.write_holes_out(topology)
 
         if flag == "filled":
@@ -329,5 +344,8 @@ class DomainWithHoles(WriteGeo):
         
         self.write_line(self.pointId - 1 - t, self.pointId - counter)
         line_loop_in_new.append(self.lineId - 1)
+        self.comment("=====================================")
+        self.comment("outer line loop:")
+        self.comment("=====================================")
         self.write_line_loop(line_loop_in_new)
         self.line_loop_outer_rect = self.lineLoopId - 1
