@@ -9,7 +9,7 @@ from .sat import collide
 # ---------- Version 2 -------------
 
 class Topology(object):
-    def __init__(self, rect_out, lrect_in):
+    def __init__(self, rect_out, lrect_in, periodic_boundary = True):
         # parameters for rect_out
         x0_out, y0_out = rect_out[0]
         x1_out, y1_out = rect_out[1]
@@ -23,7 +23,7 @@ class Topology(object):
 
         self.nRects = len(lrect_in)
         # parameters for rect_in
-       
+        self.periodic_boundary = periodic_boundary
 
         self.rects_in = {
             Id+1:{
@@ -498,11 +498,12 @@ class Topology(object):
         x1_out = self.rects_in[0]["x1"]
         y1_out = self.rects_in[0]["y1"]
 
-
-        convex_hull_reflected_hole = None if loc == "in" else self.__reflect_hole(convex_hull_hole, intersection_loc)
-        if convex_hull_reflected_hole is not None:
-            if not self.__valid_input(convex_hull_reflected_hole):
-                return False
+        convex_hull_reflected_hole = None
+        if self.periodic_boundary:
+            convex_hull_reflected_hole = None if loc > 0  else self.__reflect_hole(convex_hull_hole, intersection_loc)
+            if convex_hull_reflected_hole is not None:
+                if not self.__valid_input(convex_hull_reflected_hole):
+                    return False
 
         
 
@@ -537,7 +538,8 @@ class Topology(object):
                     elif round(hole_in[0][0], 9) == x0_out:
                         hole_in = hole_in[1:]
                     self.edgeLeft_out.append([s0] + hole_in + [s1])
-                    self.edgeRight_out.append([(s1[0] + self.dx, s1[1])] + hole_out + [(s0[0] + self.dx, s0[1])])
+                    if self.periodic_boundary:
+                        self.edgeRight_out.append([(s1[0] + self.dx, s1[1])] + hole_out + [(s0[0] + self.dx, s0[1])])
 
             elif intersection_loc == "up":
                 s0, s1 = (s0, s1) if s0[0] < s1[0] else (s1, s0)
@@ -553,7 +555,8 @@ class Topology(object):
                         hole_in = hole_in[1:]
 
                     self.edgeUp_out.append([s0] + hole_in + [s1])
-                    self.edgeDown_out.append([(s1[0], s1[1] - self.dy)] + hole_out + [(s0[0], s0[1] - self.dy)])
+                    if self.periodic_boundary:
+                        self.edgeDown_out.append([(s1[0], s1[1] - self.dy)] + hole_out + [(s0[0], s0[1] - self.dy)])
 
             elif intersection_loc == "right":
                 s0, s1 = (s0, s1) if s0[1] > s1[1] else (s1, s0)
@@ -570,7 +573,8 @@ class Topology(object):
                         hole_in = hole_in[1:]
 
                     self.edgeRight_out.append([s0] + hole_in + [s1])
-                    self.edgeLeft_out.append([(s1[0] - self.dx, s1[1])] + hole_out + [(s0[0] - self.dx, s0[1])])
+                    if self.periodic_boundary:
+                        self.edgeLeft_out.append([(s1[0] - self.dx, s1[1])] + hole_out + [(s0[0] - self.dx, s0[1])])
 
             else:
                 s0, s1 = (s0, s1) if s0[0] > s1[0] else (s1, s0)
@@ -587,7 +591,8 @@ class Topology(object):
                         hole_in = hole_in[1:]
 
                     self.edgeDown_out.append([s0] + hole_in + [s1])
-                    self.edgeUp_out.append([(s1[0], s1[1] + self.dy)] + hole_out + [(s0[0], s0[1] + self.dy)])
+                    if self.periodic_boundary:
+                        self.edgeUp_out.append([(s1[0], s1[1] + self.dy)] + hole_out + [(s0[0], s0[1] + self.dy)])
 
             if convex_hull_reflected_hole is not None:
                 self.all_holes_conv_hull.append(convex_hull_reflected_hole)
@@ -612,7 +617,7 @@ class Topology(object):
             edge_1 = (x0_in, 'x') if loc > 0 else (x0_out, 'x')
 
             bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
-            
+            s0, s1 = intersections
             if bool__:
                 if loc > 0:
                     self.__add_hole_on_corner_in(hole, intersections, intersection_loc, loc)
@@ -620,33 +625,36 @@ class Topology(object):
                     orientation = lambda x: x[0] > self.x0_out and x[1] > self.y0_out
                     hole_d_l, hole_u_l, hole_u_r, hole_d_r = self.__process_hole(hole, orientation, [3, 0])
 
-                    if not self.__valid_reflection_corner(hole_d_l, hole_u_l, hole_u_r, hole_d_r):
-                        print("No valid reflection corner, possible solution: more discretization points")
-                        return False
+                    if self.periodic_boundary:
+                        
+                        if not self.__valid_reflection_corner(hole_d_l, hole_u_l, hole_u_r, hole_d_r):
+                            print("No valid reflection corner, possible solution: more discretization points")
+                            return False
 
-                    s0, s1 = intersections
+                        s0_x0_y0 = s0
+                        s1_x0_y0 = s1
 
-                    s0_x0_y0 = s0
-                    s1_x0_y0 = s1
+                        s0_x1_y0 = (self.x1_out, s1[1])
+                        s1_x1_y0 = ((hole_u_l[-1][0] + hole_d_l[0][0]) / 2, self.y0_out)
 
-                    s0_x1_y0 = (self.x1_out, s1[1])
-                    s1_x1_y0 = ((hole_u_l[-1][0] + hole_d_l[0][0]) / 2, self.y0_out)
+                        s0_x0_y1 = (self.x0_out, (hole_d_l[-1][1] + hole_d_r[0][1]) / 2)
+                        s1_x0_y1 = (s0[0], self.y1_out)
 
-                    s0_x0_y1 = (self.x0_out, (hole_d_l[-1][1] + hole_d_r[0][1]) / 2)
-                    s1_x0_y1 = (s0[0], self.y1_out)
+                        s0_x1_y1 = (s1_x1_y0[0], self.y1_out)
+                        s1_x1_y1 = (self.x1_out, s0_x0_y1[1])
 
-                    s0_x1_y1 = (s1_x1_y0[0], self.y1_out)
-                    s1_x1_y1 = (self.x1_out, s0_x0_y1[1])
+                        self.edgeLeft_out.pop(0)
+                        self.edgeUp_out.pop(0)
+                        self.edgeRight_out.pop(0)
+                        self.edgeDown_out.pop(0)
 
-                    self.edgeLeft_out.pop(0)
-                    self.edgeUp_out.pop(0)
-                    self.edgeRight_out.pop(0)
-                    self.edgeDown_out.pop(0)
-
-                    self.edgeLeft_out.append([s0_x0_y0] + hole_u_r + [s1_x0_y0])
-                    self.edgeUp_out.append([s0_x0_y1] + hole_d_r + [s1_x0_y1])
-                    self.edgeRight_out.append([s0_x1_y1] + hole_d_l + [s1_x1_y1])
-                    self.edgeDown_out.append([s0_x1_y0] + hole_u_l + [s1_x1_y0])
+                        self.edgeLeft_out.append([s0_x0_y0] + hole_u_r + [s1_x0_y0])
+                        self.edgeUp_out.append([s0_x0_y1] + hole_d_r + [s1_x0_y1])
+                        self.edgeRight_out.append([s0_x1_y1] + hole_d_l + [s1_x1_y1])
+                        self.edgeDown_out.append([s0_x1_y0] + hole_u_l + [s1_x1_y0])
+                    else:
+                        self.edgeDown_out.pop(0)
+                        self.edgeLeft_out.append([s0]+hole_u_r +[s1])
             else:
                 return False
 
@@ -654,6 +662,7 @@ class Topology(object):
             edge_0 = (x0_in, 'x') if loc > 0 else (x0_out, 'x')
             edge_1 = (y1_in, 'y') if loc > 0 else (y1_out, 'y')
             bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
+            s0, s1 = intersections
             if bool__:
                 if loc > 0:
                     self.__add_hole_on_corner_in(hole, intersections, intersection_loc,loc)
@@ -661,31 +670,34 @@ class Topology(object):
                     orientation = lambda x: x[0] > self.x0_out and x[1] < self.y1_out
                     hole_d_l, hole_u_l, hole_u_r, hole_d_r = self.__process_hole(hole, orientation, [0, 1])
 
-                    if not self.__valid_reflection_corner(hole_d_l, hole_u_l, hole_u_r, hole_d_r):
-                        return False
+                    if self.periodic_boundary:
+                        if not self.__valid_reflection_corner(hole_d_l, hole_u_l, hole_u_r, hole_d_r):
+                            return False
 
-                    s0, s1 = intersections
+                        
 
-                    s0_x1_y1 = (
-                        self.x1_out - abs((hole_d_l[0][0] - self.x1_out + hole_u_l[-1][0] - self.x1_out) / 2),
-                        self.y1_out)
+                        s0_x1_y1 = (
+                            self.x1_out - abs((hole_d_l[0][0] - self.x1_out + hole_u_l[-1][0] - self.x1_out) / 2),
+                            self.y1_out)
 
-                    s1_x1_y1 = (self.x1_out, s0[1])
-                    s0_x0_y0 = (s1[0], self.y0_out)
-                    s1_x0_y0 = (self.x0_out, abs(hole_u_r[-1][1] + hole_u_l[0][1]) / 2)
-                    s0_x1_y0 = (self.x1_out, s1_x0_y0[1])
-                    s1_x1_y0 = (s0_x1_y1[0], self.y0_out)
+                        s1_x1_y1 = (self.x1_out, s0[1])
+                        s0_x0_y0 = (s1[0], self.y0_out)
+                        s1_x0_y0 = (self.x0_out, abs(hole_u_r[-1][1] + hole_u_l[0][1]) / 2)
+                        s0_x1_y0 = (self.x1_out, s1_x0_y0[1])
+                        s1_x1_y0 = (s0_x1_y1[0], self.y0_out)
 
-                    self.edgeUp_out.pop(0)
-                    self.edgeRight_out.pop(0)
-                    self.edgeLeft_out.pop(0)
-                    self.edgeDown_out.pop(0)
+                        self.edgeUp_out.pop(0)
+                        self.edgeRight_out.pop(0)
+                        self.edgeLeft_out.pop(0)
+                        self.edgeDown_out.pop(0)
 
-                    self.edgeLeft_out.append([s0_x0_y0] + hole_u_r + [s1_x0_y0])
-                    self.edgeUp_out.append([s0] + hole_d_r + [s1])
-                    self.edgeDown_out.append([s0_x1_y0] + hole_u_l + [s1_x1_y0])
-                    self.edgeRight_out.append([s0_x1_y1] + hole_d_l + [s1_x1_y1])
-
+                        self.edgeLeft_out.append([s0_x0_y0] + hole_u_r + [s1_x0_y0])
+                        self.edgeUp_out.append([s0] + hole_d_r + [s1])
+                        self.edgeDown_out.append([s0_x1_y0] + hole_u_l + [s1_x1_y0])
+                        self.edgeRight_out.append([s0_x1_y1] + hole_d_l + [s1_x1_y1])
+                    else:
+                        self.edgeLeft_out.pop(0)
+                        self.edgeUp_out.append([s0] + hole_d_r + [s1])
             else:
                 return False
         elif intersection_loc == "up_right":
@@ -693,6 +705,7 @@ class Topology(object):
             edge_1 = (x1_in, 'x') if loc > 0 else (x1_out, 'x')
 
             bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
+            s0, s1 = intersections
             if bool__:
                 if loc > 0:
                     self.__add_hole_on_corner_in(hole, intersections, intersection_loc,loc)
@@ -700,32 +713,35 @@ class Topology(object):
                     orientation = lambda x: x[0] < self.x1_out and x[1] < self.y1_out
                     hole_d_l, hole_u_l, hole_u_r, hole_d_r = self.__process_hole(hole, orientation, [1, 2])
 
-                    if not self.__valid_reflection_corner(hole_d_l, hole_u_l, hole_u_r, hole_d_r):
-                        return False
+                    if self.periodic_boundary:
+                        if not self.__valid_reflection_corner(hole_d_l, hole_u_l, hole_u_r, hole_d_r):
+                            return False
 
-                    s0, s1 = intersections
+                        s0_x1_y1 = s0
+                        s1_x1_y1 = s1
 
-                    s0_x1_y1 = s0
-                    s1_x1_y1 = s1
+                        s0_x1_y0 = (self.x1_out, (hole_u_l[0][1] + hole_u_r[-1][1]) / 2)
+                        s1_x1_y0 = (s0[0], self.y0_out)
 
-                    s0_x1_y0 = (self.x1_out, (hole_u_l[0][1] + hole_u_r[-1][1]) / 2)
-                    s1_x1_y0 = (s0[0], self.y0_out)
+                        s0_x0_y1 = (self.x0_out, s1[1])
+                        s1_x0_y1 = ((hole_u_r[0][0] + hole_d_r[-1][0]) / 2, self.y1_out)
 
-                    s0_x0_y1 = (self.x0_out, s1[1])
-                    s1_x0_y1 = ((hole_u_r[0][0] + hole_d_r[-1][0]) / 2, self.y1_out)
+                        s0_x0_y0 = (s1_x0_y1[0], self.y0_out)
+                        s1_x0_y0 = (self.x0_out, s0_x1_y0[1])
 
-                    s0_x0_y0 = (s1_x0_y1[0], self.y0_out)
-                    s1_x0_y0 = (self.x0_out, s0_x1_y0[1])
+                        self.edgeLeft_out.pop(0)
+                        self.edgeUp_out.pop(0)
+                        self.edgeRight_out.pop(0)
+                        self.edgeDown_out.pop(0)
 
-                    self.edgeLeft_out.pop(0)
-                    self.edgeUp_out.pop(0)
-                    self.edgeRight_out.pop(0)
-                    self.edgeDown_out.pop(0)
+                        self.edgeLeft_out.append([s0_x0_y0] + hole_u_r + [s1_x0_y0])
+                        self.edgeUp_out.append([s0_x0_y1] + hole_d_r + [s1_x0_y1])
+                        self.edgeDown_out.append([s0_x1_y0] + hole_u_l + [s1_x1_y0])
+                        self.edgeRight_out.append([s0_x1_y1] + hole_d_l + [s1_x1_y1])
+                    else:
+                        self.edgeUp_out.pop(0)
+                        self.edgeRight_out.append([s0] + hole_d_l + [s1])
 
-                    self.edgeLeft_out.append([s0_x0_y0] + hole_u_r + [s1_x0_y0])
-                    self.edgeUp_out.append([s0_x0_y1] + hole_d_r + [s1_x0_y1])
-                    self.edgeDown_out.append([s0_x1_y0] + hole_u_l + [s1_x1_y0])
-                    self.edgeRight_out.append([s0_x1_y1] + hole_d_l + [s1_x1_y1])
             else:
                 return False
         else:
@@ -733,6 +749,7 @@ class Topology(object):
             edge_1 = (y0_in, 'y') if loc > 0 else (y0_out, 'y')
 
             bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
+            s0, s1 = intersections
             if bool__:
                 if loc > 0:
                     self.__add_hole_on_corner_in(hole, intersections, intersection_loc,loc)
@@ -740,32 +757,36 @@ class Topology(object):
                     orientation = lambda x: x[0] < self.x1_out and x[1] > self.y0_out
                     hole_d_l, hole_u_l, hole_u_r, hole_d_r = self.__process_hole(hole, orientation, [2, 3])
 
-                    if not self.__valid_reflection_corner(hole_d_l, hole_u_l, hole_u_r, hole_d_r):
-                        return False
+                    if self.periodic_boundary:
+                        if not self.__valid_reflection_corner(hole_d_l, hole_u_l, hole_u_r, hole_d_r):
+                            return False
 
-                    s0, s1 = intersections
+                        s0, s1 = intersections
 
-                    s0_x1_y0 = s0
-                    s1_x1_y0 = s1
+                        s0_x1_y0 = s0
+                        s1_x1_y0 = s1
 
-                    s0_x0_y1 = (self.x0_out, (hole_d_r[0][1] + hole_d_l[-1][1]) / 2)
-                    s1_x0_y1 = ((hole_u_r[0][0] + hole_d_r[-1][0]) / 2, self.y1_out)
+                        s0_x0_y1 = (self.x0_out, (hole_d_r[0][1] + hole_d_l[-1][1]) / 2)
+                        s1_x0_y1 = ((hole_u_r[0][0] + hole_d_r[-1][0]) / 2, self.y1_out)
 
-                    s0_x1_y1 = (s1_x1_y0[0], self.y1_out)
-                    s1_x1_y1 = (self.x1_out, s0_x0_y1[1])
+                        s0_x1_y1 = (s1_x1_y0[0], self.y1_out)
+                        s1_x1_y1 = (self.x1_out, s0_x0_y1[1])
 
-                    s0_x0_y0 = (s1_x0_y1[0], self.y0_out)
-                    s1_x0_y0 = (self.x0_out, s0_x1_y0[1])
+                        s0_x0_y0 = (s1_x0_y1[0], self.y0_out)
+                        s1_x0_y0 = (self.x0_out, s0_x1_y0[1])
 
-                    self.edgeLeft_out.pop(0)
-                    self.edgeUp_out.pop(0)
-                    self.edgeRight_out.pop(0)
-                    self.edgeDown_out.pop(0)
+                        self.edgeLeft_out.pop(0)
+                        self.edgeUp_out.pop(0)
+                        self.edgeRight_out.pop(0)
+                        self.edgeDown_out.pop(0)
 
-                    self.edgeLeft_out.append([s0_x0_y0] + hole_u_r + [s1_x0_y0])
-                    self.edgeUp_out.append([s0_x0_y1] + hole_d_r + [s1_x0_y1])
-                    self.edgeDown_out.append([s0_x1_y0] + hole_u_l + [s1_x1_y0])
-                    self.edgeRight_out.append([s0_x1_y1] + hole_d_l + [s1_x1_y1])
+                        self.edgeLeft_out.append([s0_x0_y0] + hole_u_r + [s1_x0_y0])
+                        self.edgeUp_out.append([s0_x0_y1] + hole_d_r + [s1_x0_y1])
+                        self.edgeDown_out.append([s0_x1_y0] + hole_u_l + [s1_x1_y0])
+                        self.edgeRight_out.append([s0_x1_y1] + hole_d_l + [s1_x1_y1])
+                    else:
+                        self.edgeRight_out.pop(0)
+                        self.edgeDown_out.append([s0] + hole_u_l + [s1])
 
             else:
                 return False
