@@ -594,10 +594,10 @@ class Topology(object):
 
     def __add_hole_on_corner(self, intersection_loc, loc, hole):
         
-        x0_in = self.rects_in[1]["x0"]
-        y0_in = self.rects_in[1]["y0"]
-        x1_in = self.rects_in[1]["x1"]
-        y1_in = self.rects_in[1]["y1"]
+        x0_in = self.rects_in[loc]["x0"]
+        y0_in = self.rects_in[loc]["y0"]
+        x1_in = self.rects_in[loc]["x1"]
+        y1_in = self.rects_in[loc]["y1"]
 
         x0_out = self.x0_out
         y0_out = self.y0_out
@@ -609,7 +609,7 @@ class Topology(object):
             edge_1 = (x0_in, 'x') if loc > 0 else (x0_out, 'x')
 
             bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
-
+            
             if bool__:
                 if loc > 0:
                     self.__add_hole_on_corner_in(hole, intersections, intersection_loc, loc)
@@ -647,9 +647,8 @@ class Topology(object):
                 return False
 
         elif intersection_loc == "left_up":
-            edge_0 = (x0_in, 'x') if loc == "in" else (x0_out, 'x')
-            edge_1 = (y1_in, 'y') if loc == "in" else (y1_out, 'y')
-
+            edge_0 = (x0_in, 'x') if loc > 0 else (x0_out, 'x')
+            edge_1 = (y1_in, 'y') if loc > 0 else (y1_out, 'y')
             bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
             if bool__:
                 if loc > 0:
