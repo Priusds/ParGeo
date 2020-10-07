@@ -2,7 +2,9 @@ from .writeGeo import WriteGeo
 
 
 class DomainWithHoles(WriteGeo):
+    
     def __init__(self, file_name, dir = None):
+        raise ValueError("Use of this class is deprecated! Use instead only class topology with method get_geometry()")
         WriteGeo.__init__(self, file_name, dir)
         self.line_loops_in = []
         self.line_loops_out = []
@@ -30,7 +32,7 @@ class DomainWithHoles(WriteGeo):
                 # Iterate over inner rects:
                 # write points, lines, line loops, surfaces and physical surfaces
                 rect_in = topology.rects_in[rect_ID]
-                edges_in = topology.edges_in(rect_ID) # TODO: more then 1
+                edges_in = topology.edges_in(rect_ID) 
                 x0_in = rect_in["x0"]
                 y0_in = rect_in["y0"]
                 x1_in = rect_in["x1"]
@@ -104,6 +106,18 @@ class DomainWithHoles(WriteGeo):
         Here we write the inner rectangle, therfore we write two line loops.
         Holes on the boundary are NOT defined "through" it's own line loop.
         """
+        for i in range(4):
+            print("============")
+            print(i)
+            print("_________")
+            for j in edges_in[i]:
+                if len(j) > 2:
+                    print(len(j[1]), len(j[2]))
+                print(j)
+                print("_________")
+        print("==============")
+        print(edges_in[0][0])
+
         x0_in,y0_in = rect_points[0]
         x1_in,y1_in = rect_points[1]
 

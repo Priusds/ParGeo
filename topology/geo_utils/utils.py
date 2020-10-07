@@ -28,6 +28,15 @@ def write_surface(Id, data):
     string = "Plane Surface({0}) = {{{1}}};\n".format(Id, loop)
     return string
 
+def write_physicalSurface(Id, data):
+    loop = ""
+    for i in data:
+        if len(loop)>0:
+            loop += ","
+        loop += str(i)
+    string = "Physical Surface({0}) = {{{1}}};\n".format(Id, loop)
+    return string
+
 def write_surfaceLoop(Id, data):
     loop = ""
     for i in data:
@@ -52,13 +61,14 @@ functions = {
     "lines":write_line,
     "lineLoops":write_lineLoop,
     "surfaces":write_surface,
+    "physicalSurfaces":write_physicalSurface,
     "surfaceLoops":write_surfaceLoop,
     "volumes":write_volume
 }
 
 def write_geo(geo, file_name):
     file = open(file_name + ".geo", 'w')
-    for key in ["points", "lines","lineLoops", "surfaces", "surfaceLoops","volumes"]: #,"surfaces"]:
+    for key in ["points", "lines","lineLoops", "surfaces", "surfaceLoops","volumes", "physicalSurfaces"]: 
         if key in geo:
             for Id, value in geo[key].items():
                 file.write(functions[key](Id, value))

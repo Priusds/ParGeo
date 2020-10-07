@@ -1,6 +1,6 @@
 import json
 
-from .domainWithHoles import DomainWithHoles as dwh
+from ..geo_utils.utils import write_geo
 from .hole import Circle, Ellipse, Stellar
 from .intersections import convex_hull, intersection_hole_edge, intersection_hole_corner
 from .sat import collide
@@ -21,6 +21,7 @@ class Topology(object):
         self.dx = x1_out - x0_out
         self.dy = y1_out - y0_out
 
+        self.nRects = len(lrect_in)
         # parameters for rect_in
        
 
@@ -74,13 +75,14 @@ class Topology(object):
             #counter = len(self.topology_json) - 2
             #self.topology_json["hole_" + str(counter)] = hole.to_dict()
             return True
-
+        print("Hole could not be added")
         return False
 
-    def write_geo(self, file_name, flag="filled", lc_in=.2, lc_out=.2):
+    def write_geo(self, file_name, filled = True, lc_in=.2, lc_out=.2):
         """ writes a .geo file of the current topology"""
-        new_file = dwh(file_name)
-        new_file.write_file(self, lc_in, lc_out, flag)
+        geometry = self.get_geometry(filled)
+        write_geo(geometry, file_name)
+      
 
     def safe_json(self, file_name):
         raise NotImplementedError("Change from 1 inner rect to multiple is missing")
@@ -593,7 +595,7 @@ class Topology(object):
             return False
 
     def __add_hole_on_corner(self, intersection_loc, loc, hole):
-        
+
         x0_in = self.rects_in[loc]["x0"]
         y0_in = self.rects_in[loc]["y0"]
         x1_in = self.rects_in[loc]["x1"]
@@ -605,6 +607,7 @@ class Topology(object):
         y1_out = self.y1_out
 
         if intersection_loc == "down_left":
+
             edge_0 = (y0_in, 'y') if loc > 0 else (y0_out, 'y')
             edge_1 = (x0_in, 'x') if loc > 0 else (x0_out, 'x')
 
@@ -618,6 +621,7 @@ class Topology(object):
                     hole_d_l, hole_u_l, hole_u_r, hole_d_r = self.__process_hole(hole, orientation, [3, 0])
 
                     if not self.__valid_reflection_corner(hole_d_l, hole_u_l, hole_u_r, hole_d_r):
+                        print("No valid reflection corner, possible solution: more discretization points")
                         return False
 
                     s0, s1 = intersections
@@ -879,6 +883,403 @@ class Topology(object):
             return [(x[0], x[1] + self.dy) for x in convex_hull_hole]
 
 
+    def get_geometry(self,filled = False):
+        """
+            I)  Write boundary of rect_0 (Main rect that contains all other rects)
+            II) Write boundaries of rect_1,...,rect_n
+                - for each rect write inner and outer boundary
+                    - rect_i has inner loop ID 2*i and outer loop ID 2*i + 1
+                    - outer loop is needed for surface of rect_0
+                    - inner loop is needed for surface of rect_i
+            III) Write all line loops of holes
+                - store line loop ID and the rect containing it, e.g. (rect_ID, loop_ID)
+            VI) If holes need to be filled:
+                - write line loops for holes on boundaries
+                - for every hole loop make surface
+
+        """
+        geometry = {
+            "points":{},
+            "lines":{},
+            "lineLoops":{},
+            "surfaces":{},
+            "physicalSurfaces":{Id:[Id] for Id in range(1,self.nRects+2)}
+        }
+        freePointID = 1
+        freeLineID = 1
+        freeLineLoopID = 2*(len(self.rects_in)-1)+2 # lower IDs are reserved for rect loops
+        freeSurfaceID = len(self.rects_in)+1
+
+        #===================================
+        #   I)
+        #===================================
+        boundaryLoopsOut = []
+        edges_out = self.edges_out()
+        firstLineID = freeLineID
+        firstPointID = freePointID 
+        lastPointID = None
+        for i in range(4):
+            edge = edges_out[i]
+            nholes = len(edge)
+            for j in range(nholes):
+                hole = edge[j]
+                if len(hole)==1:
+                    # vertex case
+                    x,y = hole[0]
+                    coords = (x,y,0)
+                    geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                    freePointID+=1
+
+                    if lastPointID is not None:
+                        geometry["lines"][freeLineID] = (lastPointID, freePointID-1)
+                        freeLineID += 1
+                    lastPointID = freePointID-1
+
+                else:
+                    # hole case
+                    nPoints = len(hole)
+                    lPoints = []
+                    for k in range(nPoints):
+                        x,y = hole[k]
+                        coords = (x,y,0)
+                        geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                        freePointID+=1
+                        lPoints.append(freePointID-1)
+
+                    firstIntersectionPoint = freePointID - nPoints
+                    
+                    if lastPointID is not None:
+                        geometry["lines"][freeLineID] = (lastPointID, firstIntersectionPoint)
+                        freeLineID += 1
+                    lastPointID = freePointID-1
+                    # make lines
+                    loop = []
+                    nLines = nPoints-1
+                    for k in range(nLines):
+                        start = lPoints[k]
+                        end = lPoints[k+1]
+                        geometry["lines"][freeLineID] = (start,end)
+                        freeLineID+=1
+                        loop.append(freeLineID-1)
+                    boundaryLoopsOut.append(loop)
+                    
+        
+        geometry["lines"][freeLineID] = (lastPointID,firstPointID)
+        freeLineID+=1
+        geometry["lineLoops"][1] = list(range(firstLineID,freeLineID))
+
+        #===================================
+        #   II)
+        #===================================
+        boundaryLoops = []
+        for rect_ID, rect_in in self.rects_in.items():
+            if rect_ID > 0:
+                inner_boundary = []
+                outer_boundary = []
+                edges_in = self.edges_in(rect_ID)
+                firstPointID = None 
+                lastPointID = None
+                for i in range(4):
+                    edge = edges_in[i]
+                    nholes = len(edge)
+                    for j in range(nholes):
+                        if i == 0 and j == 0:
+                            firstPointID = freePointID
+                        hole = edge[j]
+                        if len(hole) == 1:
+                            # vertex case
+                            coords = (hole[0][0],hole[0][1],0)
+                            geometry["points"][freePointID] = {"id":freePointID,"coords":coords,"lc":None}
+                            freePointID+=1
+                            if lastPointID is not None:
+                                geometry["lines"][freeLineID] = (lastPointID, freePointID-1)
+                                freeLineID += 1
+                                inner_boundary.append(freeLineID-1)
+                                outer_boundary.append(freeLineID-1)
+
+                            lastPointID = freePointID-1
+                        else:
+                            intersections = hole[0]
+                            hole_in = hole[1]
+                            hole_out = hole[2]
+                            
+                            
+                            firstIntersectionPoint = freePointID
+                            secondIntersectionPoint = freePointID+1
+
+                            # write intersection points
+                            coords = (intersections[0][0],intersections[0][1],0)
+                            geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                            freePointID+=1
+
+                            coords = (intersections[1][0],intersections[1][1],0)
+                            geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                            freePointID+=1
+
+                            # write points of inner hole
+                            nPointsIn = len(hole_in)
+                            lPointsIn = []
+                            for k in range(nPointsIn):
+                                point = hole_in[k]
+                                x,y = point
+                                coords = (x,y,0)
+                                geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                                freePointID+=1
+                                lPointsIn.append(freePointID-1)
+                            lPointsIn.append(secondIntersectionPoint)
+                            lPointsIn = [firstIntersectionPoint]+lPointsIn
+                            # write points of outer hole
+                            nPointsOut = len(hole_out)
+                            lPointsOut = []
+                            for k in range(nPointsOut):
+                                point = hole_out[k]
+                                x,y = point
+                                coords = (x,y,0)
+                                geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                                freePointID+=1
+                                lPointsOut.append(freePointID-1)
+                            lPointsOut.reverse()
+                            lPointsOut.append(secondIntersectionPoint)
+                            lPointsOut = [firstIntersectionPoint]+lPointsOut
+                            # write connection lines
+                            if lastPointID is not None:
+                                geometry["lines"][freeLineID]=(lastPointID,firstIntersectionPoint)
+                                freeLineID+=1
+                                inner_boundary.append(freeLineID-1)
+                                outer_boundary.append(freeLineID-1)
+                            
+                            lastPointID = secondIntersectionPoint
+
+                            # write lines corresponding to inner points
+                            linesIn = []
+                            nLinesIn = nPointsIn+1
+                            for k in range(nLinesIn):
+                                geometry["lines"][freeLineID]=(lPointsIn[k],lPointsIn[k+1])
+                                freeLineID+=1
+                                inner_boundary.append(freeLineID-1)
+                                linesIn.append(freeLineID-1)
+
+                            # write lines corresponding to outer points
+                            linesOut = []
+                            nLinesOut = nPointsOut+1
+                            for k in range(nLinesOut):
+                                geometry["lines"][freeLineID]=(lPointsOut[k],lPointsOut[k+1])
+                                freeLineID+=1
+                                outer_boundary.append(freeLineID-1)
+                                linesOut.append(freeLineID-1)
+                            
+                            boundaryLoops.append((rect_ID,linesIn, linesOut))
+
+
+
+                geometry["lines"][freeLineID] = (lastPointID, firstPointID)
+                freeLineID+=1
+                inner_boundary.append(freeLineID-1)
+                outer_boundary.append(freeLineID-1)
+                
+                geometry["lineLoops"][2*rect_ID]=inner_boundary
+                geometry["lineLoops"][2*rect_ID+1]=outer_boundary
+                
+                
+        #===================================
+        #   III)
+        #===================================
+        lInnerHoles = [[] for i in self.rects_in]
+        for hole in self.holes_between:
+            nPoints = len(hole)
+            lPointID=[]
+            lineLoop = []
+            for point in hole:
+                x,y = point
+                coords = (x,y,0)
+                geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                freePointID+=1
+                lPointID.append(freePointID-1)
+
+            nPoints = len(hole)
+            for i in range(nPoints):
+                start = lPointID[i]
+                end = lPointID[i+1] if i < nPoints-1 else lPointID[0]
+                geometry["lines"][freeLineID] = (start, end)
+                freeLineID+=1
+                lineLoop.append(freeLineID-1)
+            
+            geometry["lineLoops"][freeLineLoopID]=lineLoop
+            freeLineLoopID+=1
+            lInnerHoles[0].append(freeLineLoopID-1)
+
+        for rect_ID, rect_in in self.rects_in.items():
+            if rect_ID > 0:
+                holes = rect_in["holes_in"]
+                for hole in holes:
+                    nPoints = len(hole)
+                    lPointID=[]
+                    lineLoop = []
+                    for point in hole:
+                        x,y = point
+                        coords = (x,y,0)
+                        geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                        freePointID+=1
+                        lPointID.append(freePointID-1)
+
+                    nPoints = len(hole)
+                    for i in range(nPoints):
+                        start = lPointID[i]
+                        end = lPointID[i+1] if i < nPoints-1 else lPointID[0]
+                        geometry["lines"][freeLineID] = (start, end)
+                        freeLineID+=1
+                        lineLoop.append(freeLineID-1)
+                    
+                    geometry["lineLoops"][freeLineLoopID]=lineLoop
+                    freeLineLoopID+=1
+                    lInnerHoles[rect_ID].append(freeLineLoopID-1)
+
+
+        #==================================
+        #   IV)
+        #==================================
+        boundaryHolesSurfaces = [[] for i in self.rects_in]
+        lboundaryHoles = [[] for i in self.rects_in]
+        if filled:
+            for loop in boundaryLoops:
+               
+                rect_ID, loopIn,loopOut = loop
+                point0_ID = geometry["lines"][loopIn[0]][0]
+                point1_ID = geometry["lines"][loopIn[-1]][1]
+                
+                x0,y0,z0 = geometry["points"][point0_ID]["coords"]
+                x1,y1,z1 = geometry["points"][point1_ID]["coords"]
+
+                if x0-x1 != 0 and y0-y1 != 0:
+                    # corner case, we need to add a point
+                    x,y = None,None
+                    if x0 == self.rects_in[rect_ID]["x0"]: 
+                        x = x0
+                        y = self.rects_in[rect_ID]["y1"]
+
+                    elif y0 ==self.rects_in[rect_ID]["y1"]:
+                        # up right
+                        x = self.rects_in[rect_ID]["x1"]
+                        y = y0
+                    elif x0 == self.rects_in[rect_ID]["x1"]:
+                        #down right
+                        x = x0
+                        y = self.rects_in[rect_ID]["y0"]
+                    elif y0 == self.rects_in[rect_ID]["y0"]:
+                        # down left
+                        x = self.rects_in[rect_ID]["x0"]
+                        y = y0
+                    else:
+                        raise ValueError("Dunno")
+                    
+                    coords = (x,y,0)
+                    geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                    freePointID+=1
+                    
+                    geometry["lines"][freeLineID]=(point1_ID,freePointID-1)
+                    freeLineID+=1
+
+                    geometry["lines"][freeLineID]=(freePointID-1,point0_ID)
+                    freeLineID+=1
+
+                    geometry["lineLoops"][freeLineLoopID]=loopIn+[freeLineID-2,freeLineID-1]
+                    freeLineLoopID+=1
+                    lboundaryHoles[rect_ID].append(freeLineLoopID-1)
+
+                    geometry["lineLoops"][freeLineLoopID]=loopOut+[freeLineID-2,freeLineID-1]
+                    freeLineLoopID+=1
+                    lboundaryHoles[0].append(freeLineLoopID-1)
+
+                else:
+                    geometry["lines"][freeLineID]=(point1_ID,point0_ID)
+                    freeLineID+=1
+
+                    geometry["lineLoops"][freeLineLoopID]=loopIn+[freeLineID-1]
+                    freeLineLoopID+=1
+                    lboundaryHoles[rect_ID].append(freeLineLoopID-1)
+
+                    geometry["lineLoops"][freeLineLoopID]=loopOut+[freeLineID-1]
+                    freeLineLoopID+=1
+                    lboundaryHoles[0].append(freeLineLoopID-1)
+
+
+            for loop in boundaryLoopsOut:
+                # first check if we need to add a point
+                
+                point0_ID = geometry["lines"][loop[0]][0]
+                point1_ID = geometry["lines"][loop[-1]][1]
+                
+                x0,y0,z0 = geometry["points"][point0_ID]["coords"]
+                x1,y1,z1 = geometry["points"][point1_ID]["coords"]
+
+
+                if x0-x1 != 0 and y0-y1 != 0:
+                    # corner case, we need to add a point
+                    x,y = None,None
+                    if x0 == self.x0_out:
+                        x = x0
+                        y = self.y1_out
+
+                    elif y0 == self.y1_out:
+                        # up right
+                        x = self.x1_out
+                        y = y0
+                    elif x0 == self.x1_out:
+                        #down right
+                        x = x0
+                        y = self.y0_out
+                    elif y0 == self.y0_out:
+                        # down left
+                        x = self.x0_out
+                        y = y0
+                    else:
+                        raise ValueError("Dunno")
+                    
+                    coords = (x,y,0)
+                    geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                    freePointID+=1
+                    
+                    geometry["lines"][freeLineID]=(point1_ID,freePointID-1)
+                    freeLineID+=1
+                    geometry["lines"][freeLineID]=(freePointID-1,point0_ID)
+                    freeLineID+=1
+
+                    geometry["lineLoops"][freeLineLoopID]=loop+[freeLineID-2,freeLineID-1]
+                    freeLineLoopID+=1
+                    lboundaryHoles[0].append(freeLineLoopID-1)
+
+                else:
+                    geometry["lines"][freeLineID]=(point1_ID,point0_ID)
+                    freeLineID+=1
+                    geometry["lineLoops"][freeLineLoopID]=loop+[freeLineID-1]
+                    freeLineLoopID+=1
+                    lboundaryHoles[0].append(freeLineLoopID-1)
+
+
+        #==================================
+        # Write main surfaces
+        #==================================
+        geometry["surfaces"][1]=[1]+ [2*i+1 for i in range(1,len(self.rects_in))] +lInnerHoles[0]
+        
+        for rect_ID in range(1,len(self.rects_in)):
+            geometry["surfaces"][rect_ID+1]=[2*rect_ID]+lInnerHoles[rect_ID]
+
+        if filled:
+            # make surfaces of boundary holes
+            lLoops = [lInnerHoles[i]+lboundaryHoles[i] for i in range(len(self.rects_in))]
+            physicalHoles = [[] for i in range(self.nRects+1)]
+            for Id,loops in enumerate(lLoops):
+                for loop in loops:
+                    geometry["surfaces"][freeSurfaceID]=[loop]
+                    freeSurfaceID+=1
+                    physicalHoles[Id].append(freeSurfaceID-1)
+
+            for Id, surfaces in enumerate(physicalHoles):
+                tag = Id + 2 + self.nRects
+                geometry["physicalSurfaces"][tag]=surfaces
+
+       
+        return geometry
 def shift(array, n):
     # doesnt work with numpy arrays!
     # left shift
