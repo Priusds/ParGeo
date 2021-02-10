@@ -13,7 +13,7 @@ def dolfin_mesh(file_name):
     os.system("dolfin-convert " + file_name + ".msh " + file_name + ".xml")
     return Mesh(file_name + ".xml")
 
-def debugExamples(fname):
+def debugExamples(fname, loadbug = False):
     width = 1.
     height = 1.
     domain = {"x0" : 0, 
@@ -24,7 +24,7 @@ def debugExamples(fname):
     x0, y0 = (domain["x0"], domain["y0"]) 
 
     N = 2
-    nHoles = 100
+    nHoles = 10
     filled = True
 
     def createTopology(x0, y0, periodic_boundary=False):
@@ -59,31 +59,36 @@ def debugExamples(fname):
     
         refs = 40      # refs for the interior inclusions
 
-        # Set periodic_boundary, True or False for outer rectangle
-        topo = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary)
 
-        nCounter = 0
-        #for k in range(100):
-        while nCounter < nHoles:
-                
-            midpoint_s = rd.uniform(0, width), rd.uniform(0, height)
-            radius = 0.015 * min(width, height)  #rd.uniform(0,.1)
-            stellar_hole = Circle(midpoint_s,radius) 
+        if not loadbug : 
+            # Set periodic_boundary, True or False for outer rectangle
+            topo = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary)
+
+            nCounter = 0
+            #for k in range(100):
+            while nCounter < nHoles:
                     
-            if topo.add_hole(stellar_hole,refs=refs): 
-                discrete_Holes.append(stellar_hole.discretize_hole(refs))
-                nCounter += 1
+                midpoint_s = rd.uniform(0, width), rd.uniform(0, height)
+                radius = 0.015 * min(width, height)  #rd.uniform(0,.1)
+                stellar_hole = Circle(midpoint_s,radius) 
+                        
+                if topo.add_hole(stellar_hole,refs=refs): 
+                    discrete_Holes.append(stellar_hole.discretize_hole(refs))
+                    nCounter += 1
 
-                # make a random composite material via filled setted to true option
-        topo.safe_json(fname)
-                
-        # write geo file
-        topo.write_geo(fname, filled = filled, lc_in=.025, lc_out=.025)
-        print("Geo file written : ", fname)
+                    # make a random composite material via filled setted to true option
+            topo.safe_json(fname)
+                    
+            # write geo file
+            topo.write_geo(fname, filled = filled, lc_in=.025, lc_out=.025)
+            print("Geo file written : ", fname)
 
-        return discrete_Holes,  rects_in
-    
-    discrete_Holes, rects_in = createTopology(x0, y0, periodic_boundary = False)
+        else : 
+            topo = Topology.load_topology("bug")
+        
+
+        
+    createTopology(x0, y0, periodic_boundary = False)
 
     mesh = dolfin_mesh(fname)
     #plot(mesh)
@@ -96,7 +101,7 @@ def main():
     #fname = "sample_20_Nsub2_Nholes100"
     #dolfin_mesh(fname)                  # this fails since the geo file seems to be corrupt
     for k in range(10):
-        debugExamples("test")
+        debugExamples("bug", loadbug = True)
 
 
 

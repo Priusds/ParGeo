@@ -36,6 +36,9 @@ class WriteGeo(object):
         self.pointId += 1
 
     def write_line(self, p1, p2):
+        if p1 == None or p2 == None: 
+            print("NONE DETECTED")
+            exit()
         self.file.write("Line(" + str(self.lineId) + ") = {" + str(p1) + "," + str(p2) + "};\n")
         self.lineId += 1
 
