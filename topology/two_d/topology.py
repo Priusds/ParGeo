@@ -74,6 +74,7 @@ class Topology(object):
         if self.__add_hole(discretized_hole):
             counter = len(self.topology_json) - 3
             self.topology_json["hole_" + str(counter)] = (hole.to_dict() , refs)
+            print("Hole added")
             return True
         print("Hole could not be added")
         return False
@@ -1313,9 +1314,9 @@ class Topology(object):
 
             for Id, surfaces in enumerate(physicalHoles):
                 tag = Id + 2 + self.nRects
-                print(" ADD PYHSICAL HOLE SURFACES : ")
-                print(" tag = ", str(tag))
-                print("surfaces = ", str(surfaces))
+                #print(" ADD PYHSICAL HOLE SURFACES : ")
+                #print(" tag = ", str(tag))
+                #print("surfaces = ", str(surfaces))
                 if len(surfaces) == 0:
                     continue
                 geometry["physicalSurfaces"][tag]=surfaces

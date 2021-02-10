@@ -75,19 +75,19 @@ def debugExamples(fname):
                 nCounter += 1
 
                 # make a random composite material via filled setted to true option
-                topo.safe_json(fname)
+        topo.safe_json(fname)
                 
-                # write geo file
-                topo.write_geo(fname, filled = filled, lc_in=.025, lc_out=.025)
-                print("Geo file written : ", fname)
+        # write geo file
+        topo.write_geo(fname, filled = filled, lc_in=.025, lc_out=.025)
+        print("Geo file written : ", fname)
 
         return discrete_Holes,  rects_in
     
     discrete_Holes, rects_in = createTopology(x0, y0, periodic_boundary = False)
 
     mesh = dolfin_mesh(fname)
-    plot(mesh)
-    plt.show()
+    #plot(mesh)
+    #plt.show()
 
 
 
@@ -95,8 +95,8 @@ def main():
 
     #fname = "sample_20_Nsub2_Nholes100"
     #dolfin_mesh(fname)                  # this fails since the geo file seems to be corrupt
-
-    debugExamples("test")
+    for k in range(10):
+        debugExamples("test")
 
 
 
