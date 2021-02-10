@@ -1,3 +1,5 @@
+from pathlib import Path
+
 def write_point(Id, data):
     lc = 1 if data["lc"] is None else data["lc"]
     string = "Point({0}) = {{{1},{2},{3},{4}}};\n".format(Id,
@@ -67,6 +69,11 @@ functions = {
 }
 
 def write_geo(geo, file_name):
+    
+
+    #filename = Path(file_name + ".geo")
+    #filename.touch(exist_ok=True)  # will create file, if it exists will do nothing
+    #file = open(filename)
     file = open(file_name + ".geo", 'w')
     for key in ["points", "lines","lineLoops", "surfaces", "surfaceLoops","volumes", "physicalSurfaces"]: 
         if key in geo:

@@ -60,7 +60,7 @@ class Stellar(Hole):
     def __init__(self, midpoint, radius, coefficient = None):
         super().__init__("stellar")
         self.midpoint = midpoint
-        self.coefficient = np.random.uniform(-.2, .2, (5, 2)) if coefficient is None else coefficient
+        self.coefficient = np.random.uniform(-.2, .2, (2, 2)) if coefficient is None else coefficient
         self.radius = radius
 
     def to_dict(self):

@@ -65,34 +65,34 @@ class Topology(object):
 
         # description of the topology in json format (more readable)
 
-        #self.topology_json = {"rect_out": rect_out, "rect_in": rect_in} TODO: Missing
+        self.topology_json = {"rect_out": rect_out, "rects_in": lrect_in, 'boundaryCondition': periodic_boundary} 
 
     def add_hole(self, hole, refs = 60):
         assert isinstance(hole, Circle) or isinstance(hole, Ellipse) or isinstance(hole, Stellar)
         discretized_hole = hole.discretize_hole(refs)
 
         if self.__add_hole(discretized_hole):
-            #counter = len(self.topology_json) - 2
-            #self.topology_json["hole_" + str(counter)] = hole.to_dict()
+            counter = len(self.topology_json) - 3
+            self.topology_json["hole_" + str(counter)] = (hole.to_dict() , refs)
             return True
         print("Hole could not be added")
         return False
 
     def write_geo(self, file_name, filled = True, lc_in=.2, lc_out=.2):
         """ writes a .geo file of the current topology"""
-        geometry = self.get_geometry(filled)
+        geometry = self.get_geometry(lc_in,lc_out, filled)
         write_geo(geometry, file_name)
       
 
     def safe_json(self, file_name):
-        raise NotImplementedError("Change from 1 inner rect to multiple is missing")
+        #raise NotImplementedError("Change from 1 inner rect to multiple is missing")
         """safes the current topology as json file (without refinements)"""
         with open(file_name + ".json", 'w') as fp:
             json.dump(self.topology_json, fp, indent=2)
 
     @staticmethod
     def load_topology(file_name, hole_refinement=None, decay=None):
-        raise NotImplementedError("Change from 1 inner rect to multiple is missing")
+        #raise NotImplementedError("Change from 1 inner rect to multiple is missing")
         """
         refinement_pattern = default_refinement_pattern (constant verfeinerung oder sowas)
 
@@ -112,44 +112,52 @@ class Topology(object):
         with open(file_name + ".json", 'r') as fp:
             topo_json = json.load(fp)
 
-        topo = Topology(topo_json["rect_out"], topo_json["rect_in"])
+        topo = Topology(topo_json["rect_out"], topo_json["rects_in"], topo_json["boundaryCondition"])
 
-        for hole in topo_json.values():
+        for data in topo_json.items():
+            key, val = data
+            if "hole" in key:
+                hole, refs = val
+        #for hole in topo_json.values():
 
             if type(hole) is dict:
 
                 if hole['type'] == 'circle':
                     hole = Circle(hole['midpoint'], hole['radius'])
-                    if hole_refinement is None:
-                        hole_d = hole.discretize_hole(50)
-                        topo.__add_hole(hole_d)
-                    else:
-                        hole_d = hole.discretize_hole(
-                            hole_refinement(topo_json["rect_out"], topo_json["rect_in"], hole.midpoint, decay))
-                        topo.__add_hole(hole_d)
-                elif hole['type'] == 'ellipse':
-                    hole = Ellipse(hole['midpoint'], hole['axis'], hole['angle'])
-                    if hole_refinement is None:
-                        hole_d = hole.discretize_hole(50)
-                        topo.__add_hole(hole_d)
-                    else:
-                        hole_d = hole.discretize_hole(
-                            hole_refinement(topo_json["rect_out"], topo_json["rect_in"], hole.midpoint, decay))
-                        topo.__add_hole(hole_d)
+                    hole_d = hole.discretize_hole(refs)
+                    topo.__add_hole(hole_d)
+                    #if hole_refinement is None:
+                    #    hole_d = hole.discretize_hole(refs)
+                    #    topo.__add_hole(hole_d)
+                    #else:
+                    #    hole_d = hole.discretize_hole(
+                    #        hole_refinement(topo_json["rect_out"], topo_json["rect_in"], hole.midpoint, decay))
+                    #    topo.__add_hole(hole_d)
+                else:
+                    raise NotImplementedError("Other hole types need to be specified.")
+                #elif hole['type'] == 'ellipse':
+                #    hole = Ellipse(hole['midpoint'], hole['axis'], hole['angle'])
+                #    if hole_refinement is None:
+                #        hole_d = hole.discretize_hole(refs)
+                #        topo.__add_hole(hole_d)
+                #    else:
+                #        hole_d = hole.discretize_hole(
+                #            hole_refinement(topo_json["rect_out"], topo_json["rect_in"], hole.midpoint, decay))
+                #        topo.__add_hole(hole_d)
 
-                elif hole['type'] == 'stellar':
-                    hole = Stellar(hole['midpoint'], hole['radius'], hole['coefficient'])
-                    if hole_refinement is None:
-                        hole_d = hole.discretize_hole(4)#+++++++++++++++++++++++++++++++
-                        topo.__add_hole(hole_d)
-                    else:
-                        hole_d = hole.discretize_hole(
-                            hole_refinement(topo_json["rect_out"], topo_json["rect_in"], hole.midpoint, decay))
-                        topo.__add_hole(hole_d)
+                #elif hole['type'] == 'stellar':
+                #    hole = Stellar(hole['midpoint'], hole['radius'], hole['coefficient'])
+                #    if hole_refinement is None:
+                #        hole_d = hole.discretize_hole(4)#+++++++++++++++++++++++++++++++
+                #        topo.__add_hole(hole_d)
+                #    else:
+                #        hole_d = hole.discretize_hole(
+                #            hole_refinement(topo_json["rect_out"], topo_json["rect_in"], hole.midpoint, decay))
+                #        topo.__add_hole(hole_d)
 
-                elif hole['type'] == 'rectangular':
-                    hole = Rectangular(hole['midpoint'], hole['width'], hole['height'])
-                    topo.__add_hole(hole.discretize_hole(None))
+                #elif hole['type'] == 'rectangular':
+                #    hole = Rectangular(hole['midpoint'], hole['width'], hole['height'])
+                #    topo.__add_hole(hole.discretize_hole(None))
 
         return topo
 
@@ -904,7 +912,7 @@ class Topology(object):
             return [(x[0], x[1] + self.dy) for x in convex_hull_hole]
 
 
-    def get_geometry(self,filled = False):
+    def get_geometry(self, lc, lc_subrects,filled = False):
         """
             I)  Write boundary of rect_0 (Main rect that contains all other rects)
             II) Write boundaries of rect_1,...,rect_n
@@ -919,6 +927,9 @@ class Topology(object):
                 - for every hole loop make surface
 
         """
+
+
+
         geometry = {
             "points":{},
             "lines":{},
@@ -932,7 +943,7 @@ class Topology(object):
         freeSurfaceID = len(self.rects_in)+1
 
         #===================================
-        #   I)
+        #   I) Write boundary of rect_0 (Main rect that contains all other rects)
         #===================================
         boundaryLoopsOut = []
         edges_out = self.edges_out()
@@ -948,7 +959,7 @@ class Topology(object):
                     # vertex case
                     x,y = hole[0]
                     coords = (x,y,0)
-                    geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                    geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc": lc}
                     freePointID+=1
 
                     if lastPointID is not None:
@@ -963,7 +974,7 @@ class Topology(object):
                     for k in range(nPoints):
                         x,y = hole[k]
                         coords = (x,y,0)
-                        geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                        geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc": lc}
                         freePointID+=1
                         lPoints.append(freePointID-1)
 
@@ -990,7 +1001,7 @@ class Topology(object):
         geometry["lineLoops"][1] = list(range(firstLineID,freeLineID))
 
         #===================================
-        #   II)
+        #   II) Write boundaries of rect_1,...,rect_n
         #===================================
         boundaryLoops = []
         for rect_ID, rect_in in self.rects_in.items():
@@ -1010,7 +1021,7 @@ class Topology(object):
                         if len(hole) == 1:
                             # vertex case
                             coords = (hole[0][0],hole[0][1],0)
-                            geometry["points"][freePointID] = {"id":freePointID,"coords":coords,"lc":None}
+                            geometry["points"][freePointID] = {"id":freePointID,"coords":coords,"lc":lc_subrects}
                             freePointID+=1
                             if lastPointID is not None:
                                 geometry["lines"][freeLineID] = (lastPointID, freePointID-1)
@@ -1030,11 +1041,11 @@ class Topology(object):
 
                             # write intersection points
                             coords = (intersections[0][0],intersections[0][1],0)
-                            geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                            geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":lc_subrects}
                             freePointID+=1
 
                             coords = (intersections[1][0],intersections[1][1],0)
-                            geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                            geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":lc_subrects}
                             freePointID+=1
 
                             # write points of inner hole
@@ -1044,7 +1055,7 @@ class Topology(object):
                                 point = hole_in[k]
                                 x,y = point
                                 coords = (x,y,0)
-                                geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                                geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":lc_subrects}
                                 freePointID+=1
                                 lPointsIn.append(freePointID-1)
                             lPointsIn.append(secondIntersectionPoint)
@@ -1056,7 +1067,7 @@ class Topology(object):
                                 point = hole_out[k]
                                 x,y = point
                                 coords = (x,y,0)
-                                geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":None}
+                                geometry["points"][freePointID]={"id":freePointID,"coords":coords,"lc":lc_subrects}
                                 freePointID+=1
                                 lPointsOut.append(freePointID-1)
                             lPointsOut.reverse()
@@ -1288,6 +1299,9 @@ class Topology(object):
         if filled:
             # make surfaces of boundary holes
             lLoops = [lInnerHoles[i]+lboundaryHoles[i] for i in range(len(self.rects_in))]
+
+          
+
             physicalHoles = [[] for i in range(self.nRects+1)]
             for Id,loops in enumerate(lLoops):
                 for loop in loops:
@@ -1295,8 +1309,15 @@ class Topology(object):
                     freeSurfaceID+=1
                     physicalHoles[Id].append(freeSurfaceID-1)
 
+                    #physicalHoles[1].append(freeSurfaceID-1)
+
             for Id, surfaces in enumerate(physicalHoles):
                 tag = Id + 2 + self.nRects
+                print(" ADD PYHSICAL HOLE SURFACES : ")
+                print(" tag = ", str(tag))
+                print("surfaces = ", str(surfaces))
+                if len(surfaces) == 0:
+                    continue
                 geometry["physicalSurfaces"][tag]=surfaces
 
        
