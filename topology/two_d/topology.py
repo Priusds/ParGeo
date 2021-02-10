@@ -32,10 +32,10 @@ class Topology(object):
                 "x1":lrect_in[Id][1][0],
                 "y1":lrect_in[Id][1][1],
                 "holes_in":[],
-                "edgeLeft": [[(lrect_in[Id][0][0], lrect_in[Id][1][1])]],
-                "edgeUp": [[(lrect_in[Id][1][0], lrect_in[Id][1][1])]],
-                "edgeRight" : [[(lrect_in[Id][1][0], lrect_in[Id][0][1])]],
-                "edgeDown":[[(lrect_in[Id][0][0], lrect_in[Id][0][1])]]
+                "edgeLeft": [[(lrect_in[Id][0][0], lrect_in[Id][1][1])]],   # This is a list of holes
+                "edgeUp": [[(lrect_in[Id][1][0], lrect_in[Id][1][1])]],     # each hole can have either length 1 or 3
+                "edgeRight" : [[(lrect_in[Id][1][0], lrect_in[Id][0][1])]], # length == 1 means: vertex case
+                "edgeDown":[[(lrect_in[Id][0][0], lrect_in[Id][0][1])]]     # length == 3 means: [intersection_points, inner_points, outer_points] (ccw)
             } for Id in range(len(lrect_in))
         }
         self.rects_in[0]={
