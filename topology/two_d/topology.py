@@ -836,6 +836,13 @@ class Topology(object):
                 sorted(self.edgeDown_out, key=lambda x: -x[0][0])]
 
     def edges_in(self,rect_id):
+        """
+            sorts the holes on each edge of rect_id.
+            sort the holes clockwise
+            for x in self.rects_in[rect_id]["someEdge]:
+                x[0] = intersection points (can be of length 1 or 2, 1 if hole is vertex)
+                x[0][0] = first intersection point = tuple (x-coordinate, y-coordinate)
+        """
         return [sorted(self.rects_in[rect_id]["edgeLeft"], key=lambda x: x[0][0][1] if len(x) == 3 else x[0][1]),
                 sorted(self.rects_in[rect_id]["edgeUp"], key=lambda x: x[0][0][0] if len(x) == 3 else x[0][0]),
                 sorted(self.rects_in[rect_id]["edgeRight"], key=lambda x: -x[0][0][1] if len(x) == 3 else -x[0][1]),
@@ -843,11 +850,16 @@ class Topology(object):
 
     def __process_hole(self, hole, orientation, ref_dir=None):
         # orientation(hole[i], edge) = True if in False if out
+        # TODO: Check this
         bool_ = False
-        while not bool_:
+        counter = 0
+        maxCounter = len(hole)
+        while not bool_ and counter <= maxCounter +2:
             hole = shift(hole, 1)
             bool_ = orientation(hole[-1]) and not orientation(hole[0])
-
+            counter += 1
+        if not bool_:
+            exit("Error: could not process hole")
         hole_in = [point for point in hole if orientation(point)]
 
         if ref_dir is None:
@@ -1039,6 +1051,9 @@ class Topology(object):
                             
                             firstIntersectionPoint = freePointID
                             secondIntersectionPoint = freePointID+1
+
+                            if i == 1 and j == 0 and len(edges_in[0]) == 0:
+                                firstPointID = firstIntersectionPoint
 
                             # write intersection points
                             coords = (intersections[0][0],intersections[0][1],0)
