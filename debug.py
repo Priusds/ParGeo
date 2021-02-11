@@ -108,7 +108,6 @@ def CouldNotProcessBugMinimal(verbose = False):
     x0, y0 = (domain["x0"], domain["y0"]) 
 
     N = 2
-    nHoles = 100
     filled = True
 
     rect_out = [(x0,y0),(x0 + width, y0 + height)]
@@ -133,12 +132,10 @@ def CouldNotProcessBugMinimal(verbose = False):
             M = xshift + i * w_loc,  yshift + j * h_loc
             rect = [(M[0],M[1]),(M[0]+w,M[1]+h)]
             rects_in.append(rect)           
-        
-    discrete_Holes = []
+  
 
-    refs = 20      # the number of refs does not change the appearance of the bug
+    refsNew = 40      # the number of refs does not change the appearance of the bug
     periodic_boundary = False
-
 
     topo = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary)
 
@@ -148,7 +145,6 @@ def CouldNotProcessBugMinimal(verbose = False):
                     [domain["y0"], domain["y0"], domain["y0"]+domain["h"], domain["y0"]+domain["h"], domain["y0"]],
                     'k--'
             )
-
 
         for rect in rects_in : 
             A, B = rect[0], rect[1]
@@ -165,8 +161,8 @@ def CouldNotProcessBugMinimal(verbose = False):
 
         if verbose : 
             s = 2*pi / refs
-            x = [M[0] + r * np.cos( n * s * 2*np.pi) for n in range(refs)]
-            y = [M[1] + r * np.sin( n * s * 2*np.pi) for n in range(refs)]
+            x = [M[0] + r * np.cos( n * s * 2*np.pi) for n in range(refsNew)]
+            y = [M[1] + r * np.sin( n * s * 2*np.pi) for n in range(refsNew)]
             plt.plot(x,y, 'r.', ms = 1)
             plt.show()
 
@@ -174,7 +170,7 @@ def CouldNotProcessBugMinimal(verbose = False):
 
 
         hole = Circle(M, r)
-        topo.add_hole(hole,refs=refs)
+        topo.add_hole(hole,refs=refsNew)
 
       
 
