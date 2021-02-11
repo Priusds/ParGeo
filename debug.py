@@ -6,7 +6,7 @@ import random as rd
 from dolfin import *
 import os
 import matplotlib.pyplot as plt
-
+import numpy as np
 import json
 
 def dolfin_mesh(file_name):
@@ -97,7 +97,7 @@ def couldNotProcessBug(fname):
 
                 ddict[hNa-1][2] = True  # hole has been added
 
-def CouldNotProcessBugMinimal():
+def CouldNotProcessBugMinimal(verbose = False):
     width = 1.
     height = 1.
     domain = {"x0" : 0, 
@@ -143,12 +143,37 @@ def CouldNotProcessBugMinimal():
     topo = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary)
 
 
+    if verbose:
+        plt.plot( [domain["x0"], domain["x0"]+domain["w"], domain["x0"]+domain["w"], domain["x0"], domain["x0"]],
+                    [domain["y0"], domain["y0"], domain["y0"]+domain["h"], domain["y0"]+domain["h"], domain["y0"]],
+                    'k--'
+            )
+
+
+        for rect in rects_in : 
+            A, B = rect[0], rect[1]
+
+            plt.plot([A[0], B[0], B[0], A[0], A[0]], [A[1],A[1],B[1],B[1],A[1]], 'k--', linewidth = 0.5)
+
 
     with open("bugHole" + ".json", 'r') as fp:
         holes_json = json.load(fp)
         k = '0'
         hole_data, refs = holes_json[k]
-        hole = Circle(hole_data['midpoint'], hole_data['radius'])
+
+        M , r = hole_data['midpoint'], hole_data['radius']
+
+        if verbose : 
+            s = 2*pi / refs
+            x = [M[0] + r * np.cos( n * s * 2*np.pi) for n in range(refs)]
+            y = [M[1] + r * np.sin( n * s * 2*np.pi) for n in range(refs)]
+            plt.plot(x,y, 'r.', ms = 1)
+            plt.show()
+
+
+
+
+        hole = Circle(M, r)
         topo.add_hole(hole,refs=refs)
 
       
@@ -327,7 +352,7 @@ def debugExamples(fname, loadbug = False):
 
 
 def main():
-    CouldNotProcessBugMinimal()
+    CouldNotProcessBugMinimal(True)
     #ExtractProcessBug()
     #couldNotProcessBug("notProcessBug")
 
