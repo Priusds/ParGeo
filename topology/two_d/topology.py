@@ -190,6 +190,10 @@ class Topology(object):
         # rect_id in {0,1,2,3...} 0 is rect_out, i > 0 is the ID of one rect_in
         bool__, intersection_loc, rect_id = self.__localize(hole)
 
+        print(bool__)
+        print("intersection loc : ", intersection_loc)
+        print(rect_id)
+
         
         if bool__:
             
@@ -210,6 +214,7 @@ class Topology(object):
 
             else:
                 # ---------------CORNER INTERSECTION ------------------
+                print("intersection is a corner one")
                 self.__add_hole_on_corner(intersection_loc, rect_id, hole)
 
             self.all_holes_conv_hull.append(convex_hull_hole)
@@ -860,13 +865,49 @@ class Topology(object):
         # shift the hole as long as the last point is in and the first one is out
         # possible problem:
         #   -hole intersects only with boundary! 
+
+        #TODO hole  must be discretization and parametric information aswell
+        # 
+        #   
+        #    2 Faelle : 
+        #    
+        #  (1) hole is nach verfeinerung gar nicht im schnitt mit dem rechteck  : 
+        #      # gib information  außen / innen zurück sodass callende methode die richtige methode aufrufen kann
+        #      # zum beispiel optimierung oder  N punkte zwischen den "außen punkten" nehmen und testen ob einer im rechteck liegt. N >> 1
+        #
+        #
+        #  (2) hole schneidet das gebiet : 
+        #      mache den while loop unten  öfter : 
+        #
+        #      2.1  hole ist kein stella : abbruch nach einem loop mit could not proccess hole, rise Notimplemented Expection ("cannot generate point in between")
+        #      2.2  hole ist ein stella : 
+        #               for dem ersten shift, speicher das winkel array mit was zu den tupeln gehört und shifte es immer mit
+        #
+        #           kriege raus welche 2 punkte den linearen schnitt mit dem Rechteck verursachen,  neheme die dazugehörigen winkel ( modulu 2pi)
+        #           und füge nen neuen winkel in der mitte in das winkel array und das tupel array
+        #           
+        #           Falls der hinzugefügte punkt im inneren liegt und der orientation test also geht fertig
+        #           sonst füge weitere punkte hinzu .
+        #
+        #                       
+        #
+        #      füge nen punkt hinzu 
+        #           starte while loop  bis es funktioniert 
+        #
+        #
+        #
+        #
+
+
+
         while not bool_ and counter <= maxCounter +2:
             hole = shift(hole, 1)
             bool_ = orientation(hole[-1]) and not orientation(hole[0])
             counter += 1
         if not bool_:
-            exit("Error: could not process hole")
             print(hole)
+            exit("Error: could not process hole")
+            
         else:
             print(hole[0], hole[-1])
         hole_in = [point for point in hole if orientation(point)]
