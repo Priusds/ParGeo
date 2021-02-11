@@ -7,11 +7,241 @@ from dolfin import *
 import os
 import matplotlib.pyplot as plt
 
+import json
+
 def dolfin_mesh(file_name):
     # creates .xml mesh from .geo mesh and returns dolfin mesh
     os.system("gmsh -2 " + file_name + ".geo")  # -v 0
     os.system("dolfin-convert " + file_name + ".msh " + file_name + ".xml")
     return Mesh(file_name + ".xml")
+
+
+
+def couldNotProcessBug(fname):
+    width = 1.
+    height = 1.
+    domain = {"x0" : 0, 
+              "y0" : 0, 
+              "w"  : width,
+              "h"  : height
+    }
+    x0, y0 = (domain["x0"], domain["y0"]) 
+
+    N = 2
+    nHoles = 100
+    filled = True
+
+    rect_out = [(x0,y0),(x0 + width, y0 + height)]
+
+    rects_in = []   
+
+    # local placement of rectangles   s1 free  s2 rect  s3 free
+    s1, s2, s3 = 1./4, 1./2, 1./4    # must sum to 1
+        
+    w_loc = width / N   # local width  of a N equidistant subdivided rectangles from Domain one
+    h_loc = height / N  # local height of a N equidistant subdivided rectangles from Domain one
+
+    xshift = s1*w_loc  # midpoint offset for rectangle in x direction
+    yshift = s1*h_loc  # midpoint offset for rectangle in y direction
+
+    w = s2 * w_loc  # width of subrectangle
+    h = s2 * h_loc  # height of subrectangle
+
+    for i in range( N ) : 
+        for j in range( N ) : 
+            # midpoint of new sub rectangle
+            M = xshift + i * w_loc,  yshift + j * h_loc
+            rect = [(M[0],M[1]),(M[0]+w,M[1]+h)]
+            rects_in.append(rect)           
+        
+    discrete_Holes = []
+
+    refs = 40      # refs for the interior inclusions
+    periodic_boundary = False
+
+
+
+    M = 100 
+
+
+    for m in range(M):
+
+        print(" =================== START NEW TOPOLOGY ===================")
+
+        topo = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary)
+
+
+        hNa = 0    # attempted hole number
+        ddict = {} # debug storage dict
+
+
+        nCounter = 0
+        #for k in range(100):
+        while nCounter < nHoles:
+                    
+            midpoint_s = rd.uniform(0, width), rd.uniform(0, height)
+            radius = 0.015 * min(width, height)  #rd.uniform(0,.1)
+            hole = Circle(midpoint_s,radius) 
+
+            ddict[hNa] = [hole.to_dict() , refs, False]
+
+            hNa +=1
+
+
+            with open(fname + ".json", 'w') as fp:
+                json.dump(ddict, fp, indent=2)
+
+                        
+            if topo.add_hole(hole,refs=refs): 
+                nCounter += 1
+
+                ddict[hNa-1][2] = True  # hole has been added
+
+def CouldNotProcessBugMinimal():
+    width = 1.
+    height = 1.
+    domain = {"x0" : 0, 
+              "y0" : 0, 
+              "w"  : width,
+              "h"  : height
+    }
+    x0, y0 = (domain["x0"], domain["y0"]) 
+
+    N = 2
+    nHoles = 100
+    filled = True
+
+    rect_out = [(x0,y0),(x0 + width, y0 + height)]
+
+    rects_in = []   
+
+    # local placement of rectangles   s1 free  s2 rect  s3 free
+    s1, s2, s3 = 1./4, 1./2, 1./4    # must sum to 1
+        
+    w_loc = width / N   # local width  of a N equidistant subdivided rectangles from Domain one
+    h_loc = height / N  # local height of a N equidistant subdivided rectangles from Domain one
+
+    xshift = s1*w_loc  # midpoint offset for rectangle in x direction
+    yshift = s1*h_loc  # midpoint offset for rectangle in y direction
+
+    w = s2 * w_loc  # width of subrectangle
+    h = s2 * h_loc  # height of subrectangle
+
+    for i in range( N ) : 
+        for j in range( N ) : 
+            # midpoint of new sub rectangle
+            M = xshift + i * w_loc,  yshift + j * h_loc
+            rect = [(M[0],M[1]),(M[0]+w,M[1]+h)]
+            rects_in.append(rect)           
+        
+    discrete_Holes = []
+
+    refs = 20      # the number of refs does not change the appearance of the bug
+    periodic_boundary = False
+
+
+    topo = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary)
+
+
+
+    with open("bugHole" + ".json", 'r') as fp:
+        holes_json = json.load(fp)
+        k = '0'
+        hole_data, refs = holes_json[k]
+        hole = Circle(hole_data['midpoint'], hole_data['radius'])
+        topo.add_hole(hole,refs=refs)
+
+      
+
+                
+
+
+
+
+
+
+
+
+
+
+
+
+
+def ExtractProcessBug():
+    width = 1.
+    height = 1.
+    domain = {"x0" : 0, 
+              "y0" : 0, 
+              "w"  : width,
+              "h"  : height
+    }
+    x0, y0 = (domain["x0"], domain["y0"]) 
+
+    N = 2
+    nHoles = 100
+    filled = True
+
+    rect_out = [(x0,y0),(x0 + width, y0 + height)]
+
+    rects_in = []   
+
+    # local placement of rectangles   s1 free  s2 rect  s3 free
+    s1, s2, s3 = 1./4, 1./2, 1./4    # must sum to 1
+        
+    w_loc = width / N   # local width  of a N equidistant subdivided rectangles from Domain one
+    h_loc = height / N  # local height of a N equidistant subdivided rectangles from Domain one
+
+    xshift = s1*w_loc  # midpoint offset for rectangle in x direction
+    yshift = s1*h_loc  # midpoint offset for rectangle in y direction
+
+    w = s2 * w_loc  # width of subrectangle
+    h = s2 * h_loc  # height of subrectangle
+
+    for i in range( N ) : 
+        for j in range( N ) : 
+            # midpoint of new sub rectangle
+            M = xshift + i * w_loc,  yshift + j * h_loc
+            rect = [(M[0],M[1]),(M[0]+w,M[1]+h)]
+            rects_in.append(rect)           
+        
+    discrete_Holes = []
+
+    refs = 40      # refs for the interior inclusions
+    periodic_boundary = False
+
+
+    topo = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary)
+
+    file_name = "notProcessBug"
+
+    with open(file_name + ".json", 'r') as fp:
+        holes_json = json.load(fp)
+
+        #print(holes_json)
+
+        k = 0
+
+        while str(k) in holes_json:
+            hole_data, refs, added = holes_json[str(k)]
+
+            print(str(k), " : ", holes_json[str(k)], "\n")
+
+            hole = Circle(hole_data['midpoint'], hole_data['radius'])
+            if str(k) == '36':
+                bugHole = {}
+                bugHole[0] = [hole.to_dict() , refs]
+
+                with open("bugHole" + ".json", 'w') as fp:
+                    json.dump(bugHole, fp, indent=2)
+
+
+                topo.add_hole(hole,refs=refs)
+
+            k+=1
+
+
+
+
 
 def debugExamples(fname, loadbug = False):
     width = 1.
@@ -97,11 +327,14 @@ def debugExamples(fname, loadbug = False):
 
 
 def main():
+    CouldNotProcessBugMinimal()
+    #ExtractProcessBug()
+    #couldNotProcessBug("notProcessBug")
 
     #fname = "sample_20_Nsub2_Nholes100"
     #dolfin_mesh(fname)                  # this fails since the geo file seems to be corrupt
-    for k in range(10):
-        debugExamples("bug", loadbug = True)
+    #for k in range(10):
+    #    debugExamples("bug", loadbug = True)
 
 
 
