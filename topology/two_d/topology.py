@@ -68,6 +68,7 @@ class Topology(object):
         self.topology_json = {"rect_out": rect_out, "rects_in": lrect_in, 'boundaryCondition': periodic_boundary} 
 
     def add_hole(self, hole, refs = 60):
+        # TODO: Missing corner case
         assert isinstance(hole, Circle) or isinstance(hole, Ellipse) or isinstance(hole, Stellar)
         discretized_hole = hole.discretize_hole(refs)
 
