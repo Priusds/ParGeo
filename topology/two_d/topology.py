@@ -72,7 +72,7 @@ class Topology(object):
         assert isinstance(hole, Circle) or isinstance(hole, Ellipse) or isinstance(hole, Stellar)
         discretized_hole = hole.discretize_hole(refs)
 
-        if self.__add_hole(discretized_hole):
+        if self.__add_hole((discretized_hole,hole)):
             counter = len(self.topology_json) - 3
             self.topology_json["hole_" + str(counter)] = (hole.to_dict() , refs)
             print("Hole added")
@@ -175,12 +175,12 @@ class Topology(object):
         example: hole = [(0,0), (1,0), (1,1), (0,1)]
 
         """
-
+        dhole = hole[0]
         # Check intersection with other holes
-        if len(hole) <= 2:
+        if len(dhole) <= 2:
             # The hole must consist of at least 3 points
             return False
-        convex_hull_hole = hole #convex_hull(hole)
+        convex_hull_hole = dhole #convex_hull(hole)
         if not self.__valid_input(convex_hull_hole):
             return False
 
@@ -188,7 +188,7 @@ class Topology(object):
         # (more checks will follow)
         # intersection_loc in {None, "left","left_down",...}
         # rect_id in {0,1,2,3...} 0 is rect_out, i > 0 is the ID of one rect_in
-        bool__, intersection_loc, rect_id = self.__localize(hole)
+        bool__, intersection_loc, rect_id = self.__localize(dhole)
 
         print(bool__)
         print("intersection loc : ", intersection_loc)
@@ -201,11 +201,11 @@ class Topology(object):
                 # ---------------NO INTERSECTIONS-------------------
                 if rect_id > 0:
                     # hole is in rect_in
-                    self.rects_in[rect_id]["holes_in"].append(hole)
+                    self.rects_in[rect_id]["holes_in"].append(dhole)
 
                 else:
                     # hole is between rect_in and rect_out
-                    self.holes_between.append(hole)
+                    self.holes_between.append(dhole)
 
             elif intersection_loc in {"left", "up", "right", "down"}:
                 # ----------------EDGE INTERSECTION ----------------
@@ -502,7 +502,7 @@ class Topology(object):
 
     def __add_hole_on_edge(self, intersection_loc, loc, hole, convex_hull_hole):
         
-
+        dhole = hole[0]
         x0_in = self.rects_in[loc]["x0"]
         y0_in = self.rects_in[loc]["y0"]
         x1_in = self.rects_in[loc]["x1"]
@@ -533,7 +533,7 @@ class Topology(object):
         else:
             edge = (y0_in, 'y') if loc > 0 else (y0_out, 'y')
 
-        bool__, intersections = intersection_hole_edge(hole, edge)
+        bool__, intersections = intersection_hole_edge(dhole, edge)
 
 
         if bool__:
@@ -615,7 +615,7 @@ class Topology(object):
             return False
 
     def __add_hole_on_corner(self, intersection_loc, loc, hole):
-
+        dhole = hole[0]
         x0_in = self.rects_in[loc]["x0"]
         y0_in = self.rects_in[loc]["y0"]
         x1_in = self.rects_in[loc]["x1"]
@@ -631,7 +631,7 @@ class Topology(object):
             edge_0 = (y0_in, 'y') if loc > 0 else (y0_out, 'y')
             edge_1 = (x0_in, 'x') if loc > 0 else (x0_out, 'x')
 
-            bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
+            bool__, intersections = intersection_hole_corner(dhole, edge_0, edge_1, intersection_loc)
             s0, s1 = intersections
             if bool__:
                 if loc > 0:
@@ -676,7 +676,7 @@ class Topology(object):
         elif intersection_loc == "left_up":
             edge_0 = (x0_in, 'x') if loc > 0 else (x0_out, 'x')
             edge_1 = (y1_in, 'y') if loc > 0 else (y1_out, 'y')
-            bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
+            bool__, intersections = intersection_hole_corner(dhole, edge_0, edge_1, intersection_loc)
             s0, s1 = intersections
             if bool__:
                 if loc > 0:
@@ -719,7 +719,7 @@ class Topology(object):
             edge_0 = (y1_in, 'y') if loc > 0 else (y1_out, 'y')
             edge_1 = (x1_in, 'x') if loc > 0 else (x1_out, 'x')
 
-            bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
+            bool__, intersections = intersection_hole_corner(dhole, edge_0, edge_1, intersection_loc)
             s0, s1 = intersections
             if bool__:
                 if loc > 0:
@@ -763,7 +763,7 @@ class Topology(object):
             edge_0 = (x1_in, 'x') if loc > 0 else (x1_out, 'x')
             edge_1 = (y0_in, 'y') if loc > 0 else (y0_out, 'y')
 
-            bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc)
+            bool__, intersections = intersection_hole_corner(dhole, edge_0, edge_1, intersection_loc)
             s0, s1 = intersections
             if bool__:
                 if loc > 0:
@@ -859,9 +859,10 @@ class Topology(object):
         # hole = [p0, p1, ..., pN]
         # ref_dir tells where to shift the hole in the periodic case
         # TODO: Check this
+        dhole = hole[0]
         bool_ = False
         counter = 0
-        maxCounter = len(hole)
+        maxCounter = len(dhole)
         # shift the hole as long as the last point is in and the first one is out
         # possible problem:
         #   -hole intersects only with boundary! 
@@ -901,34 +902,36 @@ class Topology(object):
 
 
         while not bool_ and counter <= maxCounter +2:
-            hole = shift(hole, 1)
-            bool_ = orientation(hole[-1]) and not orientation(hole[0])
+            dhole = shift(dhole, 1)
+            bool_ = orientation(dhole[-1]) and not orientation(dhole[0])
             counter += 1
+
         if not bool_:
+            # In this case the polygon dhole intersects the rect, but none of the discretization points is inside the rect.
+            # This means all dpoint are outside => make inner loop only with intersection points and corner point
+            #   Problem: still need to shift outer loop
             print(hole)
             exit("Error: could not process hole")
-            
-        else:
-            print(hole[0], hole[-1])
-        hole_in = [point for point in hole if orientation(point)]
+
+        hole_in = [point for point in dhole if orientation(point)]
 
         if ref_dir is None:
-            hole_out = [point for point in hole if not orientation(point)]
+            hole_out = [point for point in dhole if not orientation(point)]
             return hole_in, hole_out
 
         elif len(ref_dir) == 1:
             # edge case 
             if ref_dir[0] == 2:
-                hole_out = [(p[0] - self.dx, p[1]) for p in hole if not orientation(p)]
+                hole_out = [(p[0] - self.dx, p[1]) for p in dhole if not orientation(p)]
 
             elif ref_dir[0] == 3:
-                hole_out = [(p[0], p[1] + self.dy) for p in hole if not orientation(p)]
+                hole_out = [(p[0], p[1] + self.dy) for p in dhole if not orientation(p)]
 
             elif ref_dir[0] == 0:
-                hole_out = [(p[0] + self.dx, p[1]) for p in hole if not orientation(p)]
+                hole_out = [(p[0] + self.dx, p[1]) for p in dhole if not orientation(p)]
 
             else:
-                hole_out = [(p[0], p[1] - self.dy) for p in hole if not orientation(p)]
+                hole_out = [(p[0], p[1] - self.dy) for p in dhole if not orientation(p)]
 
             return hole_in, hole_out
 
@@ -937,32 +940,32 @@ class Topology(object):
             if ref_dir[0] == 0 and ref_dir[1] == 1:
                 # up/left
                 hole_d_r = hole_in
-                hole_d_l = [(p[0] + self.dx, p[1]) for p in hole if p[0] < self.x0_out and p[1] < self.y1_out]
-                hole_u_l = [(p[0] + self.dx, p[1] - self.dy) for p in hole if p[0] < self.x0_out and p[1] > self.y1_out]
-                hole_u_r = [(p[0], p[1] - self.dy) for p in hole if p[0] > self.x0_out and p[1] > self.y1_out]
+                hole_d_l = [(p[0] + self.dx, p[1]) for p in dhole if p[0] < self.x0_out and p[1] < self.y1_out]
+                hole_u_l = [(p[0] + self.dx, p[1] - self.dy) for p in dhole if p[0] < self.x0_out and p[1] > self.y1_out]
+                hole_u_r = [(p[0], p[1] - self.dy) for p in dhole if p[0] > self.x0_out and p[1] > self.y1_out]
 
             elif ref_dir[0] == 1 and ref_dir[1] == 2:
                 # up/right
-                hole_u_r = [(p[0] - self.dx, p[1] - self.dy) for p in hole if p[0] > self.x1_out and p[1] > self.y1_out]
-                hole_u_l = [(p[0], p[1] - self.dy) for p in hole if p[0] < self.x1_out and p[1] > self.y1_out]
+                hole_u_r = [(p[0] - self.dx, p[1] - self.dy) for p in dhole if p[0] > self.x1_out and p[1] > self.y1_out]
+                hole_u_l = [(p[0], p[1] - self.dy) for p in dhole if p[0] < self.x1_out and p[1] > self.y1_out]
 
-                hole_d_r = [(p[0] - self.dx, p[1]) for p in hole if p[0] > self.x1_out and p[1] < self.y1_out]
+                hole_d_r = [(p[0] - self.dx, p[1]) for p in dhole if p[0] > self.x1_out and p[1] < self.y1_out]
                 hole_d_l = hole_in
 
             elif ref_dir[0] == 2 and ref_dir[1] == 3:
                 # down/right
-                hole_u_r = [(p[0] - self.dx, p[1]) for p in hole if
+                hole_u_r = [(p[0] - self.dx, p[1]) for p in dhole if
                             p[0] > self.x1_out and p[1] > self.y0_out]
                 hole_u_l = hole_in
-                hole_d_r = [(p[0] - self.dx, p[1] + self.dy) for p in hole if p[0] > self.x1_out and p[1] < self.y0_out]
-                hole_d_l = [(p[0], p[1] + self.dy) for p in hole if p[0] < self.x1_out and p[1] < self.y0_out]
+                hole_d_r = [(p[0] - self.dx, p[1] + self.dy) for p in dhole if p[0] > self.x1_out and p[1] < self.y0_out]
+                hole_d_l = [(p[0], p[1] + self.dy) for p in dhole if p[0] < self.x1_out and p[1] < self.y0_out]
 
             else:
                 # down/left
                 hole_u_r = hole_in
-                hole_u_l = [(p[0] + self.dx, p[1]) for p in hole if p[0] < self.x0_out and p[1] > self.y0_out]
-                hole_d_r = [(p[0], p[1] + self.dy) for p in hole if p[0] > self.x0_out and p[1] < self.y0_out]
-                hole_d_l = [(p[0] + self.dx, p[1] + self.dy) for p in hole if p[0] < self.x0_out and p[1] < self.y0_out]
+                hole_u_l = [(p[0] + self.dx, p[1]) for p in dhole if p[0] < self.x0_out and p[1] > self.y0_out]
+                hole_d_r = [(p[0], p[1] + self.dy) for p in dhole if p[0] > self.x0_out and p[1] < self.y0_out]
+                hole_d_l = [(p[0] + self.dx, p[1] + self.dy) for p in dhole if p[0] < self.x0_out and p[1] < self.y0_out]
 
             return hole_d_l, hole_u_l, hole_u_r, hole_d_r
 
