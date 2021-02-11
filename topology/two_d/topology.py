@@ -179,7 +179,7 @@ class Topology(object):
         if len(hole) <= 2:
             # The hole must consist of at least 3 points
             return False
-        convex_hull_hole = convex_hull(hole)
+        convex_hull_hole = hole #convex_hull(hole)
         if not self.__valid_input(convex_hull_hole):
             return False
 
@@ -849,17 +849,25 @@ class Topology(object):
                 sorted(self.rects_in[rect_id]["edgeDown"], key=lambda x: -x[0][0][0] if len(x) == 3 else -x[0][0])]
 
     def __process_hole(self, hole, orientation, ref_dir=None):
-        # orientation(hole[i], edge) = True if in False if out
+        # orientation(hole[i]) = True if in else False w.r.t. an edge or an corner
+        # hole = [p0, p1, ..., pN]
+        # ref_dir tells where to shift the hole in the periodic case
         # TODO: Check this
         bool_ = False
         counter = 0
         maxCounter = len(hole)
+        # shift the hole as long as the last point is in and the first one is out
+        # possible problem:
+        #   -hole intersects only with boundary! 
         while not bool_ and counter <= maxCounter +2:
             hole = shift(hole, 1)
             bool_ = orientation(hole[-1]) and not orientation(hole[0])
             counter += 1
         if not bool_:
             exit("Error: could not process hole")
+            print(hole)
+        else:
+            print(hole[0], hole[-1])
         hole_in = [point for point in hole if orientation(point)]
 
         if ref_dir is None:
@@ -867,6 +875,7 @@ class Topology(object):
             return hole_in, hole_out
 
         elif len(ref_dir) == 1:
+            # edge case 
             if ref_dir[0] == 2:
                 hole_out = [(p[0] - self.dx, p[1]) for p in hole if not orientation(p)]
 
@@ -882,6 +891,7 @@ class Topology(object):
             return hole_in, hole_out
 
         elif len(ref_dir) == 2:
+            # corner case
             if ref_dir[0] == 0 and ref_dir[1] == 1:
                 # up/left
                 hole_d_r = hole_in
