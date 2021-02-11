@@ -163,7 +163,7 @@ def CouldNotProcessBugMinimal(verbose = False):
             s = 2*pi / refs
             x = [M[0] + r * np.cos( n * s * 2*np.pi) for n in range(refsNew)]
             y = [M[1] + r * np.sin( n * s * 2*np.pi) for n in range(refsNew)]
-            plt.plot(x,y, 'r.', ms = 1)
+            plt.plot(x,y, 'r.', ms = 3)
             plt.show()
 
 

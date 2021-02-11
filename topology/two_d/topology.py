@@ -189,6 +189,10 @@ class Topology(object):
         # rect_id in {0,1,2,3...} 0 is rect_out, i > 0 is the ID of one rect_in
         bool__, intersection_loc, rect_id = self.__localize(hole)
 
+        print(bool__)
+        print("intersection loc : ", intersection_loc)
+        print(rect_id)
+
         
         if bool__:
             
@@ -209,6 +213,7 @@ class Topology(object):
 
             else:
                 # ---------------CORNER INTERSECTION ------------------
+                print("intersection is a corner one")
                 self.__add_hole_on_corner(intersection_loc, rect_id, hole)
 
             self.all_holes_conv_hull.append(convex_hull_hole)
@@ -864,8 +869,9 @@ class Topology(object):
             bool_ = orientation(hole[-1]) and not orientation(hole[0])
             counter += 1
         if not bool_:
-            exit("Error: could not process hole")
             print(hole)
+            exit("Error: could not process hole")
+            
         else:
             print(hole[0], hole[-1])
         hole_in = [point for point in hole if orientation(point)]
