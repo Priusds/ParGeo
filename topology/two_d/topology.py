@@ -268,6 +268,7 @@ class Topology(object):
         input: list of tuples
         output: bool_ean, str, str
         """
+        # TODO make it possible to choose how to compute intersection points
         max_x = max(hole, key=lambda x: x[0])[0]
         max_y = max(hole, key=lambda x: x[1])[1]
 
@@ -501,7 +502,7 @@ class Topology(object):
 
 
     def __add_hole_on_edge(self, intersection_loc, loc, hole, convex_hull_hole):
-        
+        # TODO make it possible to choose how to compute intersection points
         dhole = hole[0]
         x0_in = self.rects_in[loc]["x0"]
         y0_in = self.rects_in[loc]["y0"]
@@ -615,6 +616,7 @@ class Topology(object):
             return False
 
     def __add_hole_on_corner(self, intersection_loc, loc, hole):
+        # TODO make it possible to choose how to compute intersection points
         dhole = hole[0]
         x0_in = self.rects_in[loc]["x0"]
         y0_in = self.rects_in[loc]["y0"]
