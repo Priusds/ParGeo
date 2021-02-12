@@ -20,6 +20,10 @@ class Hole(ABC):
         """ prints informations about the hole"""
         print(self.to_dict())
 
+    def getPoint(self, angle):
+        """ returns the corresponding point on the submanifold for given angle"""
+        raise NotImplementedError
+
 
 
 class Circle(Hole):
@@ -35,6 +39,15 @@ class Circle(Hole):
     def discretize_hole(self, refs):
         return discretize_ellipse([self.midpoint, (self.radius, self.radius), 0], refs)
 
+    def getPoint(self, angle, axis):
+
+        if axis == 0:
+            return self.radius*np.cos(angle) + self.midpoint[0]
+        elif axis == 1 :  
+            return self.radius * np.sin(angle) + self.midpoint[1]
+        else:
+            raise ValueError("Only axis = 0 or 1 supported")
+
 class Ellipse(Hole):
 
     def __init__(self, midpoint, axis, angle):
@@ -48,6 +61,16 @@ class Ellipse(Hole):
 
     def discretize_hole(self, refs):
         return discretize_ellipse([self.midpoint, self.axis, self.angle], refs)
+
+    def getPoint(self, angle, axis):
+
+        if axis == 0:
+            return self.axis[0]*np.cos(angle) + self.midpoint[0]
+        elif axis == 1 : 
+            return self.axis[1] * np.sin(angle) + self.midpoint[1]
+        else:
+            raise ValueError("Only axis = 0 or 1 supported")
+        
 
 class Stellar(Hole):
     """
@@ -63,12 +86,29 @@ class Stellar(Hole):
         self.coefficient = np.random.uniform(-.2, .2, (2, 2)) if coefficient is None else coefficient
         self.radius = radius
 
+
+        self.f = trigonometric_function(self.coefficients, self.radius)
+
     def to_dict(self):
         return {'type': self.type, 'midpoint': self.midpoint, 'coefficient':self.coefficient.tolist(), 'radius': self.radius}
 
     def discretize_hole(self, refs):
         return discetize_stellar_polygon(self.midpoint, self.radius, self.coefficient, refs)
 
+
+    def getPoint(self, angle, axis):
+
+        r = self.f(angle)
+
+        if axis == 0:
+            return r*np.cos(angle) + midpoint[0]
+        elif axis == 1 : 
+            return r*np.sin(angle) + midpoint[1]
+        else:
+            raise ValueError("Only axis = 0 or 1 supported")
+
+
+        
 class Rectangular(Hole):
     def __init__(self, midpoint, width, height):
         super().__init__("rectangular")

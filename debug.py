@@ -137,7 +137,7 @@ def CouldNotProcessBugMinimal(verbose = False):
     refsNew = 40      # the number of refs does not change the appearance of the bug
     periodic_boundary = False
 
-    topo = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary)
+    topo = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary, method = 'linear')
 
 
     if verbose:
@@ -168,9 +168,30 @@ def CouldNotProcessBugMinimal(verbose = False):
 
 
 
-
         hole = Circle(M, r)
         topo.add_hole(hole,refs=refsNew)
+
+        fname = "bugHole"
+
+        topo.write_geo(fname, filled = filled, lc_in=.025, lc_out=.025)
+        print("Geo file written : ", fname)
+
+
+        topoOpt = Topology(rect_out, rects_in, periodic_boundary= periodic_boundary, method = 'optimise')
+        topoOpt.add_hole(hole,refs=refsNew)
+        topoOpt.write_geo(fname+'Opt', filled = filled, lc_in=.025, lc_out=.025)
+
+        #exit()
+        mesh = dolfin_mesh(fname)
+        meshOpt = dolfin_mesh(fname+'Opt')
+
+        #plt.subplot(1,2,1)
+        plot(mesh, color = 'red')
+
+        #plt.subplot(1,2,2)
+        plot(meshOpt, color = 'blue')
+        plt.show()
+
 
       
 
@@ -348,7 +369,7 @@ def debugExamples(fname, loadbug = False):
 
 
 def main():
-    CouldNotProcessBugMinimal(True)
+    CouldNotProcessBugMinimal(False)
     #ExtractProcessBug()
     #couldNotProcessBug("notProcessBug")
 

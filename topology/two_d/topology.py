@@ -9,7 +9,7 @@ from .sat import collide
 # ---------- Version 2 -------------
 
 class Topology(object):
-    def __init__(self, rect_out, lrect_in, periodic_boundary = True):
+    def __init__(self, rect_out, lrect_in, periodic_boundary = True, method = 'linear'):
         # parameters for rect_out
         x0_out, y0_out = rect_out[0]
         x1_out, y1_out = rect_out[1]
@@ -24,6 +24,12 @@ class Topology(object):
         self.nRects = len(lrect_in)
         # parameters for rect_in
         self.periodic_boundary = periodic_boundary
+
+        # underlying method of hole and rectangle intersection point computation
+        # method = 'linear' / 'optimise' 
+        # linear   : computes intersection points based in segment-edge intersection based on holes discretization points
+        # optimise : computes apprx to exact intersection of hole and edge based on numerical approximation 
+        self.method = method
 
         self.rects_in = {
             Id+1:{
@@ -180,7 +186,7 @@ class Topology(object):
         if len(dhole) <= 2:
             # The hole must consist of at least 3 points
             return False
-        convex_hull_hole = dhole #convex_hull(hole)
+        convex_hull_hole = convex_hull(dhole)  # dhole #
         if not self.__valid_input(convex_hull_hole):
             return False
 
@@ -188,11 +194,7 @@ class Topology(object):
         # (more checks will follow)
         # intersection_loc in {None, "left","left_down",...}
         # rect_id in {0,1,2,3...} 0 is rect_out, i > 0 is the ID of one rect_in
-        bool__, intersection_loc, rect_id = self.__localize(dhole)
-
-        print(bool__)
-        print("intersection loc : ", intersection_loc)
-        print(rect_id)
+        bool__, intersection_loc, rect_id = self.__localize(hole)
 
         
         if bool__:
@@ -214,7 +216,6 @@ class Topology(object):
 
             else:
                 # ---------------CORNER INTERSECTION ------------------
-                print("intersection is a corner one")
                 self.__add_hole_on_corner(intersection_loc, rect_id, hole)
 
             self.all_holes_conv_hull.append(convex_hull_hole)
@@ -268,12 +269,16 @@ class Topology(object):
         input: list of tuples
         output: bool_ean, str, str
         """
-        # TODO make it possible to choose how to compute intersection points
-        max_x = max(hole, key=lambda x: x[0])[0]
-        max_y = max(hole, key=lambda x: x[1])[1]
 
-        min_x = min(hole, key=lambda x: x[0])[0]
-        min_y = min(hole, key=lambda x: x[1])[1]
+        dhole = hole[0]
+
+
+        # TODO make it possible to choose how to compute intersection points
+        max_x = max(dhole, key=lambda x: x[0])[0]
+        max_y = max(dhole, key=lambda x: x[1])[1]
+
+        min_x = min(dhole, key=lambda x: x[0])[0]
+        min_y = min(dhole, key=lambda x: x[1])[1]
 
         x0_out = self.x0_out
         x1_out = self.x1_out
@@ -393,8 +398,8 @@ class Topology(object):
 
                         if min_x < x0_in and min_y < y0_in:
                             # -----------------DOWN LEFT------------------
-                            bool_s, intersection_s = intersection_hole_edge(hole, (x0_in, 'x'))
-                            bool_r, intersection_r = intersection_hole_edge(hole, (y0_in, 'y'))
+                            bool_s, intersection_s = intersection_hole_edge(hole, (x0_in, 'x'), self.method)
+                            bool_r, intersection_r = intersection_hole_edge(hole, (y0_in, 'y'), self.method)
                             if bool_r and bool_s:
                                 s0, s1 = intersection_s
                                 r0, r1 = intersection_r
@@ -417,8 +422,8 @@ class Topology(object):
 
                         elif min_x < x0_in and max_y > y1_in:
                             # ---------------LEFT UP---------------------
-                            bool_s, intersection_s = intersection_hole_edge(hole, (x0_in, 'x'))
-                            bool_r, intersection_r = intersection_hole_edge(hole, (y1_in, 'y'))
+                            bool_s, intersection_s = intersection_hole_edge(hole, (x0_in, 'x'), self.method)
+                            bool_r, intersection_r = intersection_hole_edge(hole, (y1_in, 'y'), self.method)
 
                             if bool_r and bool_s:
                                 s0, s1 = intersection_s
@@ -445,8 +450,8 @@ class Topology(object):
                         elif max_x > x1_in and min_y < y0_in:
                             # -------------RIGHT DOWN-----------------
 
-                            bool_s, intersection_s = intersection_hole_edge(hole, (x1_in, 'x'))
-                            bool_r, intersection_r = intersection_hole_edge(hole, (y0_in, 'y'))
+                            bool_s, intersection_s = intersection_hole_edge(hole, (x1_in, 'x'), self.method)
+                            bool_r, intersection_r = intersection_hole_edge(hole, (y0_in, 'y'), self.method)
                             if bool_r and bool_s:
                                 s0, s1 = intersection_s
                                 r0, r1 = intersection_r
@@ -469,8 +474,8 @@ class Topology(object):
 
                         elif max_x > x1_in and max_y > y1_in:
                             # --------------UP RIGHT-------------
-                            bool_s, intersection_s = intersection_hole_edge(hole, (x1_in, 'x'))
-                            bool_r, intersection_r = intersection_hole_edge(hole, (y1_in, 'y'))
+                            bool_s, intersection_s = intersection_hole_edge(hole, (x1_in, 'x'), self.method)
+                            bool_r, intersection_r = intersection_hole_edge(hole, (y1_in, 'y'), self.method)
                             if bool_r and bool_s:
                                 s0, s1 = intersection_s
                                 r0, r1 = intersection_r
@@ -534,7 +539,7 @@ class Topology(object):
         else:
             edge = (y0_in, 'y') if loc > 0 else (y0_out, 'y')
 
-        bool__, intersections = intersection_hole_edge(dhole, edge)
+        bool__, intersections = intersection_hole_edge(hole, edge, self.method)
 
 
         if bool__:
@@ -633,7 +638,7 @@ class Topology(object):
             edge_0 = (y0_in, 'y') if loc > 0 else (y0_out, 'y')
             edge_1 = (x0_in, 'x') if loc > 0 else (x0_out, 'x')
 
-            bool__, intersections = intersection_hole_corner(dhole, edge_0, edge_1, intersection_loc)
+            bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc, self.method)
             s0, s1 = intersections
             if bool__:
                 if loc > 0:
@@ -678,7 +683,7 @@ class Topology(object):
         elif intersection_loc == "left_up":
             edge_0 = (x0_in, 'x') if loc > 0 else (x0_out, 'x')
             edge_1 = (y1_in, 'y') if loc > 0 else (y1_out, 'y')
-            bool__, intersections = intersection_hole_corner(dhole, edge_0, edge_1, intersection_loc)
+            bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc, self.method)
             s0, s1 = intersections
             if bool__:
                 if loc > 0:
@@ -721,7 +726,7 @@ class Topology(object):
             edge_0 = (y1_in, 'y') if loc > 0 else (y1_out, 'y')
             edge_1 = (x1_in, 'x') if loc > 0 else (x1_out, 'x')
 
-            bool__, intersections = intersection_hole_corner(dhole, edge_0, edge_1, intersection_loc)
+            bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc, self.method)
             s0, s1 = intersections
             if bool__:
                 if loc > 0:
@@ -765,7 +770,7 @@ class Topology(object):
             edge_0 = (x1_in, 'x') if loc > 0 else (x1_out, 'x')
             edge_1 = (y0_in, 'y') if loc > 0 else (y0_out, 'y')
 
-            bool__, intersections = intersection_hole_corner(dhole, edge_0, edge_1, intersection_loc)
+            bool__, intersections = intersection_hole_corner(hole, edge_0, edge_1, intersection_loc, self.method)
             s0, s1 = intersections
             if bool__:
                 if loc > 0:
