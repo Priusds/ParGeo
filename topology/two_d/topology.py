@@ -818,20 +818,24 @@ class Topology(object):
         y1_out = self.y1_out
         s0, s1 = intersections
         if position == "down_left":
-            hole_in, hole_out = self.__process_hole(hole, lambda x: x[0] > x0_in and x[1] > y0_in)
+            orientation_corner_case = (lambda x: x[0] < x0_in, lambda x: x[1] > y0_in)
+            hole_in, hole_out = self.__process_hole(hole, lambda x: x[0] > x0_in and x[1] > y0_in, orientation_corner_case=orientation_corner_case)
             self.rects_in[rect_id]["edgeDown"].pop(0)
             self.rects_in[rect_id]["edgeLeft"].append([[s0, s1], hole_in, hole_out])
         elif position == "left_up":
-            hole_in, hole_out = self.__process_hole(hole, lambda x: x[0] > x0_in and x[1] < y1_in)
+            orientation_corner_case = (lambda x: x[0] > x0_in, lambda x: x[1] > y1_in)
+            hole_in, hole_out = self.__process_hole(hole, lambda x: x[0] > x0_in and x[1] < y1_in, orientation_corner_case=orientation_corner_case)
             self.rects_in[rect_id]["edgeLeft"].pop(0)
             self.rects_in[rect_id]["edgeUp"].append([[s0, s1], hole_in, hole_out])
         elif position == "up_right":
-            hole_in, hole_out = self.__process_hole(hole, lambda x: x[0] < x1_in and x[1] < y1_in)
+            orientation_corner_case = (lambda x: x[0]>x1_in, lambda x: x[1] < y1_in)
+            hole_in, hole_out = self.__process_hole(hole, lambda x: x[0] < x1_in and x[1] < y1_in, orientation_corner_case=orientation_corner_case)
             self.rects_in[rect_id]["edgeUp"].pop(0)
             self.rects_in[rect_id]["edgeRight"].append([[s0, s1], hole_in, hole_out])
 
         else:
-            hole_in, hole_out = self.__process_hole(hole, lambda x: x[0] < x1_in and x[1] > y0_in)
+            orientation_corner_case = (lambda x:x[1]<y0_in, lambda x: x[0] > x1_in)
+            hole_in, hole_out = self.__process_hole(hole, lambda x: x[0] < x1_in and x[1] > y0_in, orientation_corner_case=orientation_corner_case)
             self.rects_in[rect_id]["edgeRight"].pop(0)
             self.rects_in[rect_id]["edgeDown"].append([[s0, s1], hole_in, hole_out])
 
@@ -854,7 +858,7 @@ class Topology(object):
                 sorted(self.rects_in[rect_id]["edgeRight"], key=lambda x: -x[0][0][1] if len(x) == 3 else -x[0][1]),
                 sorted(self.rects_in[rect_id]["edgeDown"], key=lambda x: -x[0][0][0] if len(x) == 3 else -x[0][0])]
 
-    def __process_hole(self, hole, orientation, ref_dir=None):
+    def __process_hole(self, hole, orientation, ref_dir=None, orientation_corner_case = None):
         # orientation(hole[i]) = True if in else False w.r.t. an edge or an corner
         # hole = [p0, p1, ..., pN]
         # ref_dir tells where to shift the hole in the periodic case
@@ -910,8 +914,18 @@ class Topology(object):
             # In this case the polygon dhole intersects the rect, but none of the discretization points is inside the rect.
             # This means all dpoint are outside => make inner loop only with intersection points and corner point
             #   Problem: still need to shift outer loop
-            print(hole)
-            exit("Error: could not process hole")
+            shift_index = None
+            for i in range(maxCounter):
+                p = dhole[i]
+                p_prev = dhole[i-1] if i > 0 else dhole[maxCounter-1]
+                if orientation_corner_case[0](p) and orientation_corner_case[1](p):
+                    if (not orientation_corner_case[0](p_prev)) and (not orientation_corner_case[1](p_prev)):
+                        shift_index = i
+            if shift_index is None:
+                print("Should not enter this case.")
+                exit()
+
+            return [], shift(dhole,shift_index)
 
         hole_in = [point for point in dhole if orientation(point)]
 
