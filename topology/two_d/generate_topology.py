@@ -1,3 +1,4 @@
+# TODO: Check if this module is deprecated.
 from .domainWithHoles import DomainWithHoles as dwh
 from .hole import Circle
 import json

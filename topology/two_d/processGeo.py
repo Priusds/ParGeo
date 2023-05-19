@@ -1,3 +1,4 @@
+"""This module handles the .geo to .xml conversion. The .xml file should be a for dolfin readable mesh."""
 import os
 from dolfin import *
 
