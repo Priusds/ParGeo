@@ -1,3 +1,4 @@
+# TODO: Check if deprecated.
 class WriteGeo(object):
     """
     In this class are basic methods for creating and writing .geo files.

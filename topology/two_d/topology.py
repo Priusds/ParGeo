@@ -1,3 +1,4 @@
+"""Core module for the creation of 2d geometries."""
 import json
 
 from ..geo_utils.utils import write_geo

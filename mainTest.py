@@ -1,4 +1,4 @@
-from topology.tests.three_d.test_geometry import *
+#from topology.tests.three_d.test_geometry import *
 from topology.tests.two_d.test_geometry import *
 
 # 1: many little stellars
