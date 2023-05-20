@@ -4,6 +4,20 @@ With `Bubbles` you can simulate random porose materials as GMSH objects, that ca
 The porose material can be two-dimensional or three-dimensional. _TODO: Add some images to clarify what is possible with
 this software._
 
+## Installation
+
+Install the package by running
+```bash
+(pyvenv) $ pip install -e .
+```
+in a virtual python environment.
+
+Tested with:
+- macOS Ventura Version 13.3.1 with Apple M2 Chip
+- Gmsh 4.11.1
+- Dolfin 2019.1.0
+- Python 3.11.1
+
 ## Documentation
 
 ### Create Dolfin readable mesh
@@ -49,10 +63,3 @@ Steps:
 - Run the image:
     - docker run -ti -v $(pwd):/home/fenics/shared quay.io/fenicsproject/stable
     - docker run -ti quay.io/fenicsproject/stable:latest
-
-## Installation
-
-Tested with:
-- macOS Ventura Version 13.3.1 with Apple M2 Chip
-- Gmsh 4.11.1
-- Dolfin 2019.1.0
