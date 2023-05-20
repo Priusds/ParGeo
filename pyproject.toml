@@ -6,7 +6,7 @@ authors = [
 description = "PLEASE ADD A DESCRIPTION"
 readme = "README.md"
 dynamic = ["version"]
-
+dependencies = ["numpy", "scipy", "matplotlib", "mystic"]
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
