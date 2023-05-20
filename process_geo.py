@@ -1,41 +1,12 @@
-"""This module handles the .geo to .xml conversion. The .xml file should be a for dolfin readable mesh."""
+"""Move all dolfine related code from Topology to here."""
 import os
-from dolfin import *
-
+import dolfin
 
 def geo_to_xml(file_name, width, height):
     os.system("gmsh -2 " + file_name + ".geo")  # -v 0
     os.system("dolfin-convert " + file_name + ".msh " + file_name + ".xml")
-    mesh = Mesh(file_name + ".xml")
+    mesh = dolfin.Mesh(file_name + ".xml")
     sort_xml(file_name, mesh, width, height)
-
-
-def sort_xml_old(mesh, a, b):
-    left_y = [p for p in mesh.coordinates() if p[0] == 0]
-    right_y = [p for p in mesh.coordinates() if p[0] == b]
-    up_x = [p for p in mesh.coordinates() if p[1] == a]
-    down_x = [p for p in mesh.coordinates() if p[1] == 0]
-
-    if len(left_y) == len(right_y) and len(up_x) == len(down_x):
-
-        # change .xml
-        left_y = sorted(left_y, key = lambda x: x[1])
-        right_y = sorted(right_y, key = lambda x: x[1])
-        up_x = sorted(up_x, key = lambda x: x[0])
-        down_x = sorted(down_x, key = lambda x: x[0])
-        l_y = len(left_y)
-        l_x = len(down_x)
-        for i in range(l_y):
-            new_y = (left_y[i][1] + right_y[i][1])/2
-            left_y[i][1] = new_y
-            right_y[i][1] = new_y
-        for j in range(l_x):
-            new_x = (up_x[j][0] + down_x[j][0])/2
-            up_x[j][0] = new_x
-            down_x[j][0] = new_x
-
-    else:
-        print("not sorted")
 
 def sort_xml(file_name, mesh, a, b):
 
