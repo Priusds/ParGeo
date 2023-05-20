@@ -1,8 +1,6 @@
 import numpy as np
+from scipy.optimize import LinearConstraint, minimize, root_scalar
 from scipy.spatial import ConvexHull
-
-from scipy.optimize import LinearConstraint
-from scipy.optimize import minimize, root_scalar
 
 
 def convex_hull(points):
@@ -12,8 +10,7 @@ def convex_hull(points):
     return new_points.tolist()
 
 
-def intersection_hole_corner(hole, edge_0, edge_1, ref, method = 'linear'):
-    
+def intersection_hole_corner(hole, edge_0, edge_1, ref, method="linear"):
     val_0, axis_0 = edge_0
     val_1, axis_1 = edge_1
 
@@ -57,24 +54,22 @@ def intersection_hole_corner(hole, edge_0, edge_1, ref, method = 'linear'):
         return False, None
 
 
-def intersection_hole_edge(hole, edge, method = 'linear'):
+def intersection_hole_edge(hole, edge, method="linear"):
     """
-        hole is a tuple of (dhole, chole)  
-            dhole is discretization of the underlying continuous hole chole.
+    hole is a tuple of (dhole, chole)
+        dhole is discretization of the underlying continuous hole chole.
     """
     dhole = hole[0]
-    #print("dhole = ", dhole)
+    # print("dhole = ", dhole)
 
-
-    if method == 'linear': 
-        
+    if method == "linear":
         dhole_shifted = dhole[1:] + [dhole[0]]
         segments = zip(dhole, dhole_shifted)
 
         counter = 0
         intersections = []
         for seg in segments:
-            #print("seg : ", seg)
+            # print("seg : ", seg)
             bool_, s_points = intersection_segment_edge(seg, edge)
 
             if bool_:
@@ -87,57 +82,58 @@ def intersection_hole_edge(hole, edge, method = 'linear'):
             return False, None
         return True, intersections
 
-    elif method == 'optimise':
-        #TODO if stellar is special form like circle / ellipse make analytical intersections
+    elif method == "optimise":
+        # TODO if stellar is special form like circle / ellipse make analytical intersections
 
-        if not edge[1] in ['x', 'y']:
+        if not edge[1] in ["x", "y"]:
             raise ValueError("Non proper edge input.")
 
-        val, axis = edge[0], 0 if edge[1] == 'x' else 1
+        val, axis = edge[0], 0 if edge[1] == "x" else 1
 
         chole = hole[1]
 
-        s = 2*np.pi/len(dhole)
-        thetas = [ i * s  for i in range(len(dhole))]
+        s = 2 * np.pi / len(dhole)
+        thetas = [i * s for i in range(len(dhole))]
         thetas_shifted = thetas[1:] + [thetas[0]]
 
-        #dhole = hole[0]
-        #dhole_shifted = dhole[1:] + [dhole[0]]
-        #pointData = zip(dhole,dhole_shifted, theta, theta_shifted)
+        # dhole = hole[0]
+        # dhole_shifted = dhole[1:] + [dhole[0]]
+        # pointData = zip(dhole,dhole_shifted, theta, theta_shifted)
         thetaPairs = zip(thetas, thetas_shifted)
 
         def f(t):
             # print("a = {a}, b = {b}".format(a= chole.getPoint(t, axis ), b = val))
-            return chole.getPoint(t, axis ) -  val
+            return chole.getPoint(t, axis) - val
 
         counter = 0
         intersections = []
         for tp in thetaPairs:
-            lb, ub   = tp
-           
-            if f(lb)*f(ub) <= 0 : #bool_, s_points = intersection_segment_edge(seg, edge)
+            lb, ub = tp
 
-                res = root_scalar(f,  bracket = [lb,ub])
+            if (
+                f(lb) * f(ub) <= 0
+            ):  # bool_, s_points = intersection_segment_edge(seg, edge)
+                res = root_scalar(f, bracket=[lb, ub])
                 counter += 1
-                P = [ chole.getPoint(res.root, 0), chole.getPoint(res.root, 1) ]
-                #print("projection error : ", abs(P[axis] - val))
+                P = [chole.getPoint(res.root, 0), chole.getPoint(res.root, 1)]
+                # print("projection error : ", abs(P[axis] - val))
 
-                #print("P = {P}".format(P=P))
-                
-                P[axis] = val # project the axis coordinate to the correct retangular edge height
+                # print("P = {P}".format(P=P))
 
-                #print("P projected = {P}".format(P=P))
+                P[
+                    axis
+                ] = val  # project the axis coordinate to the correct retangular edge height
+
+                # print("P projected = {P}".format(P=P))
                 intersections.append(P)
 
-        #print("LEN P = ", len(intersections))
+        # print("LEN P = ", len(intersections))
         if len(intersections) != 2:
             return False, None
         return True, intersections
 
-    else: 
+    else:
         raise NotImplementedError("Other methods not avaiable.")
-    
-
 
 
 def intersection_segment_edge(segment, edge):
@@ -146,7 +142,7 @@ def intersection_segment_edge(segment, edge):
     p = segment[0]
     q = segment[1]
 
-    if axis == 'x':
+    if axis == "x":
         bool1 = p[0] < val < q[0]
         bool2 = p[0] > val > q[0]
 

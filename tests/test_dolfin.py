@@ -8,14 +8,15 @@ With Gmsh version 4.11.1 create the .MSH file with the `-format msh2` option, i.
 `gmsh -2 file.geo -format msh2` or `gmsh -3 file.geo -format msh2`
 """
 if __name__ == "__main__":
-    from pathlib import Path
-    import dolfin
     import os
+    from pathlib import Path
+
+    import dolfin
 
     ROOT_DIR = Path("/home/fenics/shared/")
     TEST_FILES = [
-        ROOT_DIR/"tests/data/2d_domain_with_hole.msh",
-        ROOT_DIR/"tests/data/sphere_3d.msh",
+        ROOT_DIR / "tests/data/2d_domain_with_hole.msh",
+        ROOT_DIR / "tests/data/sphere_3d.msh",
     ]
 
     # Convert .MSH to .XML
