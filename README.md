@@ -6,11 +6,22 @@ this software._
 
 ## Installation
 
-Install the package by running
+This project requires `Python 3.11`. After cloning the repository, create a virtual environment, for instance run
+
 ```bash
-(pyvenv) $ pip install -e .
+python3.11 -m venv .venv
+source .venv/bin/activate
 ```
-in a virtual python environment.
+
+
+In the case you want to contribute to the code, run:
+```bash
+(.venv) $ make -B venv
+```
+else just run:
+```bash
+(.venv) $ pip install -e .
+```
 
 Tested with:
 - macOS Ventura Version 13.3.1 with Apple M2 Chip

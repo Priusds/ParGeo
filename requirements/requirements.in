@@ -1,0 +1,13 @@
+numpy
+matplotlib
+scipy
+mystic
+
+# CI
+ruff
+black
+isort
+mypy
+pytest
+pytest-cov
+pytest-mock
