@@ -1,5 +1,5 @@
 # TODO: Is this module completely deprecated?
-from .writeGeo import WriteGeo
+from bubbles.two_d.writeGeo import WriteGeo
 
 
 class DomainWithHoles(WriteGeo):

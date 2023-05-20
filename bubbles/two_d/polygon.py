@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .sat import collide
+from bubbles.two_d.sat import collide
 
 
 class Polygon(object):

@@ -1,6 +1,6 @@
-from ..geo_utils.utils import write_geo
-from .bubble import Sphere, clip, StarBubble
-from .clip import EasyClip, EuclideanProjection
+from bubbles.geo_utils.utils import write_geo
+from bubbles.three_d.bubble import Sphere, clip, StarBubble
+from bubbles.three_d.clip import EasyClip, EuclideanProjection
 import random 
 import json
 class Glue:

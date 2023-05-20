@@ -1,6 +1,6 @@
-from .glue import *
-from .layers import *
-from ..geo_utils.utils import write_geo
+from bubbles.three_d.glue import *
+from bubbles.three_d.layers import *
+from bubbles.geo_utils.utils import write_geo
 
 def get_key(val, my_dict): 
     for key, value in my_dict.items(): 
