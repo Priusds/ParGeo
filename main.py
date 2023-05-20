@@ -1,13 +1,13 @@
-#from topology.three_d.bubble import Ellipsoid3D
+#from bubbles.three_d.bubble import Ellipsoid3D
 #import numpy as np
-#from topology.three_d.sandwich import Sandwich
-from topology.three_d.glue import Glue
-#from topology.geo_utils.utils import write_geo
-#from topology.three_d.bubble import Ellipsoid3D, visualizeLayers, clip
+#from bubbles.three_d.sandwich import Sandwich
+from bubbles.three_d.glue import Glue
+#from bubbles.geo_utils.utils import write_geo
+#from bubbles.three_d.bubble import Ellipsoid3D, visualizeLayers, clip
 #import pandas as pd
 #import os
-from topology.three_d.bubble import *
-from topology.geo_utils.utils import write_geo
+from bubbles.three_d.bubble import *
+from bubbles.geo_utils.utils import write_geo
 
 
 # DEFINE GLUE BOX

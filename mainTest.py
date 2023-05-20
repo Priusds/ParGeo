@@ -1,5 +1,5 @@
-from topology.tests.three_d.test_geometry import *
-from topology.tests.two_d.test_geometry import *
+from tests.test_geometry_three_d import *
+from tests.test_geometry_two_d import *
 
 # 1: many little stellars
 # 5: circles big radii differences
