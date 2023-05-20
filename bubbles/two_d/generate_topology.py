@@ -1,6 +1,6 @@
 # TODO: Check if this module is deprecated.
-from .domainWithHoles import DomainWithHoles as dwh
-from .hole import Circle
+from bubbles.two_d.domainWithHoles import DomainWithHoles as dwh
+from bubbles.two_d.hole import Circle
 import json
 import random as rd
 

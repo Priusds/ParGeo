@@ -1,10 +1,10 @@
-from topology.two_d.topology import Topology
-from topology.two_d.hole import Stellar, Circle
+from bubbles.two_d.topology import Topology
+from bubbles.two_d.hole import Stellar, Circle
 #from dolfin import *
 import matplotlib.pyplot as plt
 import os
 import random as rd
-from topology.geo_utils.utils import write_geo
+from bubbles.geo_utils.utils import write_geo
 
 """TODO: Make dolfin dependent test optional
 def dolfin_mesh(file_name):

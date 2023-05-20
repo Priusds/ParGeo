@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from .utils import locate, normalize
+from bubbles.three_d.utils import locate, normalize
 import math
 
 

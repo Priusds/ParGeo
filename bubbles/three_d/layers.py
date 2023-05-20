@@ -1,4 +1,4 @@
-from ..geo_utils.utils import write_geo
+from bubbles.geo_utils.utils import write_geo
 import json
 
 class Waffle:

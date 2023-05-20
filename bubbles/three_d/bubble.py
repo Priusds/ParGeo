@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 import xml.etree.ElementTree as ET
 import os
 import numpy as np
-from .utils import locate
-from .clip import *
+from bubbles.three_d.utils import locate
+from bubbles.three_d.clip import *
 
 
 class Bubble(ABC):

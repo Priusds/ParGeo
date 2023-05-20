@@ -1,6 +1,6 @@
-from topology.two_d.topology import Topology
-from topology.two_d.hole import Stellar, Circle
-from topology.geo_utils.utils import write_geo
+from bubbles.two_d.topology import Topology
+from bubbles.two_d.hole import Stellar, Circle
+from bubbles.geo_utils.utils import write_geo
 
 import random as rd
 from dolfin import *

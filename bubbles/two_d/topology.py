@@ -1,10 +1,10 @@
 """Core module for the creation of 2d geometries."""
 import json
 
-from ..geo_utils.utils import write_geo
-from .hole import Circle, Ellipse, Stellar
-from .intersections import convex_hull, intersection_hole_edge, intersection_hole_corner
-from .sat import collide
+from bubbles.geo_utils.utils import write_geo
+from bubbles.two_d.hole import Circle, Ellipse, Stellar
+from bubbles.two_d.intersections import convex_hull, intersection_hole_edge, intersection_hole_corner
+from bubbles.two_d.sat import collide
 
 
 # ---------- Version 2 -------------

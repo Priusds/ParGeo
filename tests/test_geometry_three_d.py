@@ -1,12 +1,12 @@
-from topology.three_d.glue import *
-from topology.three_d.clip import *
-from topology.three_d.utils import locate, merge_loops
-from topology.three_d.bubble import Sphere,clip, Ellipse
-from topology.three_d.utils import locate
-from topology.three_d.bubble import Sphere,clip, _targetPoint
+from bubbles.three_d.glue import *
+from bubbles.three_d.clip import *
+from bubbles.three_d.utils import locate, merge_loops
+from bubbles.three_d.bubble import Sphere,clip, Ellipse
+from bubbles.three_d.utils import locate
+from bubbles.three_d.bubble import Sphere,clip, _targetPoint
 #from topology.three_d.geometry import *
-from topology.three_d.layers import *
-from topology.three_d.merge import   Sandwich, makeSomeSandwiches, mergeGeometries, Blade, makeSomeSandwiches2
+from bubbles.three_d.layers import *
+from bubbles.three_d.merge import   Sandwich, makeSomeSandwiches, mergeGeometries, Blade, makeSomeSandwiches2
 
 
 import mystic as my
