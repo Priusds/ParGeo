@@ -37,12 +37,12 @@ $(VIRTUAL_ENV)/timestamp:
 	@touch $(VIRTUAL_ENV)/timestamp
 
 format: venv
-	isort thepackagename tests
-	black thepackagename tests
+	isort bubbles tests
+	black bubbles tests
 
 lint: venv
-	ruff thepackagename tests
-	mypy thepackagename tests
+	ruff bubbles tests
+	mypy bubbles tests
 
 tests: venv
 	pytest -m '$(MARK)'
