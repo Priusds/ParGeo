@@ -1,18 +1,18 @@
 from topology.two_d.topology import Topology
 from topology.two_d.hole import Stellar, Circle
-from dolfin import *
+#from dolfin import *
 import matplotlib.pyplot as plt
 import os
 import random as rd
 from topology.geo_utils.utils import write_geo
 
-
+"""TODO: Make dolfin dependent test optional
 def dolfin_mesh(file_name):
     # creates .xml mesh from .geo mesh and returns dolfin mesh
     os.system("gmsh -2 " + file_name + ".geo")  # -v 0
     os.system("dolfin-convert " + file_name + ".msh " + file_name + ".xml")
     return Mesh(file_name + ".xml")
-
+"""
 
 def test_2d_1():
     # Domain with many little stellar holes
@@ -51,7 +51,7 @@ def test_2d_1():
     geo = topo.get_geometry(filled=True)
     write_geo(geo,"test")
 
-
+"""TODO: Make dolfin dependent test optional
 def test_2d_2():
     file_name = "test"
     mesh = dolfin_mesh("test")
@@ -59,6 +59,7 @@ def test_2d_2():
     plot(subdomains_hole)
     #plot(mesh)
     plt.show()
+"""
 
 
 def test_2d_3():
