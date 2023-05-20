@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dolfin import *
 import xml.etree.ElementTree as ET
 import os
 import numpy as np
