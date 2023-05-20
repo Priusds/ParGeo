@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import mystic as my
 import numpy as np
 from mystic.math import almostEqual
@@ -22,8 +24,12 @@ from bubbles.three_d.merge import (
 )
 from bubbles.three_d.utils import locate, merge_loops
 
+# Safe .GEO files at DATA_DIR
+DATA_DIR = Path(__file__).parent.joinpath("data/geometry_three_d")
+DATA_DIR.mkdir(exist_ok=True, parents=True)
 
-def test3():
+
+def test_3():
     s = Sphere(1, (0, 0, 0))
     accuracy = 0.1
     geo = s.discretize(accuracy)
@@ -36,10 +42,10 @@ def test3():
     # print(sum([(npoint[i] - s[i])*n[i] for i in range(3)]))
     newgeo = clip(geo, clippingPlane, EuclideanProjection, EasyClip)
     # print(newgeo["points"])
-    write_geo(newgeo, "tittifucka")
+    write_geo(newgeo, DATA_DIR.joinpath("3"))
 
 
-def test4():
+def test_4():
     # DEFINE GLUE BOX
     lcoords = [(0, 0, 0), (2, 0, 0), (2, 1, 0), (0, 1, 0)]
 
@@ -90,10 +96,10 @@ def test4():
     # glue.add_bubble(s2,.5)
 
     # WRITE GEO
-    glue.to_geo("glue_with_bubbles")
+    glue.to_geo(DATA_DIR.joinpath("4"))
 
 
-def test5():
+def test_5():
     s1 = Sphere(1, (0, 0, 0))
     geoB = s1.discretize(0.3)
     h1 = (0, 0, 1)
@@ -119,7 +125,7 @@ def test5():
     # write_geo(geo, "test")
 
 
-def test6():
+def test_6():
     s1 = Sphere(1, (0.05, 0.05, 0.05))
     geoB = s1.discretize(0.7)
     h0 = (0, 0, 1.6)
@@ -161,10 +167,10 @@ def test6():
     loop0 = loop0_clip1 + loop0_clip0
 
     print(loop0)
-    write_geo(geo1, "test")
+    write_geo(geo1, DATA_DIR.joinpath("6"))
 
 
-def testProjectionClipping():
+def test_ProjectionClipping():
     s1 = Sphere(1, (0, 0, 0))
     geo = s1.discretize(0.1)
 
@@ -181,7 +187,7 @@ def testProjectionClipping():
         clippingRule=myClipping,
         args=phi,
     )
-    write_geo(geo2, "testClipping")
+    write_geo(geo2, DATA_DIR.joinpath("testClipping"))
 
     myProjection = EuclideanProjection
     myClipping = EasyClip
@@ -194,15 +200,15 @@ def testProjectionClipping():
         clippingRule=myClipping,
         args=None,
     )
-    write_geo(geo3, "testClipping_eucl")
+    write_geo(geo3, DATA_DIR.joinpath("ProjectionClipping"))
 
 
-def test8():
+def test_waffle():
     w = Waffle(lcoords=[(0, 0, 0), (2, 0, 0)], depth=3, nLayers=5, hightLayer=0.5)
-    w.to_geo("Waffle")
+    w.to_geo(DATA_DIR.joinpath("waffle"))
 
 
-def test11():
+def test_11():
     # Make Glue
     depth = 2
     x = 0
@@ -221,10 +227,10 @@ def test11():
 
     glue = Glue(lcoords, depth)
     glue._finish_geometry()
-    write_geo(glue.geometry, "titten")
+    write_geo(glue.geometry, DATA_DIR.joinpath("11"))
 
 
-def test12():
+def test_12():
     # Rotate sandwich
     depth = 2
     x = 0
@@ -266,10 +272,10 @@ def test12():
         newCoords = (-pointCoords[1], pointCoords[0], pointCoords[2])
         sandwich["points"][pointID]["coords"] = newCoords
         # print(sandwich["points"][pointID])
-    write_geo(sandwich, "julubu")
+    write_geo(sandwich, DATA_DIR.joinpath("12"))
 
 
-def test13():
+def test_13():
     # Make Layer
     depth = 2
     x = 0
@@ -284,10 +290,10 @@ def test13():
         nLayers=3,
         hightLayer=0.1,
     )
-    write_geo(w1.geometry, "waffleWonder")
+    write_geo(w1.geometry, DATA_DIR.joinpath("13"))
 
 
-def test16():
+def test_16():
     depth = 2
     x = 1
     y = 1
@@ -323,25 +329,25 @@ def test16():
 
     sandwich = Sandwich(w1, glue, w2)
 
-    write_geo(sandwich.geometry, "SaaandwichClass")
+    write_geo(sandwich.geometry, DATA_DIR.joinpath("16"))
 
 
-def test17():
+def test_17():
     s1, s2, s3, s4 = makeSomeSandwiches()
 
     lGeometries = [s1.geometry, s2.geometry, s3.geometry, s4.geometry]
     geometry = mergeGeometries(lGeometries)
-    write_geo(geometry, "UUhh")
+    write_geo(geometry, DATA_DIR.joinpath("17"))
 
 
-def test18():
+def test_18():
     s1, s2, s3, s4 = makeSomeSandwiches()
     rotorBlade = Blade(s1, s2, s3, s4)
     geometry = rotorBlade.geometry
-    write_geo(geometry, "UUhh")
+    write_geo(geometry, DATA_DIR.joinpath("18"))
 
 
-def test19():
+def test_19():
     depth = 2
     width = 2
 
@@ -400,11 +406,11 @@ def test19():
     )
 
     sandwich1 = Sandwich(w1, glue, w2)
-    write_geo(sandwich1.geometry, "Badabuff")
+    write_geo(sandwich1.geometry, DATA_DIR.joinpath("19"))
 
 
-def test20():
+def test_20():
     s1, s2, s3, s4 = makeSomeSandwiches2()
     rotorBlade = Blade(s1, s2, s3, s4)
     geometry = rotorBlade.geometry
-    write_geo(geometry, "UUhh")
+    write_geo(geometry, DATA_DIR.joinpath("20"))

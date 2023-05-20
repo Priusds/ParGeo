@@ -78,6 +78,7 @@ def write_geo(geo, file_name):
     # filename = Path(file_name + ".geo")
     # filename.touch(exist_ok=True)  # will create file, if it exists will do nothing
     # file = open(filename)
+    file_name = str(file_name)
     file = open(file_name + ".geo", "w")
     for key in [
         "points",

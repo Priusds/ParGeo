@@ -1,11 +1,16 @@
 import os
 import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import numpy as np
 
 from bubbles.three_d.clip import *
 from bubbles.three_d.utils import locate
+
+SPHERE_GEO_PATH = Path(__file__).parent.joinpath("sphere.geo")
+assert SPHERE_GEO_PATH.exists()
+SPHERE_GEO_FINER_PATH = Path(__file__).parent.joinpath("sphere_finer.geo")
 
 
 class Bubble(ABC):
@@ -294,9 +299,9 @@ def discretize_reference(trafo, accuracy, point_id=1, line_id=1, lineLoop_id=1):
     # return geomerty: dict containing points,lines,lineLoops
 
     # 1: Write geo
-    reference_sphere = open("sphere.geo", "r")
+    reference_sphere = open(SPHERE_GEO_PATH, "r")
 
-    finer_sphere = open("sphere_finer.geo", "w")
+    finer_sphere = open(SPHERE_GEO_FINER_PATH, "w")
 
     txt = []
     lc = accuracy
@@ -310,11 +315,13 @@ def discretize_reference(trafo, accuracy, point_id=1, line_id=1, lineLoop_id=1):
     finer_sphere.close()
     #  2:   WRITE XML
 
-    os.system("gmsh -2 " + "sphere_finer" + ".geo")  # -v 0
-    os.system("dolfin-convert " + "sphere_finer" + ".msh " + "sphere_finer" + ".xml")
+    os.system(f"gmsh -2 {SPHERE_GEO_FINER_PATH} -format msh2")  # -v 0
+    sphere_finer_msh = SPHERE_GEO_FINER_PATH.with_suffix(".msh")
+    sphere_finer_xml = SPHERE_GEO_FINER_PATH.with_suffix(".xml")
+    os.system(f"dolfin-convert {sphere_finer_msh} {sphere_finer_xml}")
 
     # 3:    LOAD XML
-    tree = ET.parse("sphere_finer.xml")
+    tree = ET.parse(sphere_finer_xml)
 
     root = tree.getroot()
     dpoints = {

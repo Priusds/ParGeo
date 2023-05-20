@@ -92,7 +92,7 @@ class Stellar(Hole):
         )
         self.radius = radius
 
-        self.f = trigonometric_function(self.coefficients, self.radius)
+        self.f = trigonometric_function(self.coefficient, self.radius)
 
     def to_dict(self):
         return {
