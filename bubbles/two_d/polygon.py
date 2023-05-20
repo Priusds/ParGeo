@@ -13,7 +13,9 @@ class Polygon(object):
         """
         self.nv = len(vertices)
         self.vertices = np.array(vertices)
-        self.edges = np.array([[vertices[i], vertices[(i + 1) % self.nv]] for i in range(self.nv)])
+        self.edges = np.array(
+            [[vertices[i], vertices[(i + 1) % self.nv]] for i in range(self.nv)]
+        )
 
     def plot(self):
         # just to check if everything is alright
@@ -74,11 +76,10 @@ def intersection_segment_polygon(seg, poly):
     for i, e in enumerate(poly.edges):
         ev = e[1] - e[0]
         n = (ev[1], -ev[0])
-        z = - np.dot(p0 - poly.vertices[i], n)
+        z = -np.dot(p0 - poly.vertices[i], n)
         d = np.dot(d_s, n)
 
         if abs(d) < 1e-10:
-
             # then S is parallel to the edge e
             if z < 0:
                 # then P_0 is outside of e

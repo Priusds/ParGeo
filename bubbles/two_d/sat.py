@@ -10,8 +10,8 @@ def collide(p1, p2):
     :return: Return True if the shapes collide. Otherwise, return False.
     """
 
-    p1 = [np.array(v, 'float64') for v in p1]
-    p2 = [np.array(v, 'float64') for v in p2]
+    p1 = [np.array(v, "float64") for v in p1]
+    p2 = [np.array(v, "float64") for v in p2]
 
     edges = edges_of(p1)
     edges += edges_of(p2)
@@ -63,8 +63,8 @@ def is_separating_axis(o, p1, p2):
     Return True and the push vector if o is a separating axis of p1 and p2.
     Otherwise, return False and None.
     """
-    min1, max1 = float('+inf'), float('-inf')
-    min2, max2 = float('+inf'), float('-inf')
+    min1, max1 = float("+inf"), float("-inf")
+    min2, max2 = float("+inf"), float("-inf")
 
     for v in p1:
         projection = np.dot(v, o)
