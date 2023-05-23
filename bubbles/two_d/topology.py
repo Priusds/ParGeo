@@ -14,6 +14,55 @@ from bubbles.two_d.sat import collide
 
 
 class Topology(object):
+    """Main class for the creation of two-dimensional perforated geometries.
+
+    TODO:
+    Steps for the refactoring of this class:
+        - Understand present functionalities:
+            - What are minimal topology assumptions, s.t. the code
+                works Bug-free?
+            - What is the coolest thing we can do, but only works sometimes?
+
+        - Add visualization functionalities, based on matplotlib:
+            - Given any type of geometry object (actually the class Hole
+                could be generalized to a 2d-geometry class, if handy maybe
+                even subclass some geometry package) write a plot functionality
+                that always plots some current topology (super easy).
+                For debugging this is really needed.
+        
+        - State the foundamental needed output of this class / bubbles.two_d package:
+            - Create objects that 
+    
+    Class description:
+    A geometry is defined by following elements:
+        - domain
+            - Has one line-loop
+            - Has one Plane Surface and one Physical Surface
+        - sub-domains
+            - Has two line-loops (inner and outer rect)
+            - Has one Plane Surface and one Physical Surface
+        - holes (aka bubbles)
+            - A filled holes gets his own line loop, if it intersects with domain edges.
+            - How is a domain filled / empty in free space? (Just by changing the orientation?) # TODO: check this
+            - If filled: has it's own Plane Surface
+            - If intersects with subdomain: split into two "different" holes, inner and outer one.
+            
+    For now domain and sub-domains are rectangles (different shapes might be 
+    allowed in future). The holes are objects from sub-classes of `bubble.two-d.hole.Hole`.
+
+    Workflow:
+    1.) Instantiate a topology object => defines the domain and sub-domains.
+    2.) Add holes via self.add_hole(...) => adds a hole to the topology.
+        2.1) First it's checked wether the hole can be added. Criterias are:
+            - Holes do not intersect other holes.
+            - Holes cannot intersect opposite domain (also sub-domain?) edges.
+            - Holes cannot intersect adjactent edges without not-containing the corner-vertex.
+            - (Basically the domain must remain connected. Same logic applies for sub-domains?)
+            - TODO: Check what is missing / correct.
+    3.) Write .GEO file via self.get_geometry(...) and `bubbles.geo_utils.utils.write_geo`
+        3.1) The method self.get_geometry(...) creates all the linking between
+        point-ID/line-ID/ect.
+    """
     def __init__(self, rect_out, lrect_in, periodic_boundary=True, method="linear"):
         # parameters for rect_out
         x0_out, y0_out = rect_out[0]
