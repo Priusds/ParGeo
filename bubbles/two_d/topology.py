@@ -1,5 +1,6 @@
 """Core module for the creation of 2d geometries."""
 import json
+from typing import Optional
 
 from bubbles.geo_utils.utils import write_geo
 from bubbles.two_d.hole import Circle, Ellipse, Stellar
@@ -334,7 +335,7 @@ class Topology(object):
             return True
         return False
 
-    def __localize(self, hole):
+    def __localize(self, hole) -> tuple[bool, Optional[str], Optional[int]]:
         """ " localizes the hole
             return bool, str, int
                 -bool: if the hole can be added or not
@@ -342,6 +343,24 @@ class Topology(object):
                 -int: None if no Intersection, 0 if intersection with rect_out, Id if intersection with some rect in
         input: list of tuples
         output: bool_ean, str, str
+
+        Possible outcomes:
+
+            False, "outside domain", None
+            True, "right", rect_in_id # or 0
+            True, "left", rect_in_id # or 0
+            True, "down", rect_in_id # or 0
+            True, "up", rect_in_id # or 0
+            True, "down_left", rect_in_id # or 0
+            True, "left_up", rect_in_id # or 0
+            True, "right_down", rect_in_id # or 0
+            True, "up_right", rect_in_id # or 0
+            False, "Doesnt intersects with a corner", None
+            False, "Intersection with too many edges, hole cannot be added", None
+            False, "Intersection with rect_in and rect_out", None
+            False, "Intersection with multiple rects inside", None
+            False, "no proper corner intersection", None
+            True, None, rect_in_id
         """
 
         dhole = hole[0]
@@ -643,7 +662,13 @@ class Topology(object):
                     # The hole is completely inside of rect_in
                     return True, None, rect_in_id
 
-    def __add_hole_on_edge(self, intersection_loc, loc, hole, convex_hull_hole):
+    def __add_hole_on_edge(self, intersection_loc, loc: int, hole, convex_hull_hole):
+        """
+        Args:
+            loc:
+                Index of the intersected rectangle.
+            
+        """
         # TODO make it possible to choose how to compute intersection points
         dhole = hole[0]
         x0_in = self.rects_in[loc]["x0"]
