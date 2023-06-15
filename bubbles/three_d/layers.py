@@ -1,6 +1,7 @@
 import json
 
-from bubbles.geo_utils.utils import write_geo
+from bubbles.gmsh_api import write_geo
+from bubbles.utils import geometry_to_gmsh_entities
 
 
 class Waffle:
@@ -339,4 +340,5 @@ class Waffle:
     # print(json.dumps(self.merge, indent=3))
 
     def to_geo(self, file_name):
-        write_geo(self.geometry, file_name)
+        gmsh_entity_dict = geometry_to_gmsh_entities(self.geometry)
+        write_geo(file_name, **gmsh_entity_dict)

@@ -9,6 +9,7 @@ from mystic.math.measures import impose_mean, mean
 from mystic.monitors import VerboseMonitor
 from mystic.penalty import quadratic_equality
 
+from bubbles.gmsh_api import write_geo
 from bubbles.three_d.bubble import Ellipse, Sphere, _targetPoint, clip
 from bubbles.three_d.clip import *
 from bubbles.three_d.glue import *
@@ -23,6 +24,7 @@ from bubbles.three_d.merge import (
     mergeGeometries,
 )
 from bubbles.three_d.utils import locate, merge_loops
+from bubbles.utils import geometry_to_gmsh_entities
 
 # Safe .GEO files at DATA_DIR
 DATA_DIR = Path(__file__).parent.joinpath("data/geometry_three_d")
@@ -40,9 +42,11 @@ def test_3():
     # print("TEYT", locate(point, n,s))
     # print(locate(npoint, n, s))
     # print(sum([(npoint[i] - s[i])*n[i] for i in range(3)]))
-    newgeo = clip(geo, clippingPlane, EuclideanProjection, EasyClip)
+    newgeo, _ = clip(geo, clippingPlane, EuclideanProjection, EasyClip)
     # print(newgeo["points"])
-    write_geo(newgeo, DATA_DIR.joinpath("3"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(newgeo)
+    write_geo(DATA_DIR.joinpath("3"), **gmsh_entity_dict)
 
 
 def test_4():
@@ -121,8 +125,12 @@ def test_5():
 
     p0 = [geoB["lines"][abs(l)][0] for l in loop0[1]]
     p1 = [geoB["lines"][abs(l)][0] for l in loop1[1]]
-    print(set(p0).intersection(set(p1)))
-    # write_geo(geo, "test")
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(geo0)
+    write_geo(DATA_DIR.joinpath("5_0"), **gmsh_entity_dict)
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(geo1)
+    write_geo(DATA_DIR.joinpath("5_1"), **gmsh_entity_dict)
 
 
 def test_6():
@@ -166,8 +174,8 @@ def test_6():
             out = True
     loop0 = loop0_clip1 + loop0_clip0
 
-    print(loop0)
-    write_geo(geo1, DATA_DIR.joinpath("6"))
+    gmsh_entity_dict = geometry_to_gmsh_entities(geo1)
+    write_geo(DATA_DIR.joinpath("6"), **gmsh_entity_dict)
 
 
 def test_ProjectionClipping():
@@ -187,7 +195,6 @@ def test_ProjectionClipping():
         clippingRule=myClipping,
         args=phi,
     )
-    write_geo(geo2, DATA_DIR.joinpath("testClipping"))
 
     myProjection = EuclideanProjection
     myClipping = EasyClip
@@ -200,12 +207,19 @@ def test_ProjectionClipping():
         clippingRule=myClipping,
         args=None,
     )
-    write_geo(geo3, DATA_DIR.joinpath("ProjectionClipping"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(geo2)
+    write_geo(DATA_DIR.joinpath("testClipping"), **gmsh_entity_dict)
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(geo3)
+    write_geo(DATA_DIR.joinpath("ProjectionClipping"), **gmsh_entity_dict)
 
 
 def test_waffle():
     w = Waffle(lcoords=[(0, 0, 0), (2, 0, 0)], depth=3, nLayers=5, hightLayer=0.5)
-    w.to_geo(DATA_DIR.joinpath("waffle"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(w.geometry)
+    write_geo(DATA_DIR.joinpath("waffle"), **gmsh_entity_dict)
 
 
 def test_11():
@@ -227,7 +241,9 @@ def test_11():
 
     glue = Glue(lcoords, depth)
     glue._finish_geometry()
-    write_geo(glue.geometry, DATA_DIR.joinpath("11"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(glue.geometry)
+    write_geo(DATA_DIR.joinpath("11"), **gmsh_entity_dict)
 
 
 def test_12():
@@ -272,7 +288,9 @@ def test_12():
         newCoords = (-pointCoords[1], pointCoords[0], pointCoords[2])
         sandwich["points"][pointID]["coords"] = newCoords
         # print(sandwich["points"][pointID])
-    write_geo(sandwich, DATA_DIR.joinpath("12"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(sandwich)
+    write_geo(DATA_DIR.joinpath("12"), **gmsh_entity_dict)
 
 
 def test_13():
@@ -290,7 +308,9 @@ def test_13():
         nLayers=3,
         hightLayer=0.1,
     )
-    write_geo(w1.geometry, DATA_DIR.joinpath("13"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(w1.geometry)
+    write_geo(DATA_DIR.joinpath("13"), **gmsh_entity_dict)
 
 
 def test_16():
@@ -329,7 +349,8 @@ def test_16():
 
     sandwich = Sandwich(w1, glue, w2)
 
-    write_geo(sandwich.geometry, DATA_DIR.joinpath("16"))
+    gmsh_entity_dict = geometry_to_gmsh_entities(sandwich.geometry)
+    write_geo(DATA_DIR.joinpath("16"), **gmsh_entity_dict)
 
 
 def test_17():
@@ -337,14 +358,18 @@ def test_17():
 
     lGeometries = [s1.geometry, s2.geometry, s3.geometry, s4.geometry]
     geometry = mergeGeometries(lGeometries)
-    write_geo(geometry, DATA_DIR.joinpath("17"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(geometry)
+    write_geo(DATA_DIR.joinpath("17"), **gmsh_entity_dict)
 
 
 def test_18():
     s1, s2, s3, s4 = makeSomeSandwiches()
     rotorBlade = Blade(s1, s2, s3, s4)
     geometry = rotorBlade.geometry
-    write_geo(geometry, DATA_DIR.joinpath("18"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(geometry)
+    write_geo(DATA_DIR.joinpath("18"), **gmsh_entity_dict)
 
 
 def test_19():
@@ -406,11 +431,15 @@ def test_19():
     )
 
     sandwich1 = Sandwich(w1, glue, w2)
-    write_geo(sandwich1.geometry, DATA_DIR.joinpath("19"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(sandwich1.geometry)
+    write_geo(DATA_DIR.joinpath("19"), **gmsh_entity_dict)
 
 
 def test_20():
     s1, s2, s3, s4 = makeSomeSandwiches2()
     rotorBlade = Blade(s1, s2, s3, s4)
     geometry = rotorBlade.geometry
-    write_geo(geometry, DATA_DIR.joinpath("20"))
+
+    gmsh_entity_dict = geometry_to_gmsh_entities(geometry)
+    write_geo(DATA_DIR.joinpath("20"), **gmsh_entity_dict)

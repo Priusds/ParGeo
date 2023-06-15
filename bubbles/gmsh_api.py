@@ -9,6 +9,7 @@ from pydantic import BaseModel, StrictInt
 
 class PhysicalDimension(IntEnum):
     """Dimensions allowed for physical groups and/or meshes."""
+
     two = 2
     three = 3
 
@@ -67,16 +68,20 @@ class PhysicalGroup(BaseModel):
     class Config:
         allow_mutation = False
 
+
 class SurfaceLoop(BaseModel):
     """Closed loop of surfaces."""
+
     surface_tags: Sequence[StrictInt]
     tag: StrictInt
 
     class Config:
         allow_mutation = False
 
+
 class Volume(BaseModel):
     """Volume, delimited by surface loops."""
+
     surface_loop_tags: Sequence[StrictInt]
     tag: StrictInt
 
@@ -97,7 +102,7 @@ class GmshEntities(BaseModel):
 def mesh(
     gmsh_entities: GmshEntities,
     file_name: Path,
-    dim: PhysicalDimension=2,
+    dim: PhysicalDimension = 2,
     write_geo: bool = True,
     correct_curve_loops: bool = False,
     save_all: bool = False,
@@ -112,16 +117,16 @@ def mesh(
             Path of the saved mesh.
         dim:
             Dimension of the mesh. Allowed values are 2 or 3.
-        write_geo: 
+        write_geo:
             Whether or not the .GEO file is saved too.
-        correct_line_loops: 
+        correct_line_loops:
             Apparently gmsh offeres the possibility to correct
             line loops. TODO: Check if it is useful.
-        save_all: 
+        save_all:
             If False only mesh elements are saved that belong to some
             physical group, as long there is at least one physical group.
     """
-    assert dim in {2,3}
+    assert dim in {2, 3}
     gmsh.initialize()
     gmsh.model.add(file_name.name)
 
@@ -131,7 +136,9 @@ def mesh(
         )
 
     for line in gmsh_entities.lines:
-        gmsh.model.geo.addLine(startTag=line.start_tag, endTag=line.end_tag, tag=line.tag)
+        gmsh.model.geo.addLine(
+            startTag=line.start_tag, endTag=line.end_tag, tag=line.tag
+        )
 
     for curve_loop in gmsh_entities.curve_loops:
         gmsh.model.geo.addCurveLoop(
@@ -172,17 +179,19 @@ def mesh(
 
     gmsh.finalize()
 
-def write_geo(
-        file_name: Path,
-        points: Sequence[Point],
-        lines: Sequence[Line],
-        curve_loops: Sequence[CurveLoop],
-        plane_surfaces: Sequence[PlaneSurface],
-        surface_loops: Sequence[SurfaceLoop],
-        volumes: Sequence[Volume],
-        correct_curve_loops: bool = False
-):
 
+def write_geo(
+    file_name: Path,
+    points: Sequence[Point],
+    lines: Sequence[Line],
+    curve_loops: Sequence[CurveLoop],
+    plane_surfaces: Sequence[PlaneSurface],
+    surface_loops: Sequence[SurfaceLoop],
+    volumes: Sequence[Volume],
+    physical_groups: Sequence[PhysicalGroup],
+    correct_curve_loops: bool = False,
+):
+    """Create a .GEO file."""
     gmsh.initialize()
     gmsh.model.add(file_name.name)
 
@@ -192,7 +201,9 @@ def write_geo(
         )
 
     for line in lines:
-        gmsh.model.geo.addLine(startTag=line.start_tag, endTag=line.end_tag, tag=line.tag)
+        gmsh.model.geo.addLine(
+            startTag=line.start_tag, endTag=line.end_tag, tag=line.tag
+        )
 
     for curve_loop in curve_loops:
         gmsh.model.geo.addCurveLoop(
@@ -208,12 +219,17 @@ def write_geo(
 
     for surface_loop in surface_loops:
         gmsh.model.geo.add_surface_loop(
-            surfaceTags=surface_loop.surface_tags,tag=surface_loop.tag
+            surfaceTags=surface_loop.surface_tags, tag=surface_loop.tag
         )
 
     for volume in volumes:
-        gmsh.model.geo.add_volume(
-            shellTags=volume.surface_loop_tags,tag=volume.tag
+        gmsh.model.geo.add_volume(shellTags=volume.surface_loop_tags, tag=volume.tag)
+
+    for physical_group in physical_groups:
+        gmsh.model.geo.addPhysicalGroup(
+            dim=physical_group.dim.value,
+            tag=physical_group.tag,
+            tags=physical_group.entity_tags,
         )
 
     gmsh.model.geo.synchronize()
