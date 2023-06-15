@@ -1,7 +1,11 @@
 numpy
-matplotlib
 scipy
 mystic
+pydantic
+shapely
+
+# DEV
+matplotlib
 
 # CI
 ruff

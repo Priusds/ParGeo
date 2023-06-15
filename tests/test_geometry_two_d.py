@@ -5,7 +5,6 @@ from pathlib import Path
 # from dolfin import *
 import matplotlib.pyplot as plt
 
-from bubbles.geo_utils.utils import write_geo
 from bubbles.two_d.hole import Circle, Stellar
 from bubbles.two_d.topology import Topology
 
@@ -33,23 +32,21 @@ def test_domain_without_holes_fill():
     topo = Topology(
         rect_out, [rect_in_1, rect_in_2, rect_in_3, rect_in_4], periodic_boundary=True
     )
-    geo = topo.get_geometry(lc=1.0, lc_subrects=0.1, filled=True)
-    write_geo(geo, DATA_DIR / "domain_without_holes_filled")
-
-
-def test_domain_without_holes_empty():
-    """Create a domain without holes and empty sub-rects."""
-    rect_out = [(0, 0), (2, 2)]
-    rect_in_1 = [(0.25, 0.25), (0.75, 0.75)]
-    rect_in_2 = [(1.25, 0.25), (1.75, 0.75)]
-    rect_in_3 = [(1.25, 1.25), (1.75, 1.75)]
-    rect_in_4 = [(0.25, 1.25), (0.75, 1.75)]
-
-    topo = Topology(
-        rect_out, [rect_in_1, rect_in_2, rect_in_3, rect_in_4], periodic_boundary=True
+    topo.mesh(
+        file_name=DATA_DIR.joinpath("domain_without_holes_filled"),
+        write_geo=True,
+        lc=1,
+        lc_subrects=1,
+        filled=True,
     )
-    geo = topo.get_geometry(lc=1.0, lc_subrects=0.1, filled=False)
-    write_geo(geo, DATA_DIR / "domain_without_holes_empty")
+
+    topo.mesh(
+        file_name=DATA_DIR.joinpath("domain_without_holes_empty"),
+        write_geo=True,
+        lc=1,
+        lc_subrects=1,
+        filled=False,
+    )
 
 
 def test_2d_1():
@@ -88,8 +85,13 @@ def test_2d_1():
     print("Needed ", i, "runs for ", N, "holes")
 
     # Make geometry, set filled True or False if the inclusion is a hole or not
-    geo = topo.get_geometry(lc=1, lc_subrects=1, filled=False)
-    write_geo(geo, DATA_DIR.joinpath("2d_1"))
+    topo.mesh(
+        file_name=DATA_DIR.joinpath("2d_1"),
+        write_geo=True,
+        lc=1,
+        lc_subrects=1,
+        filled=False,
+    )
 
 
 """TODO: Make dolfin dependent test optional
@@ -118,10 +120,17 @@ def test_2d_3():
     stellar_hole = Circle(midpoint_s, 0.05)
     topo.add_hole(stellar_hole, refs=10)
 
-    topo.write_geo(DATA_DIR.joinpath("2d_3"))
+    topo.mesh(
+        file_name=DATA_DIR.joinpath("2d_3"),
+        write_geo=True,
+        lc=1,
+        lc_subrects=1,
+        filled=True,
+    )
 
 
 def test_2d_4():
+    """Add specific circles."""
     rect_out = [(0, 0), (2, 2)]
 
     rect_in_1 = [(0.25, 0.25), (0.75, 0.75)]
@@ -133,40 +142,27 @@ def test_2d_4():
         rect_out, [rect_in_1, rect_in_2, rect_in_3, rect_in_4], periodic_boundary=False
     )
 
-    midpoint_s = (1, 0.01)
-    stellar_hole = Circle(midpoint_s, 0.05)
-    added = topo.add_hole(stellar_hole, refs=10)
+    radius = 0.05
+    midpoints = [
+        (1, 0.01),
+        (2.01, 0.01),
+        (0.251, 0.251),
+        (0.251, 0.51),
+        (1.251, 1.251),
+        (0.4, 0.4),
+        (1.751, 1.251),
+        (1.251, 1.751),
+    ]
+    for midpoint in midpoints:
+        topo.add_hole(Circle(midpoint, radius), refs=10)
 
-    midpoint_s = (2.01, 0.01)
-    stellar_hole = Circle(midpoint_s, 0.05)
-    added = topo.add_hole(stellar_hole, refs=20)
-
-    midpoint_s = (0.251, 0.251)
-    stellar_hole = Circle(midpoint_s, 0.05)
-    added = topo.add_hole(stellar_hole, refs=10)
-
-    midpoint_s = (0.251, 0.51)
-    stellar_hole = Circle(midpoint_s, 0.05)
-    added = topo.add_hole(stellar_hole, refs=10)
-
-    midpoint_s = (1.251, 1.251)
-    stellar_hole = Circle(midpoint_s, 0.05)
-    added = topo.add_hole(stellar_hole, refs=10)
-
-    midpoint_s = (0.4, 0.4)
-    stellar_hole = Circle(midpoint_s, 0.05)
-    added = topo.add_hole(stellar_hole, refs=10)
-
-    midpoint_s = (1.751, 1.251)
-    stellar_hole = Circle(midpoint_s, 0.05)
-    added = topo.add_hole(stellar_hole, refs=10)
-
-    midpoint_s = (1.251, 1.751)
-    stellar_hole = Circle(midpoint_s, 0.05)
-    added = topo.add_hole(stellar_hole, refs=10)
-
-    geo = topo.get_geometry(lc=1, lc_subrects=1, filled=True)
-    write_geo(geo, DATA_DIR.joinpath("2d_4"))
+    topo.mesh(
+        file_name=DATA_DIR.joinpath("2d_4"),
+        write_geo=True,
+        lc=1,
+        lc_subrects=1,
+        filled=True,
+    )
 
 
 def test_2d_5():
@@ -202,6 +198,44 @@ def test_2d_5():
 
     print("Needed ", i, "runs for ", N, "holes")
 
-    # Make geometry, set filled True or False if the inclusion is a hole or not
-    geo = topo.get_geometry(lc=1, lc_subrects=1, filled=True)
-    write_geo(geo, DATA_DIR.joinpath("2d_5"))
+    topo.mesh(
+        file_name=DATA_DIR.joinpath("2d_5"),
+        write_geo=True,
+        lc=1,
+        lc_subrects=1,
+        filled=True,
+    )
+
+
+def test_2d_6():
+    # Domain with many little stellar holes
+    # Define the rectangles
+    width = 2
+    height = 2
+    rect_out = [(0, 0), (2, 2)]
+    rect_in_1 = [(0.25, 0.25), (0.75, 0.75)]
+    rect_in_2 = [(1.25, 0.25), (1.75, 0.75)]
+    rect_in_3 = [(1.25, 1.25), (1.75, 1.75)]
+    rect_in_4 = [(0.25, 1.25), (0.75, 1.75)]
+
+    # Set periodic_boundary, True or False for outer rectangle
+
+    topo = Topology(
+        rect_out, [rect_in_1, rect_in_2, rect_in_3, rect_in_4], periodic_boundary=True
+    )
+
+    # Make some holes
+    N = 10
+    counter = 0
+    i = 0
+    while counter < N and i < 1000:
+        i += 1
+        print(i)
+        midpoint_s = rd.uniform(0, width), rd.uniform(0, height)
+        radius = rd.uniform(0, 0.5)
+        stellar_hole = Circle(midpoint_s, radius)
+
+        if topo.add_hole(stellar_hole, refs=30):
+            counter += 1
+
+    topo.write_geo(file_name=DATA_DIR.joinpath("2d_6"), lc_in=1, lc_out=1, filled=True)

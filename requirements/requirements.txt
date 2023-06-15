@@ -49,6 +49,7 @@ numpy==1.24.3
     #   matplotlib
     #   mystic
     #   scipy
+    #   shapely
 packaging==23.1
     # via
     #   black
@@ -64,6 +65,8 @@ pluggy==1.0.0
     # via pytest
 pox==0.3.2
     # via klepto
+pydantic==1.10.9
+    # via -r requirements.in
 pyparsing==3.0.9
     # via matplotlib
 pytest==7.3.1
@@ -81,9 +84,13 @@ ruff==0.0.269
     # via -r requirements.in
 scipy==1.10.1
     # via -r requirements.in
+shapely==2.0.1
+    # via -r requirements.in
 six==1.16.0
     # via python-dateutil
 sympy==1.12
     # via mystic
 typing-extensions==4.5.0
-    # via mypy
+    # via
+    #   mypy
+    #   pydantic

@@ -1,9 +1,10 @@
 import json
 import random
 
-from bubbles.geo_utils.utils import write_geo
+from bubbles.gmsh_api import write_geo
 from bubbles.three_d.bubble import Sphere, StarBubble, clip
 from bubbles.three_d.clip import EasyClip, EuclideanProjection
+from bubbles.utils import geometry_to_gmsh_entities
 
 
 class Glue:
@@ -710,7 +711,8 @@ class Glue:
 
     def to_geo(self, file_name):
         self._finish_geometry()
-        write_geo(self.geometry, file_name)
+        gmsh_entity_dict = geometry_to_gmsh_entities(self.geometry)
+        write_geo(file_name, **gmsh_entity_dict)
 
     def showFaces(self):
         print(json.dumps(self.faces, indent=4))

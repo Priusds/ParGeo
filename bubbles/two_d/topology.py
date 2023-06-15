@@ -1,8 +1,18 @@
 """Core module for the creation of 2d geometries."""
 import json
+from pathlib import Path
 from typing import Optional
 
-from bubbles.geo_utils.utils import write_geo
+from bubbles.gmsh_api import (
+    CurveLoop,
+    GmshEntities,
+    Line,
+    PhysicalGroup,
+    PlaneSurface,
+    Point,
+    mesh,
+    write_geo,
+)
 from bubbles.two_d.hole import Circle, Ellipse, Stellar
 from bubbles.two_d.intersections import (
     convex_hull,
@@ -10,6 +20,7 @@ from bubbles.two_d.intersections import (
     intersection_hole_edge,
 )
 from bubbles.two_d.sat import collide
+from bubbles.utils import geometry_to_gmsh_entities
 
 # ---------- Version 2 -------------
 
@@ -30,10 +41,10 @@ class Topology(object):
                 even subclass some geometry package) write a plot functionality
                 that always plots some current topology (super easy).
                 For debugging this is really needed.
-        
+
         - State the foundamental needed output of this class / bubbles.two_d package:
-            - Create objects that 
-    
+            - Create objects that
+
     Class description:
     A geometry is defined by following elements:
         - domain
@@ -47,8 +58,8 @@ class Topology(object):
             - How is a domain filled / empty in free space? (Just by changing the orientation?) # TODO: check this
             - If filled: has it's own Plane Surface
             - If intersects with subdomain: split into two "different" holes, inner and outer one.
-            
-    For now domain and sub-domains are rectangles (different shapes might be 
+
+    For now domain and sub-domains are rectangles (different shapes might be
     allowed in future). The holes are objects from sub-classes of `bubble.two-d.hole.Hole`.
 
     Workflow:
@@ -60,10 +71,11 @@ class Topology(object):
             - Holes cannot intersect adjactent edges without not-containing the corner-vertex.
             - (Basically the domain must remain connected. Same logic applies for sub-domains?)
             - TODO: Check what is missing / correct.
-    3.) Write .GEO file via self.get_geometry(...) and `bubbles.geo_utils.utils.write_geo`
-        3.1) The method self.get_geometry(...) creates all the linking between
+    3.) Write mesh (.MSH) and optionally the geo file (.GEO) file via self.mesh(...)
+        3.1) The method self.prepare_gmsh_entities(...) creates all the linking between
         point-ID/line-ID/ect.
     """
+
     def __init__(self, rect_out, lrect_in, periodic_boundary=True, method="linear"):
         # parameters for rect_out
         x0_out, y0_out = rect_out[0]
@@ -160,8 +172,19 @@ class Topology(object):
 
     def write_geo(self, file_name, filled=True, lc_in=0.2, lc_out=0.2):
         """writes a .geo file of the current topology"""
-        geometry = self.get_geometry(lc_in, lc_out, filled)
-        write_geo(geometry, file_name)
+        geometry = self.prepare_gmsh_entities(
+            lc=lc_out, lc_subrects=lc_in, filled=filled
+        )
+        write_geo(
+            file_name,
+            points=geometry.points,
+            lines=geometry.lines,
+            curve_loops=geometry.curve_loops,
+            physical_groups=geometry.physical_groups,
+            plane_surfaces=geometry.plane_surfaces,
+            surface_loops=[],
+            volumes=[],
+        )
 
     def safe_json(self, file_name):
         # raise NotImplementedError("Change from 1 inner rect to multiple is missing")
@@ -667,7 +690,7 @@ class Topology(object):
         Args:
             loc:
                 Index of the intersected rectangle.
-            
+
         """
         # TODO make it possible to choose how to compute intersection points
         dhole = hole[0]
@@ -1319,8 +1342,12 @@ class Topology(object):
         else:
             return [(x[0], x[1] + self.dy) for x in convex_hull_hole]
 
-    def get_geometry(self, lc, lc_subrects, filled=False):
+    def prepare_gmsh_entities(
+        self, lc, lc_subrects, filled=False, default_lc=1
+    ) -> GmshEntities:
         """
+        Returns the gmsh entities for the creation of a gmsh mesh.
+
         I)  Write boundary of rect_0 (Main rect that contains all other rects)
         II) Write boundaries of rect_1,...,rect_n
             - for each rect write inner and outer boundary
@@ -1333,8 +1360,13 @@ class Topology(object):
             - write line loops for holes on boundaries
             - for every hole loop make surface
 
+        Args:
+            lc: Mesh size of the main domain
+            lc_subrects: Mesh size of the sub-domains
+            default_lc: Mesh size, if none is specified
+            filled: Whether or not the bubbles are meshed
         """
-
+        print(lc, lc_subrects)
         geometry = {
             "points": {},
             "lines": {},
@@ -1790,7 +1822,56 @@ class Topology(object):
                     continue
                 geometry["physicalSurfaces"][tag] = surfaces
 
-        return geometry
+        points = [
+            Point(
+                x=point["coords"][0],
+                y=point["coords"][1],
+                z=0,
+                lc=point["lc"] if point["lc"] else default_lc,
+                tag=point["id"],
+            )
+            for point in geometry["points"].values()
+        ]
+        lines = [
+            Line(start_tag=start, end_tag=end, tag=id)
+            for id, (start, end) in geometry["lines"].items()
+        ]
+        curve_loops = [
+            CurveLoop(line_tags=line_ids, tag=id)
+            for id, line_ids in geometry["lineLoops"].items()
+        ]
+        plane_surfaces = [
+            PlaneSurface(curve_loop_tags=curve_loop_ids, tag=id)
+            for id, curve_loop_ids in geometry["surfaces"].items()
+        ]
+        physical_groups = [
+            PhysicalGroup(dim=2, entity_tags=entity_ids, tag=id)
+            for id, entity_ids in geometry["physicalSurfaces"].items()
+        ]
+        gmsh_entities = GmshEntities(
+            points=points,
+            lines=lines,
+            curve_loops=curve_loops,
+            plane_surfaces=plane_surfaces,
+            physical_groups=physical_groups,
+        )
+        return gmsh_entities
+
+    def mesh(
+        self,
+        file_name: Path,
+        write_geo=True,
+        correct_curve_loops=False,
+        save_all=False,
+        **kwargs
+    ):
+        mesh(
+            gmsh_entities=self.prepare_gmsh_entities(**kwargs),
+            file_name=file_name,
+            write_geo=write_geo,
+            correct_curve_loops=correct_curve_loops,
+            save_all=save_all,
+        )
 
 
 def shift(array, n):

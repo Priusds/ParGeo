@@ -1,4 +1,3 @@
-from bubbles.geo_utils.utils import write_geo
 from bubbles.three_d.glue import *
 from bubbles.three_d.layers import *
 
