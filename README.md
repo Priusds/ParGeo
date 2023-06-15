@@ -30,6 +30,49 @@ Tested with:
 
 ## Documentation
 
+### 2D Case
+Following code snippet shows how `bubbles` can be used.
+
+```python
+from pathlib import Path
+from bubbles.two_d.topology import Topology
+from bubbles.two_d.hole import Stellar
+
+domain = [(0,0), (2,2)]
+
+sub_domains = [
+    [(0.25, 0.25), (0.75, 0.75)],
+    [(1.25, 1.25), (1.75, 1.75)]
+]
+
+topo = Topology(
+        domain, sub_domains, periodic_boundary=True
+    )
+
+# The discretized hole has `refs` many boundary points.
+stellar_hole = Stellar(midpoint=(0.5,0.5), radius=0.1)
+topo.add_hole(stellar_hole, refs=30)
+
+stellar_hole = Stellar(midpoint=(1,1), radius=0.2)
+topo.add_hole(stellar_hole, refs=30)
+
+stellar_hole = Stellar(midpoint=(1.76,1.76), radius=0.1)
+topo.add_hole(stellar_hole, refs=30)
+
+# Create and save the mesh
+file_name = Path(__file__).parent.joinpath("example.msh")
+topo.mesh(
+    file_name=file_name,
+    write_geo=True, # also saves the .GEO file
+    lc=1,
+    lc_subrects=1,
+    filled=True, # Mesh or not the hole
+)
+```
+
+### 3D Case
+Needs documentation and refactorin. If you really want to use this check out the tests.
+
 ### Create Dolfin readable mesh
 Once the `.GEO` file is written, following commands can be used to
 create a dolfin compatible `.XML` file representing the mesh.
@@ -55,11 +98,7 @@ file_path = ... # Put the path to the .XML file here
 mesh = dolfin.Mesh("file_path.xml")
 dolfin.plot(mesh)
 ```
-
-### 2D Case
-
-
-### 3D Case
+![](images/example_readme.png?raw=true)
 
 
 ## Demo usage with FEniCS

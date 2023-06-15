@@ -150,11 +150,11 @@ class StarBubble(Bubble):
     def discretize(self, accuracy=0.1, point_id=1, line_id=1, lineLoop_id=1):
         geo = discretize_reference(self.trafo, accuracy, point_id, line_id, lineLoop_id)
         new_points = []
-        for point in geo["points"]:
+        for id, point in geo["points"].items():
             x, y, z = point["coords"]
             mx, my, mz = self.midpoint
             new_point = {
-                "id": point["id"],
+                "id": id,
                 "coords": [x + mx, y + my, z + mz],
                 "lc": None,
             }

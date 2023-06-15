@@ -443,3 +443,42 @@ def test_20():
 
     gmsh_entity_dict = geometry_to_gmsh_entities(geometry)
     write_geo(DATA_DIR.joinpath("20"), **gmsh_entity_dict)
+
+def test_21():
+    # DEFINE GLUE BOX
+    lcoords = [
+        (0,0,0),
+        (2,0,0),
+        (2,1,0),
+        (0,1,0)
+    ]
+
+    depth = 2
+    glue = Glue(lcoords, depth)
+
+
+    # DEFINE/ADD BUBBLES
+    #s1 = Sphere(.1, (1.2,.5,-1))
+    #glue.add_bubble(s1)
+
+
+
+    #s3 = StarBubble(.1, (1,.4,-1), None)
+    #glue.add_bubble(s3,.1)
+
+    s4 = StarBubble(.1, (1.8,1,-1.2),None)
+    glue.add_bubble(s4)
+
+    s2 = StarBubble(.1, (.8,1,-1),None)
+    glue.add_bubble(s2,.5)
+
+
+    # WRITE GEO
+    glue.to_geo(DATA_DIR/"glue_with_bubbles")
+
+
+
+
+
+
+
