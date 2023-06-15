@@ -98,8 +98,7 @@ file_path = ... # Put the path to the .XML file here
 mesh = dolfin.Mesh("file_path.xml")
 dolfin.plot(mesh)
 ```
-![](images/example_readme.png?raw=true)
-
+<img src="images/example_readme.png">
 
 ## Demo usage with FEniCS
 
