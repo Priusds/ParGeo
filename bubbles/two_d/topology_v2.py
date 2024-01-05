@@ -143,17 +143,23 @@ class Topology(object):
 
     def plot_setup(self): 
         lvl2cl = {0: "blue", 1: "brown", 2: "gray", 3: "yellow", 10: "white", 11: "purple"}
-        P = sorted(self.bubbles, key=lambda p: p.level)
-        for bubble in P:
-            p, lvl, is_hole = bubble 
-            print(f"Plot bubble with level = {lvl}")
-            x, y = p.exterior.xy  # gold
-            if is_hole:
-                plt.fill(x, y, color=lvl2cl[lvl])
-                plt.plot(x, y, color='black')
-            else:
-                plt.fill(x, y, color=lvl2cl[lvl])
 
+        for bubble in self.bubbles: 
+            p, lvl, is_hole = bubble 
+
+            if len(p.interiors) > 0 : 
+                x,y = p.exterior.xy
+                plt.fill(x, y, color=lvl2cl[lvl]) 
+                for pp in p.interiors : 
+                    x, y = pp.xy  # gol
+                    plt.fill(x, y, color='white') 
+
+        for bubble in self.bubbles: 
+            p, lvl, is_hole = bubble 
+
+            if len(p.interiors) == 0 : 
+                x,y = p.exterior.xy
+                plt.fill(x, y, color=lvl2cl[lvl]) 
         
         x,y = self.ref_domain.polygon.exterior.xy
         plt.plot(x, y, color='black')
