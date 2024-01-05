@@ -1,6 +1,6 @@
 import shapely
 import math
-
+import matplotlib.pyplot as plt
 from bubbles.two_d.hole import Rectangular, Circle, Ellipse
 
 from collections import namedtuple
@@ -48,15 +48,6 @@ class Topology(object):
         domain_polygons = [p.polygon for p in self.bubbles if p.level == 0]
         return shapely.MultiPolygon(domain_polygons)
 
-    def set_domain(self, domain):
-        pass
-
-    def __add_discretized_void(self, discretized_hole, level):
-        pass
-
-    def __add_discretized_inclusion(self, discretized_hole, level, physical_group):
-        pass
-
     def add_bubble(self, Q: shapely.Polygon, level: int, is_hole: bool):
         # clip q with respect to the reference domain
         q = Q.intersection(self.ref_domain.polygon)
@@ -90,7 +81,6 @@ class Topology(object):
                 return
             # q_diff might be a multipolygon
             q = q.difference(higher_polygons_union)
-            print(f"q_diff HL type: {type(q)}")
                         
         for p in lower_bubbles:
 
@@ -98,12 +88,10 @@ class Topology(object):
             if p_diff.area > 0:
                 if isinstance(p_diff, shapely.MultiPolygon):
                     for p_sub in p_diff.geoms:
-                        print(f"if p_sub LL type: {type(p_sub)}")
                         self.bubbles.add(
                             Bubble(p_sub, level=p.level, is_hole=p.is_hole)
                         )
                 else:
-                    print(f"else: p_diff LL type: {type(p_diff)}")
                     self.bubbles.add(Bubble(p_diff, level=p.level, is_hole=p.is_hole))
             else:
                 # p is covered by q_diff
@@ -115,12 +103,8 @@ class Topology(object):
                     pass
             self.bubbles.remove(p)
 
-        # Clip q_diff with main domain
-        #q_diff = q.intersection(self.domain)
-        #print(f"q_diff intersection domain type: {type(q)}")
         # Merge q_diff with equal level bubbles, the result still might be a multipolygon
         q_final = shapely.union_all([q] + [p.polygon for p in equal_bubbles])
-        print(f"q_final domain type: {type(q_final)}")
 
         if isinstance(q_final, shapely.MultiPolygon):
             for q_sub in q_final.geoms:
@@ -129,19 +113,8 @@ class Topology(object):
                         Bubble(q_sub, level=level, is_hole=is_hole)
                     )
         else:
-            print(f"else: p_diff LL type: {type(p_diff)}")
             self.bubbles.add(Bubble(q_final, level=level, is_hole=is_hole))
 
-    def add_void(self, discretize_hole, level):
-        # assert hole has discretize method
-        pass
-
-    def add_inclusion(self, discretize_hole, level):
-        # assert hole has discretize method
-        pass
-
-    def set_physical_group(self, level_to_physical_group_map):
-        pass
 
     def plot_setup(self): 
         boundary_color = 'black'
@@ -217,24 +190,39 @@ class Topology(object):
         plt.show()
 
 
-def test():
-    lvl2cl = {0: "blue", 1: "brown", 2: "gray", 3: "yellow", 10: "white"}
-
-    topo = Topology()
-
+def test1():
     R = Rectangular(midpoint=(0.0, 0), width=2, height=2).discretize_hole(refs=4)
     C = Circle(midpoint=(1.0, 0), radius=0.5).discretize_hole(refs=50)
-    topo.add_bubble(R, level=0, is_hole=False)
-    topo.add_bubble(C, level=0, is_hole=False)
 
-    C2 = Circle(midpoint=(-0.25, 0), radius=0.25).discretize_hole(refs=50)
-    topo.add_bubble(C2, level=10, is_hole=True)
+    C_cutout = shapely.Polygon(Circle(midpoint=(0. ,0.75), radius = 0.2).discretize_hole(refs=50))
 
+    R_shapely = shapely.Polygon(R)
+    C_shapely = shapely.Polygon(C)
+    domain = R_shapely.union(C_shapely).difference(C_cutout)
+    topo = Topology(domain)
+
+    # P2
+    p2 = shapely.Polygon(
+        Circle(midpoint=(-0.25, 0.), radius=0.25).discretize_hole(refs=50)
+    )
+    topo.add_bubble(p2, level=10, is_hole=True)
+  
+    C_touch_both = shapely.Polygon(Circle(midpoint=(-0.1 ,0.4), radius = 0.3).discretize_hole(refs=50))
+    topo.add_bubble(C_touch_both, level=11, is_hole=False)
+
+    C_touch_hole = shapely.Polygon(Circle(midpoint=(-0.5 ,0.4), radius = 0.45).discretize_hole(refs=50))
+    topo.add_bubble(C_touch_hole, level=3, is_hole=False)
+
+    # # P3
     C3 = Circle(midpoint=(0.75, 0), radius=0.25).discretize_hole(refs=50)
-    C4 = Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
+    p3 = shapely.Polygon(C3)
+    topo.add_bubble(p3, level=1, is_hole=False)
 
-    topo.add_bubble(C3, level=1, is_hole=False)
-    topo.add_bubble(C4, level=1, is_hole=False)
+  
+    # # P4
+    C4 = Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
+    p4 = shapely.Polygon(C4)
+    topo.add_bubble(p4, level=1, is_hole=False)
 
     # this guy is intersection with the domain
     E1 = Ellipse(
@@ -244,49 +232,39 @@ def test():
     E2 = Ellipse(midpoint=(-0.55, -0.6), axis=(0.25, 0.1), angle=0.0).discretize_hole(
         refs=50
     )
-    topo.add_bubble(E1, level=1, is_hole=False)
-    topo.add_bubble(E2, level=1, is_hole=False)
+    topo.add_bubble(shapely.Polygon(E1), level=1, is_hole=False)
+    topo.add_bubble(shapely.Polygon(E2), level=1, is_hole=False)
 
     C5 = Circle(midpoint=(0.5, 0.6), radius=0.2).discretize_hole(refs=50)
     C6 = Circle(midpoint=(0.6, 0.6), radius=0.2).discretize_hole(refs=50)
-    topo.add_bubble(C6, level=4, is_hole=False)
-    topo.add_bubble(C5, level=3, is_hole=False)
+    topo.add_bubble(shapely.Polygon(C5), level=3, is_hole=False)
+    topo.add_bubble(shapely.Polygon(C6), level=2, is_hole=False)
 
     C = Circle(midpoint=(0.24, -0.8), radius=0.22).discretize_hole(refs=50)
-    topo.add_bubble(C, level=1, is_hole=False)
+    topo.add_bubble(shapely.Polygon(C), level=1, is_hole=False)
 
     E = Ellipse(midpoint=(0.25, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
         refs=50
     )
-    topo.add_bubble(E, level=2, is_hole=False)
+    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
 
     E = Ellipse(midpoint=(0.4, -0.4), axis=(0.2, 0.05), angle=0.0).discretize_hole(
         refs=50
     )
-    topo.add_bubble(E, level=2, is_hole=False)
+    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
 
     E = Ellipse(midpoint=(0.5, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
         refs=50
     )
-    topo.add_bubble(E, level=2, is_hole=False)
+    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
 
     # this guy encloses the loop !
     E = Ellipse(midpoint=(0.4, -0.7), axis=(0.2, 0.05), angle=0.0).discretize_hole(
         refs=50
     )
-    topo.add_bubble(E, level=2, is_hole=False)
+    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
 
-    P = sorted(topo.polygons, key=lambda p: p.level)
-    # check order
-
-    for p in P:
-        x, y = p.exterior.xy  # gold
-        if p.is_hole:
-            plt.fill(x, y, color=lvl2cl[p.level])
-        else:
-            plt.fill(x, y, color=lvl2cl[p.level])
-
-    plt.show()
+    topo.plot_setup()
 
 
 def test2():
@@ -387,122 +365,6 @@ def test2():
 
 
 if __name__ == "__main__":
-
+    pass
+    # test1()
     # test2()
-    # exit()
-
-    import matplotlib.pyplot as plt
-    R = Rectangular(midpoint=(0.0, 0), width=2, height=2).discretize_hole(refs=4)
-    C = Circle(midpoint=(1.0, 0), radius=0.5).discretize_hole(refs=50)
-
-    C_cutout = shapely.Polygon(Circle(midpoint=(0. ,0.75), radius = 0.2).discretize_hole(refs=50))
-
-    R_shapely = shapely.Polygon(R)
-    C_shapely = shapely.Polygon(C)
-    domain = R_shapely.union(C_shapely).difference(C_cutout)
-    topo = Topology(domain)
-
-    # P2
-    p2 = shapely.Polygon(
-        Circle(midpoint=(-0.25, 0.), radius=0.25).discretize_hole(refs=50)
-    )
-    topo.add_bubble(p2, level=10, is_hole=True)
-
-
-
-  
-    C_touch_both = shapely.Polygon(Circle(midpoint=(-0.1 ,0.4), radius = 0.3).discretize_hole(refs=50))
-    topo.add_bubble(C_touch_both, level=11, is_hole=False)
-
-    C_touch_hole = shapely.Polygon(Circle(midpoint=(-0.5 ,0.4), radius = 0.45).discretize_hole(refs=50))
-    topo.add_bubble(C_touch_hole, level=3, is_hole=False)
-
-    # # P3
-    C3 = Circle(midpoint=(0.75, 0), radius=0.25).discretize_hole(refs=50)
-    p3 = shapely.Polygon(C3)
-    topo.add_bubble(p3, level=1, is_hole=False)
-
-  
-    # # P4
-    C4 = Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
-    p4 = shapely.Polygon(C4)
-    topo.add_bubble(p4, level=1, is_hole=False)
-
-    # print(f"Number of bubbles: {len(topo.bubbles)}")
-
-
-    # this guy is intersection with the domain
-    E1 = Ellipse(
-        midpoint=(-0.5, 0.75), axis=(1, 0.1), angle=0.25 * math.pi
-    ).discretize_hole(refs=50)
-    # this guy is just interior
-    E2 = Ellipse(midpoint=(-0.55, -0.6), axis=(0.25, 0.1), angle=0.0).discretize_hole(
-        refs=50
-    )
-    topo.add_bubble(shapely.Polygon(E1), level=1, is_hole=False)
-    topo.add_bubble(shapely.Polygon(E2), level=1, is_hole=False)
-
-
-
-
-    C5 = Circle(midpoint=(0.5, 0.6), radius=0.2).discretize_hole(refs=50)
-    C6 = Circle(midpoint=(0.6, 0.6), radius=0.2).discretize_hole(refs=50)
-    topo.add_bubble(shapely.Polygon(C5), level=3, is_hole=False)
-    topo.add_bubble(shapely.Polygon(C6), level=2, is_hole=False)
-
-    C = Circle(midpoint=(0.24, -0.8), radius=0.22).discretize_hole(refs=50)
-    topo.add_bubble(shapely.Polygon(C), level=1, is_hole=False)
-
-
- 
-
-
-    E = Ellipse(midpoint=(0.25, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
-        refs=50
-    )
-    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
-
-    E = Ellipse(midpoint=(0.4, -0.4), axis=(0.2, 0.05), angle=0.0).discretize_hole(
-        refs=50
-    )
-    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
-
-    E = Ellipse(midpoint=(0.5, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
-        refs=50
-    )
-    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
-
-
-
-    # this guy encloses the loop !
-    E = Ellipse(midpoint=(0.4, -0.7), axis=(0.2, 0.05), angle=0.0).discretize_hole(
-        refs=50
-    )
-    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
-
-    topo.plot_setup()
-
-    quit()
-
-    print(f"Number of bubbles: {len(topo.bubbles)}")
-
-    P = sorted(topo.bubbles, key=lambda p: p.level)
-    # check order
-    lvl2cl = {0: "blue", 1: "brown", 2: "gray", 3: "yellow", 10: "white"}
-    for p in P:
-        if isinstance(p.polygon, shapely.MultiPolygon):
-            continue
-            for p_sub in p.polygon.geoms:
-                x, y = p_sub.exterior.xy
-        if isinstance(p.polygon, shapely.GeometryCollection):
-            continue
-        if isinstance(p.polygon, shapely.MultiLineString):
-            continue
-        print(type(p.polygon))
-        x, y = p.polygon.exterior.xy  # gold
-        if p.is_hole:
-            plt.fill(x, y, color=lvl2cl[p.level])
-        else:
-            plt.fill(x, y, color=lvl2cl[p.level])
-
-    plt.show()

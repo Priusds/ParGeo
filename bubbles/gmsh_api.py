@@ -101,7 +101,7 @@ class GmshEntities(BaseModel):
 
 def mesh(
     gmsh_entities: GmshEntities,
-    file_name: Path,
+    file_name: Path | str,
     dim: PhysicalDimension = 2,
     write_geo: bool = True,
     correct_curve_loops: bool = False,
@@ -127,6 +127,7 @@ def mesh(
             physical group, as long there is at least one physical group.
     """
     assert dim in {2, 3}
+    file_name = Path(file_name)
     gmsh.initialize()
     gmsh.model.add(file_name.name)
 
@@ -181,51 +182,38 @@ def mesh(
 
 
 def write_geo(
-    file_name: Path,
-    points: Sequence[Point],
-    lines: Sequence[Line],
-    curve_loops: Sequence[CurveLoop],
-    plane_surfaces: Sequence[PlaneSurface],
-    surface_loops: Sequence[SurfaceLoop],
-    volumes: Sequence[Volume],
-    physical_groups: Sequence[PhysicalGroup],
+    file_name: Path | str,
+    gmsh_entities: GmshEntities,
     correct_curve_loops: bool = False,
 ):
     """Create a .GEO file."""
     gmsh.initialize()
+    file_name = Path(file_name)
     gmsh.model.add(file_name.name)
 
-    for point in points:
+    for point in gmsh_entities.points:
         gmsh.model.geo.addPoint(
             x=point.x, y=point.y, z=point.z, meshSize=point.lc, tag=point.tag
         )
 
-    for line in lines:
+    for line in gmsh_entities.lines:
         gmsh.model.geo.addLine(
             startTag=line.start_tag, endTag=line.end_tag, tag=line.tag
         )
 
-    for curve_loop in curve_loops:
+    for curve_loop in gmsh_entities.curve_loops:
         gmsh.model.geo.addCurveLoop(
             curveTags=curve_loop.line_tags,
             tag=curve_loop.tag,
             reorient=correct_curve_loops,
         )
 
-    for plane_surface in plane_surfaces:
+    for plane_surface in gmsh_entities.plane_surfaces:
         gmsh.model.geo.addPlaneSurface(
             wireTags=plane_surface.curve_loop_tags, tag=plane_surface.tag
         )
 
-    for surface_loop in surface_loops:
-        gmsh.model.geo.add_surface_loop(
-            surfaceTags=surface_loop.surface_tags, tag=surface_loop.tag
-        )
-
-    for volume in volumes:
-        gmsh.model.geo.add_volume(shellTags=volume.surface_loop_tags, tag=volume.tag)
-
-    for physical_group in physical_groups:
+    for physical_group in gmsh_entities.physical_groups:
         gmsh.model.geo.addPhysicalGroup(
             dim=physical_group.dim.value,
             tag=physical_group.tag,
