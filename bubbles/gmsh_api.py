@@ -219,6 +219,7 @@ def write_geo(
             tag=physical_group.tag,
             tags=physical_group.entity_tags,
         )
+    gmsh.model.geo.removeAllDuplicates()
 
     gmsh.model.geo.synchronize()
 

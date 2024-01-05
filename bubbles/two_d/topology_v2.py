@@ -104,7 +104,11 @@ class Topology(object):
             self.bubbles.remove(p)
 
         # Merge q_diff with equal level bubbles, the result still might be a multipolygon
+        for p in equal_bubbles:
+            self.bubbles.remove(p)
         q_final = shapely.union_all([q] + [p.polygon for p in equal_bubbles])
+        print(f"level: {level}, is_hole: {is_hole}")
+        print(q_final)
 
         if isinstance(q_final, shapely.MultiPolygon):
             for q_sub in q_final.geoms:
