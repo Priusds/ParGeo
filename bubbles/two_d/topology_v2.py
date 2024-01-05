@@ -54,12 +54,16 @@ class Topology(object):
     def __add_discretized_inclusion(self, discretized_hole, level, physical_group):
         pass
 
-    def add_bubble(self, q: shapely.Polygon, level: int, is_hole: bool):
+    def add_bubble(self, Q: shapely.Polygon, level: int, is_hole: bool):
+
+        q = shapely.Polygon(Q.shell, Q.holes)
+
         assert level > 0
         # Find intersecting polygons and group by level relation
         lower_bubbles = set()
         higher_bubbles = set()
         equal_bubbles = set()
+
         for p in self.bubbles:
             if p.polygon.intersects(q):
                 if level > p.level:
@@ -72,7 +76,8 @@ class Topology(object):
                     raise ValueError(
                         "Given level is not an integer with order relation."
                     )
-
+                
+        # TODO: Avoid q_diff and use q definition only within the method. 
         if len(higher_bubbles) > 0:
             # Update the shape of q constrained by higher level bubbles
             # If q is completely contained within the union of higher level bubbles -> ignore q
@@ -80,16 +85,10 @@ class Topology(object):
                 [b.polygon for b in higher_bubbles]
             )
             if higher_polygons_union.contains(q):
-                # sanity check
-                assert len(lower_bubbles) == len(equal_bubbles) == 0
                 return
-
             # q_diff might be a multipolygon
-            q_diff = q.difference(higher_polygons_union)
-            print(f"q_diff HL type: {type(q_diff)}")
-        else:
-            q_diff = q
-            print(f"q_diff HL type: {type(q_diff)}")
+            q = q.difference(higher_polygons_union)
+            print(f"q_diff HL type: {type(q)}")
 
         # update the lower level bubbles according to q_diff
         for p in lower_bubbles:
@@ -138,6 +137,20 @@ class Topology(object):
 
     def set_physical_group(self, level_to_physical_group_map):
         pass
+
+    def plot_setup(self): 
+        lvl2cl = {0: "blue", 1: "brown", 2: "gray", 3: "yellow", 10: "white"}
+        P = sorted(self.bubbles, key=lambda p: p.level)
+        for bubble in P:
+            p, lvl, is_hole = bubble 
+            x, y = p.exterior.xy  # gold
+            if is_hole:
+                plt.fill(x, y, color=lvl2cl[lvl])
+            else:
+                plt.fill(x, y, color=lvl2cl[lvl])
+
+
+        plt.show()
 
 
 def test():
@@ -325,6 +338,8 @@ if __name__ == "__main__":
         Circle(midpoint=(-0.25, 0), radius=0.25).discretize_hole(refs=50)
     )
     topo.add_bubble(p2, level=10, is_hole=True)
+
+    topo.plot_setup()
 
     quit()
 
