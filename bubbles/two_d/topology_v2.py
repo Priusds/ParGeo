@@ -81,7 +81,6 @@ class Topology(object):
                     )
 
         if len(higher_bubbles) > 0:
-            print("I AM NEVER HERE")
             # Update the shape of q constrained by higher level bubbles
             # If q is completely contained within the union of higher level bubbles -> ignore q
             higher_polygons_union = shapely.union_all(
@@ -99,12 +98,12 @@ class Topology(object):
             if p_diff.area > 0:
                 if isinstance(p_diff, shapely.MultiPolygon):
                     for p_sub in p_diff.geoms:
-                        print(f"p_sub LL type: {type(p_sub)}")
+                        print(f"if p_sub LL type: {type(p_sub)}")
                         self.bubbles.add(
                             Bubble(p_sub, level=p.level, is_hole=p.is_hole)
                         )
                 else:
-                    print(f"p_diff LL type: {type(p_diff)}")
+                    print(f"else: p_diff LL type: {type(p_diff)}")
                     self.bubbles.add(Bubble(p_diff, level=p.level, is_hole=p.is_hole))
             else:
                 # p is covered by q_diff
@@ -121,14 +120,17 @@ class Topology(object):
         #print(f"q_diff intersection domain type: {type(q)}")
         # Merge q_diff with equal level bubbles, the result still might be a multipolygon
         q_final = shapely.union_all([q] + [p.polygon for p in equal_bubbles])
-        #print(f"q_final domain type: {type(q_final)}")
+        print(f"q_final domain type: {type(q_final)}")
 
-        q_bubble = Bubble(q_final, level=level, is_hole=is_hole)
-
-        # NOTE: currently the is_hole information is not used, this makes the implementation easier
-        # but leads to redundant bubbles and more shapely operations.
-        # IDEA: add an IF statement that only adds the new bubble if it is not a holes.
-        self.bubbles.add(q_bubble)
+        if isinstance(q_final, shapely.MultiPolygon):
+            for q_sub in q_final.geoms:
+                    print(f"if p_sub LL type: {type(p_sub)}")
+                    self.bubbles.add(
+                        Bubble(q_sub, level=level, is_hole=is_hole)
+                    )
+        else:
+            print(f"else: p_diff LL type: {type(p_diff)}")
+            self.bubbles.add(Bubble(q_final, level=level, is_hole=is_hole))
 
     def add_void(self, discretize_hole, level):
         # assert hole has discretize method
@@ -142,7 +144,14 @@ class Topology(object):
         pass
 
     def plot_setup(self): 
-        lvl2cl = {0: "blue", 1: "brown", 2: "gray", 3: "yellow", 10: "white", 11: "purple"}
+        boundary_color = 'black'
+        reference_domain_hole_color = 'white'
+        # @pre lvl2cl does not contain boundary_color
+        # @pre lvl2cl does not contain reference_domain_hole_color
+        lvl2cl = {0: "blue", 1: "brown", 2: "gray", 3: "yellow", 10: "lightgray", 11: "purple"}
+
+        
+        setted_labels = []
 
         for bubble in self.bubbles: 
             p, lvl, is_hole = bubble 
@@ -150,25 +159,61 @@ class Topology(object):
             if len(p.interiors) > 0 : 
                 x,y = p.exterior.xy
                 plt.fill(x, y, color=lvl2cl[lvl]) 
+                if is_hole : 
+                    if not boundary_color in setted_labels: 
+                        plt.plot(x, y, color=boundary_color, label = 'domain boundary') 
+                        setted_labels.append(boundary_color)
+                    else: 
+                        plt.plot(x, y, color=boundary_color)
                 for pp in p.interiors : 
                     x, y = pp.xy  # gol
                     plt.fill(x, y, color='white') 
+                    if is_hole : 
+                        if not boundary_color in setted_labels: 
+                            plt.plot(x, y, color=boundary_color, label = 'domain boundary') 
+                            setted_labels.append(boundary_color)
+                        else: 
+                            plt.plot(x, y, color=boundary_color)
 
         for bubble in self.bubbles: 
             p, lvl, is_hole = bubble 
 
             if len(p.interiors) == 0 : 
                 x,y = p.exterior.xy
-                plt.fill(x, y, color=lvl2cl[lvl]) 
+                color = lvl2cl[lvl]
+                if not color in setted_labels: 
+                    label = f'Incl. with lvl = {lvl}' if not is_hole else f'Hole with lvl = {lvl}'
+                    plt.fill(x, y, color=color, label = label)
+                    setted_labels.append(color)
+                else:
+                    plt.fill(x, y, color=color)
+                if is_hole : 
+                    if not boundary_color in setted_labels: 
+                        plt.plot(x, y, color='black', label = 'domain boundary') 
+                        setted_labels.append(boundary_color)
+                    else:
+                        plt.plot(x, y, color=boundary_color)
+
         
         x,y = self.ref_domain.polygon.exterior.xy
         plt.plot(x, y, color='black')
         for pp in self.ref_domain.polygon.interiors : 
             x, y = pp.xy  # gol
-            plt.fill(x, y, color='white') 
-            plt.plot(x, y, color='black')
+
+            if not reference_domain_hole_color in setted_labels:
+                plt.fill(x, y, color=reference_domain_hole_color, label = 'domain hole') 
+                setted_labels.append(reference_domain_hole_color)
+            else:
+                plt.fill(x, y, color=reference_domain_hole_color)
 
 
+            if not boundary_color in setted_labels: 
+                plt.plot(x, y, color=boundary_color, label = 'domain boundary')
+                setted_labels.append(boundary_color)
+            else:
+                plt.plot(x, y, color=boundary_color)
+
+        plt.legend()
         plt.show()
 
 
@@ -369,18 +414,21 @@ if __name__ == "__main__":
     C_touch_both = shapely.Polygon(Circle(midpoint=(-0.1 ,0.4), radius = 0.3).discretize_hole(refs=50))
     topo.add_bubble(C_touch_both, level=11, is_hole=False)
 
-    # P3
+    C_touch_hole = shapely.Polygon(Circle(midpoint=(-0.5 ,0.4), radius = 0.45).discretize_hole(refs=50))
+    topo.add_bubble(C_touch_hole, level=3, is_hole=False)
+
+    # # P3
     C3 = Circle(midpoint=(0.75, 0), radius=0.25).discretize_hole(refs=50)
     p3 = shapely.Polygon(C3)
     topo.add_bubble(p3, level=1, is_hole=False)
 
   
-    # P4
+    # # P4
     C4 = Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
     p4 = shapely.Polygon(C4)
     topo.add_bubble(p4, level=1, is_hole=False)
 
-    print(f"Number of bubbles: {len(topo.bubbles)}")
+    # print(f"Number of bubbles: {len(topo.bubbles)}")
 
 
     # this guy is intersection with the domain
