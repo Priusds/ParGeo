@@ -4,6 +4,7 @@ import math
 from bubbles.two_d.hole import Rectangular, Circle, Ellipse
 
 from collections import namedtuple
+from copy import deepcopy
 
 Bubble = namedtuple("Bubble", ["polygon", "level", "is_hole"])
 
@@ -37,6 +38,8 @@ class Topology(object):
         # polygons is a list of non-intersecting polygons (0-measure intersection)
         self.bubbles = {Bubble(polygon, level=0, is_hole=False)}
 
+        self.ref_domain = Bubble(polygon, level=0, is_hole=False)
+
         # HashMap:  level to list(polygons) map
         self.lvl2polygons = {}  # is final result for gmsh
 
@@ -55,8 +58,8 @@ class Topology(object):
         pass
 
     def add_bubble(self, Q: shapely.Polygon, level: int, is_hole: bool):
-
-        q = shapely.Polygon(Q.shell, Q.holes)
+        # clip q with respect to the reference domain
+        q = Q.intersection(self.ref_domain.polygon)
 
         assert level > 0
         # Find intersecting polygons and group by level relation
@@ -76,9 +79,9 @@ class Topology(object):
                     raise ValueError(
                         "Given level is not an integer with order relation."
                     )
-                
-        # TODO: Avoid q_diff and use q definition only within the method. 
+
         if len(higher_bubbles) > 0:
+            print("I AM NEVER HERE")
             # Update the shape of q constrained by higher level bubbles
             # If q is completely contained within the union of higher level bubbles -> ignore q
             higher_polygons_union = shapely.union_all(
@@ -89,10 +92,10 @@ class Topology(object):
             # q_diff might be a multipolygon
             q = q.difference(higher_polygons_union)
             print(f"q_diff HL type: {type(q)}")
-
-        # update the lower level bubbles according to q_diff
+                        
         for p in lower_bubbles:
-            p_diff = p.polygon.difference(q_diff)
+
+            p_diff = p.polygon.difference(q)
             if p_diff.area > 0:
                 if isinstance(p_diff, shapely.MultiPolygon):
                     for p_sub in p_diff.geoms:
@@ -114,11 +117,11 @@ class Topology(object):
             self.bubbles.remove(p)
 
         # Clip q_diff with main domain
-        q_diff = q_diff.intersection(self.domain)
-        print(f"q_diff intersection domain type: {type(q_diff)}")
+        #q_diff = q.intersection(self.domain)
+        #print(f"q_diff intersection domain type: {type(q)}")
         # Merge q_diff with equal level bubbles, the result still might be a multipolygon
-        q_final = shapely.union_all([q_diff] + [p.polygon for p in equal_bubbles])
-        print(f"q_final domain type: {type(q_final)}")
+        q_final = shapely.union_all([q] + [p.polygon for p in equal_bubbles])
+        #print(f"q_final domain type: {type(q_final)}")
 
         q_bubble = Bubble(q_final, level=level, is_hole=is_hole)
 
@@ -139,15 +142,25 @@ class Topology(object):
         pass
 
     def plot_setup(self): 
-        lvl2cl = {0: "blue", 1: "brown", 2: "gray", 3: "yellow", 10: "white"}
+        lvl2cl = {0: "blue", 1: "brown", 2: "gray", 3: "yellow", 10: "white", 11: "purple"}
         P = sorted(self.bubbles, key=lambda p: p.level)
         for bubble in P:
             p, lvl, is_hole = bubble 
+            print(f"Plot bubble with level = {lvl}")
             x, y = p.exterior.xy  # gold
             if is_hole:
                 plt.fill(x, y, color=lvl2cl[lvl])
+                plt.plot(x, y, color='black')
             else:
                 plt.fill(x, y, color=lvl2cl[lvl])
+
+        
+        x,y = self.ref_domain.polygon.exterior.xy
+        plt.plot(x, y, color='black')
+        for pp in self.ref_domain.polygon.interiors : 
+            x, y = pp.xy  # gol
+            plt.fill(x, y, color='white') 
+            plt.plot(x, y, color='black')
 
 
         plt.show()
@@ -324,36 +337,45 @@ def test2():
 
 if __name__ == "__main__":
 
+    # test2()
+    # exit()
+
     import matplotlib.pyplot as plt
     R = Rectangular(midpoint=(0.0, 0), width=2, height=2).discretize_hole(refs=4)
     C = Circle(midpoint=(1.0, 0), radius=0.5).discretize_hole(refs=50)
 
+    C_cutout = shapely.Polygon(Circle(midpoint=(0. ,0.75), radius = 0.2).discretize_hole(refs=50))
+
     R_shapely = shapely.Polygon(R)
     C_shapely = shapely.Polygon(C)
-    domain = R_shapely.union(C_shapely)
+    domain = R_shapely.union(C_shapely).difference(C_cutout)
     topo = Topology(domain)
 
     # P2
     p2 = shapely.Polygon(
-        Circle(midpoint=(-0.25, 0), radius=0.25).discretize_hole(refs=50)
+        Circle(midpoint=(-0.25, 0.), radius=0.25).discretize_hole(refs=50)
     )
     topo.add_bubble(p2, level=10, is_hole=True)
 
-    topo.plot_setup()
 
-    quit()
+
+  
+    C_touch_both = shapely.Polygon(Circle(midpoint=(-0.1 ,0.4), radius = 0.3).discretize_hole(refs=50))
+    topo.add_bubble(C_touch_both, level=11, is_hole=False)
 
     # P3
     C3 = Circle(midpoint=(0.75, 0), radius=0.25).discretize_hole(refs=50)
     p3 = shapely.Polygon(C3)
     topo.add_bubble(p3, level=1, is_hole=False)
 
+  
     # P4
     C4 = Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
     p4 = shapely.Polygon(C4)
     topo.add_bubble(p4, level=1, is_hole=False)
 
     print(f"Number of bubbles: {len(topo.bubbles)}")
+
 
     # this guy is intersection with the domain
     E1 = Ellipse(
@@ -366,13 +388,20 @@ if __name__ == "__main__":
     topo.add_bubble(shapely.Polygon(E1), level=1, is_hole=False)
     topo.add_bubble(shapely.Polygon(E2), level=1, is_hole=False)
 
+
+
+
     C5 = Circle(midpoint=(0.5, 0.6), radius=0.2).discretize_hole(refs=50)
     C6 = Circle(midpoint=(0.6, 0.6), radius=0.2).discretize_hole(refs=50)
-    topo.add_bubble(shapely.Polygon(C5), level=4, is_hole=False)
-    topo.add_bubble(shapely.Polygon(C6), level=3, is_hole=False)
+    topo.add_bubble(shapely.Polygon(C5), level=3, is_hole=False)
+    topo.add_bubble(shapely.Polygon(C6), level=2, is_hole=False)
 
     C = Circle(midpoint=(0.24, -0.8), radius=0.22).discretize_hole(refs=50)
     topo.add_bubble(shapely.Polygon(C), level=1, is_hole=False)
+
+
+ 
+
 
     E = Ellipse(midpoint=(0.25, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
         refs=50
@@ -389,11 +418,17 @@ if __name__ == "__main__":
     )
     topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
 
+
+
     # this guy encloses the loop !
     E = Ellipse(midpoint=(0.4, -0.7), axis=(0.2, 0.05), angle=0.0).discretize_hole(
         refs=50
     )
     topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
+
+    topo.plot_setup()
+
+    quit()
 
     print(f"Number of bubbles: {len(topo.bubbles)}")
 
