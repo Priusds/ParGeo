@@ -3,7 +3,7 @@ import shapely
 from itertools import groupby
 
 from bubbles.gmsh_api import Point, Line, CurveLoop, PlaneSurface, PhysicalGroup, SurfaceLoop, Volume, GmshEntities, mesh, write_geo
-from bubbles.two_d.hole import Circle, Ellipse, Rectangular
+from bubbles.two_d.hole import Circle, Ellipse, Rectangular, Stellar
 from bubbles.two_d.topology_v2 import Bubble, Topology
 
 def generate_topo():
@@ -46,15 +46,20 @@ def generate_topo():
     # this guy is intersection with the domain
     E1 = Ellipse(
         midpoint=(-0.5, 0.75), axis=(1, 0.1), angle=0.25 * math.pi
-    ).discretize_hole(refs=50)
+    ).discretize_hole(refs=200)
     topo.add_bubble(shapely.Polygon(E1), level=1, is_hole=False)
     
     # this guy is just interior
-    E2 = Ellipse(midpoint=(-0.55, -0.6), axis=(0.25, 0.1), angle=0.0).discretize_hole(
-        refs=50
-    )
+    # E2 = Ellipse(midpoint=(-0.55, -0.6), axis=(0.25, 0.1), angle=0.0).discretize_hole(
+    #     refs=50
+    # )
 
-    topo.add_bubble(shapely.Polygon(E2), level=1, is_hole=False)
+    S1 = Stellar(midpoint=(-0.75, -0.6), radius = 0.2).discretize_hole(refs = 100)
+
+    S2 = Stellar(midpoint=(-0.5, -0.6), radius = 0.25).discretize_hole(refs = 100)
+
+    topo.add_bubble(shapely.Polygon(S1), level=1, is_hole=False)
+    topo.add_bubble(shapely.Polygon(S2), level=2, is_hole=False)
 
     
 
@@ -212,10 +217,53 @@ def topology_to_gmsh_entities(topo: Topology):
     )
 
 
+def test_circle_tunnel():
+
+    C = shapely.Polygon(Circle(midpoint=(0., 0), radius=1.).discretize_hole(refs=50))
+
+    topo = Topology(C)
+
+    radii   = [0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]
+    level = [i+1 for i in range(len(radii))]
+
+    for lvl, rad in zip(level, radii): 
+        C = shapely.Polygon(Circle(midpoint=(0, 0), radius=rad).discretize_hole(refs=50))
+        topo.add_bubble(C, level= lvl, is_hole= False )
+
+    return topo
+
+def test_half_chessboard():
+    N = 2
+    R = shapely.Polygon(Rectangular(midpoint=((N-1)/2,(N-1)/2), width=N, height=N).discretize_hole(refs=4))
+    topo = Topology(R)
+
+    #TODO: this is buggy as above hole not added correctly
+
+    for i in range(N): 
+        for j in range(N): 
+            if  i > 0 or j > 0 : 
+                R = shapely.Polygon(Rectangular(midpoint=(i,j), width=1., height=1.).discretize_hole(refs=4))
+                topo.add_bubble(R, level= (i+j)%2 + 1, is_hole= False )
+            #print(f"level = {(i+j)%2 + 1}")
+
+
+            # 1  2    1 0      2  1  
+            # 0  1    0 1      1  2 
+
+    return topo
+
+
+
+
+
+
 if __name__ == "__main__":
-    for _ in range(1):
-        generate_topo()
-    topo = generate_topo()
+    # for _ in range(1):
+    #     generate_topo()
+    # topo = generate_topo()
+
+    #topo = test_circle_tunnel()
+    topo = test_half_chessboard()
     topo.plot_setup()
 
     gmsh_entities = topology_to_gmsh_entities(topo)
