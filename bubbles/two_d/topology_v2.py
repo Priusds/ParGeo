@@ -8,7 +8,7 @@ from copy import deepcopy
 
 Bubble = namedtuple("Bubble", ["polygon", "level", "is_hole"])
 
-
+GRID_SIZE = 1e-15
 
 class Topology(object):
     """
@@ -35,11 +35,15 @@ class Topology(object):
 
     """
 
-    def __init__(self, polygon: shapely.Polygon):
+    def __init__(self, polygon: shapely.Polygon, grid_size=GRID_SIZE):
         # polygons is a list of non-intersecting polygons (0-measure intersection)
+        #polygon = shapely.set_precision(polygon, grid_size)
         self.bubbles = {Bubble(polygon, level=0, is_hole=False)}
 
         self.ref_domain = Bubble(polygon, level=0, is_hole=False)
+        self.grid_size = grid_size
+        # TODO: Check if it is enough just to set the grid_size level for all new geometries,
+        # and then leave the parameter out for the rest of the code.
 
         # HashMap:  level to list(polygons) map
         self.lvl2polygons = {}  # is final result for gmsh
@@ -50,50 +54,50 @@ class Topology(object):
         return shapely.MultiPolygon(domain_polygons)
 
     def add_bubble(self, Q: shapely.Polygon, level: int, is_hole: bool):
-        print("========================")
-        print("ADD BUBBLE")
-        print("========================")
-        print(f"Level: {level} - Number of bubbles: {len(self.bubbles)}")
+        if not level > 0:
+            raise ValueError("Level must be positive integer.")
         # clip q with respect to the reference domain
-        new_bubble = Q.intersection(self.ref_domain.polygon)
+        new_bubble = Q.intersection(self.ref_domain.polygon, grid_size=self.grid_size)
         if not isinstance(new_bubble, shapely.Polygon):
-            raise ValueError(f"new_bubble is of type {type(new_bubble)}")
-        assert level > 0
+            raise ValueError(f"new_bubble is not a Polygon, found type {type(new_bubble)}.")
+
         # Find intersecting polygons and group by level relation
         lower_bubbles = set()
         higher_bubbles = set()
         equal_bubbles = set()
-
-        for lower_bubble in self.bubbles:
-            if lower_bubble.polygon.intersects(new_bubble):
-                if level > lower_bubble.level:
-                    lower_bubbles.add(lower_bubble)
-                elif level < lower_bubble.level:
-                    higher_bubbles.add(lower_bubble)
-                elif level == lower_bubble.level:
-                    equal_bubbles.add(lower_bubble)
+        for bubble in self.bubbles:
+            if bubble.polygon.intersects(new_bubble):
+                if level > bubble.level:
+                    lower_bubbles.add(bubble)
+                elif level < bubble.level:
+                    higher_bubbles.add(bubble)
+                elif level == bubble.level:
+                    equal_bubbles.add(bubble)
+                    if not bubble.is_hole == is_hole:
+                        raise ValueError(
+                            "Bubbles with same level must have same is_hole value."
+                        )
                 else:
                     raise ValueError(
                         "Given level is not an integer with order relation."
                     )
-
         if len(higher_bubbles) > 0:
-            # Update the shape of q constrained by higher level bubbles
-            # If q is completely contained within the union of higher level bubbles -> ignore q
+            # Update the shape of new_bubble constrained by higher level bubbles
+            # If new_bubble is completely contained within the union of higher level bubbles -> ignore q
             higher_polygons_union = shapely.union_all(
                 [b.polygon for b in higher_bubbles]
             )
             if higher_polygons_union.contains(new_bubble):
                 return
-            # q_diff might be a multipolygon
-            new_bubble = new_bubble.difference(higher_polygons_union)
-            if not isinstance(new_bubble, shapely.Polygon):
+            new_bubble = new_bubble.difference(higher_polygons_union, grid_size=self.grid_size)
+            # new_bubble might be a multipolygon
+            if not (isinstance(new_bubble, shapely.Polygon) or isinstance(new_bubble, shapely.MultiPolygon)):
                 raise ValueError(f"new_bubble is of type {type(new_bubble)}")
 
         for lower_bubble in lower_bubbles:
-            print(f"Iterate over lower bubbles:")
-            print(f"Lower_bubble level: {lower_bubble.level}")
-            p_diff = lower_bubble.polygon.difference(new_bubble)
+            p_diff = lower_bubble.polygon.difference(new_bubble, grid_size=self.grid_size)
+            if not (isinstance(p_diff, shapely.Polygon) or isinstance(p_diff, shapely.MultiPolygon)):
+                raise ValueError(f"p_diff is of type {type(p_diff)}")
 
             if p_diff.area > 0:
                 if isinstance(p_diff, shapely.MultiPolygon):
@@ -103,41 +107,33 @@ class Topology(object):
                             Bubble(p_sub, level=lower_bubble.level, is_hole=lower_bubble.is_hole)
                         )
                         # Add intersection points to new_bubble
-                        new_bubble = new_bubble.intersection(p_sub.union(new_bubble))
-                        if not isinstance(new_bubble, shapely.Polygon):
-                            raise ValueError(f"new_bubble is of type {type(new_bubble)}")
+                        new_bubble = new_bubble.intersection(p_sub.union(new_bubble, grid_size=self.grid_size), grid_size=self.grid_size)
                 else:
-                    self.bubbles.add(Bubble(p_diff, level=lower_bubble.level, is_hole=lower_bubble.is_hole))
-                    #p2.intersection(p1.union(p2))
                     # Add intersection points to new_bubble
-                    new_bubble = new_bubble.intersection(p_diff.union(new_bubble))
-                    if isinstance(new_bubble, shapely.GeometryCollection):
-                        print("------------------------")
-                        print("Error: new_bubble is a GeometryCollection")
-                        print("Inspect Geometry collection:")
-                        print(f"Length: {len(new_bubble.geoms)}")
-                        for geo in new_bubble.geoms:
-                            print(f"type of geo = {type(geo)}")
-                        print(f"p_diff type = {type(p_diff)}")
-                        raise ValueError("Invalid type for new_bubble")
+                    new_bubble = new_bubble.intersection(p_diff.union(new_bubble, grid_size=self.grid_size), grid_size=self.grid_size)
+                    self.bubbles.add(Bubble(p_diff, level=lower_bubble.level, is_hole=lower_bubble.is_hole))
             else:
-                # p is covered by q_diff
+                # lower_bubble is covered by new_bubble
                 if lower_bubble.level == 0:
-                    # bubble completely contains the domain, this is not allowed
+                    # new_bubble completely contains the domain, this is not allowed
                     return
                 else:
-                    # Remove p from self.bubbles
+                    # Remove lower_bubble from self.bubbles
                     pass
             self.bubbles.remove(lower_bubble)
 
+        if not (isinstance(new_bubble, shapely.Polygon) or isinstance(new_bubble, shapely.MultiPolygon)):
+            raise ValueError(f"new_bubble is of type {type(new_bubble)}")
         # Merge q_diff with equal level bubbles, the result still might be a multipolygon
         for lower_bubble in equal_bubbles:
             self.bubbles.remove(lower_bubble)
-        q_final = shapely.union_all([new_bubble] + [p.polygon for p in equal_bubbles])
 
+        q_final = shapely.union_all([new_bubble] + [p.polygon for p in equal_bubbles],grid_size=self.grid_size)
+        if not (isinstance(q_final, shapely.Polygon) or isinstance(q_final, shapely.MultiPolygon)):
+            raise ValueError(f"q_final is of type {type(q_final)}")
+        
         if isinstance(q_final, shapely.MultiPolygon):
             for q_sub in q_final.geoms:
-                    assert isinstance(q_sub, shapely.Polygon)
                     self.bubbles.add(
                         Bubble(q_sub, level=level, is_hole=is_hole)
                     )
@@ -396,4 +392,4 @@ def test2():
 if __name__ == "__main__":
     pass
     # test1()
-    # test2()
+    test2()

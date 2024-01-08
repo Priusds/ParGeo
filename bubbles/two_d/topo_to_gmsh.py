@@ -7,14 +7,18 @@ from bubbles.two_d.hole import Circle, Ellipse, Rectangular
 from bubbles.two_d.topology_v2 import Bubble, Topology
 
 def generate_topo():
-    R = Rectangular(midpoint=(0.0, 0), width=2, height=2).discretize_hole(refs=4)
+
     C = Circle(midpoint=(1.0, 0), radius=0.5).discretize_hole(refs=50)
 
     C_cutout = shapely.Polygon(Circle(midpoint=(0. ,0.75), radius = 0.2).discretize_hole(refs=50))
 
-    R_shapely = shapely.Polygon(R)
+    R_shapely = shapely.Polygon(Rectangular(midpoint=(0.0, 0), width=2, height=2).discretize_hole(refs=4))
     C_shapely = shapely.Polygon(C)
-    domain = R_shapely#.union(C_shapely)#.difference(C_cutout)
+    C_cutout2 = shapely.Polygon(Circle(midpoint=(0. ,0.), radius = 0.2).discretize_hole(refs=50))
+    domain = R_shapely
+    domain = domain.union(C_shapely)
+    domain = domain.difference(C_cutout)
+    domain = domain.difference(C_cutout2)
     topo = Topology(domain)
 
     if True:
@@ -27,15 +31,14 @@ def generate_topo():
     if True:
         c2 = shapely.Polygon(Circle(midpoint=(-0.1 ,0.4), radius = 0.3).discretize_hole(refs=50))
         topo.add_bubble(c2, level=11, is_hole=False)
-
-    return topo
+    
 
     # P3
     C3 = Circle(midpoint=(0.75, 0), radius=0.25).discretize_hole(refs=50)
     p3 = shapely.Polygon(C3)
     topo.add_bubble(p3, level=1, is_hole=False)
 
-    # P4
+    # # P4
     C4 = Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
     p4 = shapely.Polygon(C4)
     topo.add_bubble(p4, level=1, is_hole=False)
@@ -44,13 +47,13 @@ def generate_topo():
     E1 = Ellipse(
         midpoint=(-0.5, 0.75), axis=(1, 0.1), angle=0.25 * math.pi
     ).discretize_hole(refs=50)
+    topo.add_bubble(shapely.Polygon(E1), level=1, is_hole=False)
     
-    return topo
     # this guy is just interior
     E2 = Ellipse(midpoint=(-0.55, -0.6), axis=(0.25, 0.1), angle=0.0).discretize_hole(
         refs=50
     )
-    topo.add_bubble(shapely.Polygon(E1), level=1, is_hole=False)
+
     topo.add_bubble(shapely.Polygon(E2), level=1, is_hole=False)
 
     
@@ -61,35 +64,37 @@ def generate_topo():
     topo.add_bubble(shapely.Polygon(C5), level=3, is_hole=False)
     topo.add_bubble(shapely.Polygon(C6), level=2, is_hole=False)
 
-    C = Circle(midpoint=(0.24, -0.8), radius=0.22).discretize_hole(refs=50)
-    topo.add_bubble(shapely.Polygon(C), level=1, is_hole=False)
+    if True:
+        C = Circle(midpoint=(0.24, -0.8), radius=0.22).discretize_hole(refs=50)
+        topo.add_bubble(shapely.Polygon(C), level=1, is_hole=True)
 
+        is_hole = False
+        level = 3
+        E = Ellipse(midpoint=(0.25, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
+            refs=50
+        )
+        topo.add_bubble(shapely.Polygon(E), level=level, is_hole=is_hole)
 
- 
+        E = Ellipse(midpoint=(0.4, -0.4), axis=(0.2, 0.05), angle=0.0).discretize_hole(
+            refs=50
+        )
+        topo.add_bubble(shapely.Polygon(E), level=level, is_hole=is_hole)
 
+        E = Ellipse(midpoint=(0.5, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
+            refs=50
+        )
+        topo.add_bubble(shapely.Polygon(E), level=level, is_hole=is_hole)
+        
+        # this guy encloses the loop !
+        E = Ellipse(midpoint=(0.4, -0.7), axis=(0.2, 0.05), angle=0.0).discretize_hole(
+            refs=50
+        )
+        topo.add_bubble(shapely.Polygon(E), level=level, is_hole=is_hole)
 
-    E = Ellipse(midpoint=(0.25, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
-        refs=50
-    )
-    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
+    if True:
+        C_touch_hole = shapely.Polygon(Circle(midpoint=(-0.5 ,0.4), radius = 0.45).discretize_hole(refs=50))
+        topo.add_bubble(C_touch_hole, level=3, is_hole=False)
 
-    E = Ellipse(midpoint=(0.4, -0.4), axis=(0.2, 0.05), angle=0.0).discretize_hole(
-        refs=50
-    )
-    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
-
-    E = Ellipse(midpoint=(0.5, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
-        refs=50
-    )
-    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
-
-
-
-    # this guy encloses the loop !
-    E = Ellipse(midpoint=(0.4, -0.7), axis=(0.2, 0.05), angle=0.0).discretize_hole(
-        refs=50
-    )
-    topo.add_bubble(shapely.Polygon(E), level=2, is_hole=False)
     return topo
 
 
@@ -210,8 +215,8 @@ def topology_to_gmsh_entities(topo: Topology):
 if __name__ == "__main__":
     for _ in range(1):
         generate_topo()
-    #topo = generate_topo()
-    #topo.plot_setup()
+    topo = generate_topo()
+    topo.plot_setup()
 
     gmsh_entities = topology_to_gmsh_entities(topo)
     write_geo(gmsh_entities=gmsh_entities, file_name="mesh", correct_curve_loops=True)
