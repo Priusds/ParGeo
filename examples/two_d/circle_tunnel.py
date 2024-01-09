@@ -14,7 +14,7 @@ def generate_topo():
 
     for lvl, rad in zip(level, radii): 
         C = shapely.Polygon(Circle(midpoint=(0, 0), radius=rad).discretize_hole(refs=50))
-        topo.add_bubble(Bubble(C, level= lvl, is_hole= False))
+        topo.add_bubble(Bubble(polygon=C, level= lvl, is_hole= False))
 
     return topo
 

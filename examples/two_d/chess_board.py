@@ -20,7 +20,7 @@ def generate_topo():
                     refs=4
                 )
             )
-            topo.add_bubble(Bubble(R, level=(i + j) % 2 + 1, is_hole=(i + j) % 2))
+            topo.add_bubble(Bubble(polygon=R, level=(i + j) % 2 + 1, is_hole=(i + j) % 2))
 
     return topo
 
