@@ -238,4 +238,5 @@ def test_2d_6():
         if topo.add_hole(stellar_hole, refs=30):
             counter += 1
 
-    topo.write_geo(file_name=DATA_DIR.joinpath("2d_6"), lc_in=1, lc_out=1, filled=True)
+    topo.write_geo(file_name=DATA_DIR.joinpath("2d_6_0"), lc_in=1, lc_out=1, filled=True)
+    topo.write_geo(file_name=DATA_DIR.joinpath("2d_6_1"), lc_in=1, lc_out=1, filled=False)
