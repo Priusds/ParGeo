@@ -2,7 +2,7 @@ import shapely
 from bubbles.gmsh_api import write_geo
 from bubbles.two_d.hole import Rectangular
 from bubbles.two_d.topo_to_gmsh import topology_to_gmsh_entities
-from bubbles.two_d.topology_v2 import Topology
+from bubbles.two_d.topology_v2 import Bubble, Topology
 
 
 def generate_topo():
@@ -21,7 +21,7 @@ def generate_topo():
                     refs=4
                 )
             )
-            topo.add_bubble(R, level=(i + j) % 2 + 1, is_hole=(i + j) % 2)
+            topo.add_bubble(Bubble(R, level=(i + j) % 2 + 1, is_hole=(i + j) % 2))
 
     return topo
 
