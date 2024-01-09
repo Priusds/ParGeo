@@ -1,3 +1,4 @@
+from typing import Any
 import shapely
 import math
 
@@ -7,8 +8,6 @@ from collections import namedtuple
 from copy import deepcopy
 
 Bubble = namedtuple("Bubble", ["polygon", "level", "is_hole"])
-
-GRID_SIZE = 1e-15
 
 
 class Topology(object):
@@ -36,29 +35,32 @@ class Topology(object):
 
     """
 
-    def __init__(self, polygon: shapely.Polygon, grid_size=GRID_SIZE):
+    DEFAULT_GRID_SIZE = 1e-15
+
+    def __init__(self, polygon: shapely.Polygon, grid_size=None):
         self.bubbles = {Bubble(polygon, level=0, is_hole=False)}
 
         self.ref_domain = Bubble(polygon, level=0, is_hole=False)
         # TODO: Check if it is enough just to set the grid_size level for all new geometries,
         # and then leave the parameter out for the rest of the code.
         # E.g. doing: polygon = shapely.set_precision(polygon, grid_size)
-        self.grid_size = grid_size
-        
+
+        self.grid_size = grid_size if grid_size else Topology.DEFAULT_GRID_SIZE
+
         # level2is_hole is a dictionary that maps level to is_hole
+        # Once a bubble is added to the topology, the level2is_hole dictionary is updated,
+        # the first time a bubble with a new level is added, the is_hole value is set and
+        # cannot be changed.
         self.__level2is_hole = {0: False}
 
     @property
-    def domain(self):
-        domain_polygons = [p.polygon for p in self.bubbles if p.level == 0]
-        return shapely.MultiPolygon(domain_polygons)
-
-    @property
-    def level2is_hole(self):
+    def level2is_hole(self) -> dict[int, bool]:
+        """Return a dictionary that maps level to is_hole."""
         return self.__level2is_hole
 
     @property
-    def levels(self):
+    def levels(self) -> list[int]:
+        """Return all currently present levels."""
         return sorted(set([p.level for p in self.bubbles]))
 
     def add_bubble(self, bubble: Bubble) -> bool:
@@ -70,7 +72,7 @@ class Topology(object):
             raise ValueError("Level must be positive integer.")
         if level in self.level2is_hole and self.level2is_hole[level] != is_hole:
             raise ValueError("Bubbles with same level must have same is_hole value.")
-        
+
         # Clip the bubble with respect to the reference domain
         q = q.intersection(self.ref_domain.polygon, grid_size=self.grid_size)
         if not isinstance(q, (shapely.Polygon, shapely.MultiPolygon)):
@@ -108,9 +110,7 @@ class Topology(object):
             if higher_polygons_union.contains(q):
                 # new_bubble is completely contained in higher level bubbles and is ignored
                 return False
-            q = q.difference(
-                higher_polygons_union, grid_size=self.grid_size
-            )
+            q = q.difference(higher_polygons_union, grid_size=self.grid_size)
             # new_bubble might be a multipolygon
             if not isinstance(q, (shapely.Polygon, shapely.MultiPolygon)):
                 if isinstance(q, shapely.GeometryCollection):
@@ -120,9 +120,7 @@ class Topology(object):
 
         # Iterate over lower level bubbles and update them
         for lower_bubble in lower_bubbles:
-            p_diff = lower_bubble.polygon.difference(
-                q, grid_size=self.grid_size
-            )
+            p_diff = lower_bubble.polygon.difference(q, grid_size=self.grid_size)
             if not isinstance(p_diff, (shapely.Polygon, shapely.MultiPolygon)):
                 if isinstance(p_diff, shapely.GeometryCollection):
                     p_diff = self.fix_geometryCollection(p_diff)
@@ -204,7 +202,7 @@ class Topology(object):
             else:
                 return union
 
-    def plot(self):
+    def plot(self) -> Any:
         """
         Plot the reference domain and the bubbles.
         """
