@@ -7,6 +7,7 @@ from bubbles.two_d.topology_v2 import Topology
 
 
 def generate_topo():
+    """Generate a topology with a few edge cases."""
     C = Circle(midpoint=(1.0, 0), radius=0.5).discretize_hole(refs=50)
 
     C_cutout = shapely.Polygon(

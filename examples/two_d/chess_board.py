@@ -6,6 +6,7 @@ from bubbles.two_d.topology_v2 import Topology
 
 
 def generate_topo():
+    """Generate a topology with a chess board pattern."""
     N = 10
     R = shapely.Polygon(
         Rectangular(
@@ -13,9 +14,6 @@ def generate_topo():
         ).discretize_hole(refs=4)
     )
     topo = Topology(R)
-
-    # TODO: this is buggy as above hole not added correctly
-
     for i in range(N):
         for j in range(N):
             R = shapely.Polygon(
@@ -28,10 +26,11 @@ def generate_topo():
     return topo
 
 
-topo = generate_topo()
-topo.plot()
+if __name__ == "__main__":
+    topo = generate_topo()
+    topo.plot()
 
-gmsh_entities = topology_to_gmsh_entities(topo)
-write_geo(
-    gmsh_entities=gmsh_entities, file_name="chess_board", correct_curve_loops=True
-)
+    gmsh_entities = topology_to_gmsh_entities(topo)
+    write_geo(
+        gmsh_entities=gmsh_entities, file_name="chess_board", correct_curve_loops=True
+    )

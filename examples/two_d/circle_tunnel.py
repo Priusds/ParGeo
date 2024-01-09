@@ -5,7 +5,7 @@ from bubbles.two_d.topo_to_gmsh import topology_to_gmsh_entities
 from bubbles.two_d.topology_v2 import Topology
 
 def generate_topo():
-
+    """Generate a topology with a sequence of centered inclusions."""
     C = shapely.Polygon(Circle(midpoint=(0., 0), radius=1.).discretize_hole(refs=50))
 
     topo = Topology(C)
