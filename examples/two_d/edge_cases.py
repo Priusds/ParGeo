@@ -25,8 +25,13 @@ def generate_topo():
     domain = domain.union(C_shapely)
     domain = domain.difference(C_cutout)
     domain = domain.difference(C_cutout2)
+    domain = domain.difference(
+        shapely.Polygon(
+            Ellipse(midpoint=(0.8, 0.0), axis=(.05,.3), angle=0).discretize_hole(refs=51) # 50 does not work
+        )
+    )
     topo = Topology(domain)
-
+    #return topo
     if True:
         # P2
         c1 = shapely.Polygon(
@@ -60,18 +65,19 @@ def generate_topo():
     # E2 = Ellipse(midpoint=(-0.55, -0.6), axis=(0.25, 0.1), angle=0.0).discretize_hole(
     #     refs=50
     # )
+    if True:
+        S1 = Stellar(midpoint=(-0.75, -0.6), radius=0.2).discretize_hole(refs=100)
 
-    S1 = Stellar(midpoint=(-0.75, -0.6), radius=0.2).discretize_hole(refs=100)
+        S2 = Stellar(midpoint=(-0.5, -0.6), radius=0.25).discretize_hole(refs=100)
 
-    S2 = Stellar(midpoint=(-0.5, -0.6), radius=0.25).discretize_hole(refs=100)
+        topo.add_bubble(shapely.Polygon(S1), level=1, is_hole=False)
+        topo.add_bubble(shapely.Polygon(S2), level=2, is_hole=False)
 
-    topo.add_bubble(shapely.Polygon(S1), level=1, is_hole=False)
-    topo.add_bubble(shapely.Polygon(S2), level=2, is_hole=False)
-
-    C5 = Circle(midpoint=(0.5, 0.6), radius=0.2).discretize_hole(refs=50)
-    C6 = Circle(midpoint=(0.6, 0.6), radius=0.2).discretize_hole(refs=50)
-    topo.add_bubble(shapely.Polygon(C5), level=3, is_hole=False)
-    topo.add_bubble(shapely.Polygon(C6), level=2, is_hole=False)
+    if True:
+        C5 = Circle(midpoint=(0.5, 0.6), radius=0.2).discretize_hole(refs=50)
+        C6 = Circle(midpoint=(0.6, 0.6), radius=0.2).discretize_hole(refs=50)
+        topo.add_bubble(shapely.Polygon(C5), level=3, is_hole=False)
+        topo.add_bubble(shapely.Polygon(C6), level=2, is_hole=False)
 
     if True:
         C = Circle(midpoint=(0.24, -0.8), radius=0.22).discretize_hole(refs=50)

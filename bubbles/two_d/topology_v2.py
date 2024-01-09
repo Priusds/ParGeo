@@ -66,9 +66,9 @@ class Topology(object):
             raise ValueError("Level must be positive integer.")
         if level in self.level2is_hole and self.level2is_hole[level] != is_hole:
             raise ValueError("Bubbles with same level must have same is_hole value.")
-        # clip q with respect to the reference domain
+        # Clip Q with respect to the reference domain
         new_bubble = Q.intersection(self.ref_domain.polygon, grid_size=self.grid_size)
-        if not isinstance(new_bubble, shapely.Polygon):
+        if not isinstance(new_bubble, (shapely.Polygon, shapely.MultiPolygon)):
             raise ValueError(
                 f"new_bubble is not a Polygon, found type {type(new_bubble)}."
             )
@@ -201,6 +201,7 @@ class Topology(object):
         hole_boundary_color = "orange"
         ref_boundary_color = "black"
         ref_domain_color = "silver"
+        ref_domain_hole_color = "white"
 
         level2is_hole = self.level2is_hole
         # Filter out levels that are not represented by any bubble.
@@ -218,10 +219,10 @@ class Topology(object):
         if 0 in levels:
             lvl2cl[0] = ref_domain_color
             levels.remove(0)
-        norm = Normalize(vmin=min(levels), vmax=max(levels))
-        for lvl in levels:
-            lvl2cl[lvl] = plt.cm.cool(norm(lvl))
-
+        if len(levels) > 0:
+            norm = Normalize(vmin=min(levels), vmax=max(levels))
+            for lvl in levels:
+                lvl2cl[lvl] = plt.cm.cool(norm(lvl))
         # Make a legend.
         handles = [
             Line2D([0], [0], label="Reference boundary", color=ref_boundary_color),
@@ -239,20 +240,24 @@ class Topology(object):
             handles.append(mpatches.Patch(color=cl, label=label_text))
         plt.legend(handles=handles)
 
-        # Plot the boundary of the reference domain.
+        # Plot the reference domain.
         x, y = self.ref_domain.polygon.exterior.xy
         plt.plot(x, y, color=ref_boundary_color)
+        plt.fill(x, y, color=ref_domain_color)
         for pp in self.ref_domain.polygon.interiors:
             x, y = pp.xy
             plt.plot(x, y, color=ref_boundary_color)
+            plt.fill(x, y, color=ref_domain_hole_color)
 
         # Plot the bubbles
         for bubble in bubbles:
-            p, lvl, is_hole = bubble
-            x, y = p.exterior.xy
-            plt.fill(x, y, color=lvl2cl[lvl])
-            if is_hole:
-                plt.plot(x, y, color=hole_boundary_color)
+            # Filter out reference domain
+            if bubble.level != 0:
+                p, lvl, is_hole = bubble
+                x, y = p.exterior.xy
+                plt.fill(x, y, color=lvl2cl[lvl])
+                if is_hole:
+                    plt.plot(x, y, color=hole_boundary_color)
 
         # Re-Plot Bubbles without holes
         for bubble in bubbles:
