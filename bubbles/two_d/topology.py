@@ -1,8 +1,11 @@
 from typing import Any
 from pydantic import BaseModel
 import shapely
+from shapely.geometry import Polygon
 
+from bubbles.two_d.hole import Rectangular
 
+from shapely.affinity import translate as shapely_translate
 class Bubble(BaseModel):
     polygon: shapely.Polygon
     level: int
@@ -367,3 +370,60 @@ class Topology(object):
 
         # Show the plot
         plt.show()
+
+class PeriodicTopology(Topology):
+    
+    def __init__(self, midpoint, width, height, periodic_x, periodic_y, grid_size=None):
+        polygon = shapely.Polygon(
+            Rectangular(midpoint=midpoint, width=width, height=height).discretize_hole(refs=4)
+        )
+        super().__init__(polygon, grid_size)
+        self.bounds = (midpoint[0]-width/2, midpoint[1]-height/2, midpoint[0]+width/2, midpoint[1]+height/2)
+        self.width = width
+        self.height = height
+        self.periodic_x = periodic_x
+        self.periodic_y = periodic_y
+
+    def add(self, bubble):
+        poly = self.clip(bubble.polygon)
+        if poly.area == 0:
+            return False
+        if isinstance(poly, shapely.Polygon):
+            self.add_bubble(Bubble(polygon=poly, level=bubble.level, is_hole=bubble.is_hole))
+        else:
+            for sub_poly in poly.geoms:
+                self.add_bubble(Bubble(polygon=sub_poly, level=bubble.level, is_hole=bubble.is_hole))
+
+    def clip(self, polygon):
+        poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
+        self_x_min, self_y_min, self_x_max, self_y_max = self.bounds
+
+        if not isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon)):
+            raise ValueError(f"polygon is of type {type(polygon)}")
+
+        if self.ref_domain.polygon.intersects(polygon):
+            if poly_x_min < self_x_min:
+                _in, _out = polygon.intersection(self.ref_domain.polygon), polygon.difference(self.ref_domain.polygon)
+                polygon = shapely.union_all(
+                    [_in, shapely_translate(_out, xoff=self.width)]
+                )
+            elif poly_y_min < self_y_min:
+                _in, _out = polygon.intersection(self.ref_domain.polygon), polygon.difference(self.ref_domain.polygon)
+                polygon = shapely.union_all(
+                    [_in, shapely_translate(_out, yoff=self.height)]
+                )
+            if poly_x_max > self_x_max:
+                _in, _out = polygon.intersection(self.ref_domain.polygon), polygon.difference(self.ref_domain.polygon)
+                polygon = shapely.union_all(
+                    [_in, shapely_translate(_out, xoff=-self.width)]
+                )
+            elif poly_y_max > self_y_max:
+                _in, _out = polygon.intersection(self.ref_domain.polygon), polygon.difference(self.ref_domain.polygon)
+                polygon = shapely.union_all(
+                    [_in, shapely_translate(_out, yoff=-self.height)]
+                )
+            else:
+                return polygon
+        else:
+            return shapely.Polygon()
+        return self.clip(polygon)
