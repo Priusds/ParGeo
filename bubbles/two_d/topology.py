@@ -38,6 +38,11 @@ class Topology(object):
     5.2 Delete pi1,...pim and add each subpolygon of P.
     5.3 If P is a multipolygon split into polygons.
 
+    # TODO: Separate bubbles and domain logic. The domain could be interpreted as a bubble with level 0, and
+    behave exactly the same way as the other bubbles. Meaning, it can grow or disappear. In a second
+    step this behaviour could be regulated if not desired.
+
+    # TODO: Make main add_bubble functions static.
     """
 
     DEFAULT_GRID_SIZE = 1e-15
@@ -68,7 +73,7 @@ class Topology(object):
         """Return all currently present levels."""
         return sorted(set([p.level for p in self.bubbles]))
 
-    def add_bubble(self, bubble: Bubble) -> bool:
+    def __add_bubble_merge(self, bubble: Bubble) -> bool:
         """
         Add a bubble to the topology.
         """
@@ -177,6 +182,65 @@ class Topology(object):
 
         self.__level2is_hole[level] = is_hole
         return True
+
+    def __add_bubble_disjoint(self, bubble: Bubble, bubble_distance: float, domain_distance: float) -> bool:
+        """Add a bubble to the topology.
+        
+        The bubble is added only if it is disjoint to all other bubbles, having minimal distance `bubble_distance`.
+
+        The bubble can intersect the domain boundary, if `domain_distance` is 0, otherwise it must be disjoint and have
+        distance `domain_distance` to the domain boundary.
+        """
+        if not bubble.level > 0:
+            raise ValueError("Level must be positive integer.")
+        if bubble.level in self.level2is_hole and self.level2is_hole[bubble.level] != bubble.is_hole:
+            raise ValueError("Bubbles with same level must have same is_hole value.")
+        if bubble_distance < self.grid_size:
+            raise ValueError("Minimal distance must be larger than grid_size.")
+        if domain_distance > 0:
+            if domain_distance < self.grid_size:
+                raise ValueError("Minimal distance must be larger than grid_size.")
+        
+        polygon = bubble.polygon
+        # Assert that the polygon intersects with the reference domain
+        if not self.ref_domain.polygon.intersects(polygon):
+            return False
+        
+        # Clip the bubble with respect to the reference domain OR assert
+        # minimal distance to the reference domain boundary.
+        if domain_distance == 0:
+            polygon = bubble.polygon.intersection(
+                self.ref_domain.polygon, grid_size=self.grid_size
+            )
+            if isinstance(polygon, shapely.GeometryCollection):
+                polygon = self.fix_geometryCollection(polygon)
+        else:
+            if self.ref_domain.polygon.boundary.distance(polygon) < domain_distance:
+                return False
+        
+        # Check distance to other bubbles
+        for _bubble in self.bubbles:
+            # Only iterate over non-boundary bubbles
+            if _bubble.level > 0:
+                if _bubble.polygon.distance(polygon) < bubble_distance:
+                    return False
+        
+        # Add bubble
+        self.bubbles.add(Bubble(
+            polygon=polygon,
+            level=bubble.level,
+            is_hole=bubble.is_hole,
+        ))
+        self.__level2is_hole[bubble.level] = bubble.is_hole
+        return True
+
+    def add_bubble(self, bubble: Bubble, **kwargs) -> bool:
+        """
+        Add a bubble to the topology.
+        """
+        if "bubble_distance" in kwargs and "domain_distance" in kwargs:
+            return self.__add_bubble_disjoint(bubble, **kwargs)
+        return self.__add_bubble_merge(bubble)
 
     def fix_geometryCollection(
         self, geo: shapely.GeometryCollection

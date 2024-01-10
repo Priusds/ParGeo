@@ -122,6 +122,12 @@ def generate_topo():
     )
     topo.add_bubble(Bubble(polygon=c_8, level=3, is_hole=False))
 
+    c_9 = shapely.Polygon(
+        Circle(midpoint=(0.0, 0.75), radius=0.1).discretize_hole(refs=50)
+    )
+
+    #topo.add_bubble(Bubble(polygon=c_9, level=3, is_hole=False))
+
     return topo
 
 
