@@ -1,4 +1,11 @@
-"""Define two-dimensional bubbles here."""
+"""Define two-dimensional bubbles here.
+
+TODO: Refactor this module. Do following:
+    - Rename `Hole`
+    - Integrate Shapely
+    - Rename `Rectangular` to `Rectangle` and add more boundary points.
+    - Maybe move Bubble class here.
+"""
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional
 
