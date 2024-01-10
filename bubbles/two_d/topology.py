@@ -6,6 +6,8 @@ from shapely.geometry import Polygon
 from bubbles.two_d.hole import Rectangular
 
 from shapely.affinity import translate as shapely_translate
+
+
 class Bubble(BaseModel):
     polygon: shapely.Polygon
     level: int
@@ -90,6 +92,9 @@ class Topology(object):
         polygon = polygon.intersection(
             self.ref_domain.polygon, grid_size=self.grid_size
         )
+        if polygon.area == 0:
+            # new_bubble is completely outside the reference domain and is ignored
+            return False
         if isinstance(polygon, shapely.GeometryCollection):
             polygon = self.fix_geometryCollection(polygon)
 
@@ -186,9 +191,11 @@ class Topology(object):
         self.__level2is_hole[level] = is_hole
         return True
 
-    def __add_bubble_disjoint(self, bubble: Bubble, bubble_distance: float, domain_distance: float) -> bool:
+    def __add_bubble_disjoint(
+        self, bubble: Bubble, bubble_distance: float, domain_distance: float
+    ) -> bool:
         """Add a bubble to the topology.
-        
+
         The bubble is added only if it is disjoint to all other bubbles, having minimal distance `bubble_distance`.
 
         The bubble can intersect the domain boundary, if `domain_distance` is 0, otherwise it must be disjoint and have
@@ -196,19 +203,22 @@ class Topology(object):
         """
         if not bubble.level > 0:
             raise ValueError("Level must be positive integer.")
-        if bubble.level in self.level2is_hole and self.level2is_hole[bubble.level] != bubble.is_hole:
+        if (
+            bubble.level in self.level2is_hole
+            and self.level2is_hole[bubble.level] != bubble.is_hole
+        ):
             raise ValueError("Bubbles with same level must have same is_hole value.")
         if bubble_distance < self.grid_size:
             raise ValueError("Minimal distance must be larger than grid_size.")
         if domain_distance > 0:
             if domain_distance < self.grid_size:
                 raise ValueError("Minimal distance must be larger than grid_size.")
-        
+
         polygon = bubble.polygon
         # Assert that the polygon intersects with the reference domain
         if not self.ref_domain.polygon.intersects(polygon):
             return False
-        
+
         # Clip the bubble with respect to the reference domain OR assert
         # minimal distance to the reference domain boundary.
         if domain_distance == 0:
@@ -220,24 +230,26 @@ class Topology(object):
         else:
             if self.ref_domain.polygon.boundary.distance(polygon) < domain_distance:
                 return False
-        
+
         # Check distance to other bubbles
         for _bubble in self.bubbles:
             # Only iterate over non-boundary bubbles
             if _bubble.level > 0:
                 if _bubble.polygon.distance(polygon) < bubble_distance:
                     return False
-        
+
         # Add bubble
-        self.bubbles.add(Bubble(
-            polygon=polygon,
-            level=bubble.level,
-            is_hole=bubble.is_hole,
-        ))
+        self.bubbles.add(
+            Bubble(
+                polygon=polygon,
+                level=bubble.level,
+                is_hole=bubble.is_hole,
+            )
+        )
         self.__level2is_hole[bubble.level] = bubble.is_hole
         return True
 
-    def add_bubble(self, bubble: Bubble, **kwargs) -> bool:
+    def add(self, bubble: Bubble, **kwargs) -> bool:
         """
         Add a bubble to the topology.
         """
@@ -371,30 +383,47 @@ class Topology(object):
         # Show the plot
         plt.show()
 
+
 class PeriodicTopology(Topology):
-    
     def __init__(self, midpoint, width, height, periodic_x, periodic_y, grid_size=None):
         polygon = shapely.Polygon(
-            Rectangular(midpoint=midpoint, width=width, height=height).discretize_hole(refs=4)
+            Rectangular(midpoint=midpoint, width=width, height=height).discretize_hole(
+                refs=4
+            )
         )
         super().__init__(polygon, grid_size)
-        self.bounds = (midpoint[0]-width/2, midpoint[1]-height/2, midpoint[0]+width/2, midpoint[1]+height/2)
+        self.bounds = (
+            midpoint[0] - width / 2,
+            midpoint[1] - height / 2,
+            midpoint[0] + width / 2,
+            midpoint[1] + height / 2,
+        )
         self.width = width
         self.height = height
         self.periodic_x = periodic_x
         self.periodic_y = periodic_y
 
-    def add(self, bubble):
+    def add(self, bubble: Bubble, **kwargs) -> bool:
         poly = self.clip(bubble.polygon)
+
         if poly.area == 0:
             return False
         if isinstance(poly, shapely.Polygon):
-            self.add_bubble(Bubble(polygon=poly, level=bubble.level, is_hole=bubble.is_hole))
+            super().add(
+                Bubble(polygon=poly, level=bubble.level, is_hole=bubble.is_hole),
+                **kwargs,
+            )
         else:
             for sub_poly in poly.geoms:
-                self.add_bubble(Bubble(polygon=sub_poly, level=bubble.level, is_hole=bubble.is_hole))
+                super().add(
+                    bubble=Bubble(
+                        polygon=sub_poly, level=bubble.level, is_hole=bubble.is_hole
+                    ),
+                    **kwargs,
+                )
 
     def clip(self, polygon):
+        """Clip polygon along periodic boundaries until it is inside the reference domain."""
         poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
         self_x_min, self_y_min, self_x_max, self_y_max = self.bounds
 
@@ -402,23 +431,31 @@ class PeriodicTopology(Topology):
             raise ValueError(f"polygon is of type {type(polygon)}")
 
         if self.ref_domain.polygon.intersects(polygon):
-            if poly_x_min < self_x_min:
-                _in, _out = polygon.intersection(self.ref_domain.polygon), polygon.difference(self.ref_domain.polygon)
+            if poly_x_min < self_x_min and self.periodic_x:
+                _in, _out = polygon.intersection(
+                    self.ref_domain.polygon
+                ), polygon.difference(self.ref_domain.polygon)
                 polygon = shapely.union_all(
                     [_in, shapely_translate(_out, xoff=self.width)]
                 )
-            elif poly_y_min < self_y_min:
-                _in, _out = polygon.intersection(self.ref_domain.polygon), polygon.difference(self.ref_domain.polygon)
+            elif poly_y_min < self_y_min and self.periodic_y:
+                _in, _out = polygon.intersection(
+                    self.ref_domain.polygon
+                ), polygon.difference(self.ref_domain.polygon)
                 polygon = shapely.union_all(
                     [_in, shapely_translate(_out, yoff=self.height)]
                 )
-            if poly_x_max > self_x_max:
-                _in, _out = polygon.intersection(self.ref_domain.polygon), polygon.difference(self.ref_domain.polygon)
+            if poly_x_max > self_x_max and self.periodic_x:
+                _in, _out = polygon.intersection(
+                    self.ref_domain.polygon
+                ), polygon.difference(self.ref_domain.polygon)
                 polygon = shapely.union_all(
                     [_in, shapely_translate(_out, xoff=-self.width)]
                 )
-            elif poly_y_max > self_y_max:
-                _in, _out = polygon.intersection(self.ref_domain.polygon), polygon.difference(self.ref_domain.polygon)
+            elif poly_y_max > self_y_max and self.periodic_y:
+                _in, _out = polygon.intersection(
+                    self.ref_domain.polygon
+                ), polygon.difference(self.ref_domain.polygon)
                 polygon = shapely.union_all(
                     [_in, shapely_translate(_out, yoff=-self.height)]
                 )

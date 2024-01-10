@@ -19,7 +19,7 @@ def generate_topo():
 
     for mid, rad, lvl in zip(midpoints, radii, levels):
         C = shapely.Polygon(Stellar(midpoint=mid, radius=rad).discretize_hole(refs=50))
-        topo.add_bubble(Bubble(polygon=C, level=lvl, is_hole=False))
+        topo.add(Bubble(polygon=C, level=lvl, is_hole=False))
 
     return topo
 

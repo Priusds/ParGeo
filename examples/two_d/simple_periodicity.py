@@ -10,7 +10,7 @@ def generate_topo():
         width=1,
         height=1,
         periodic_x=True,
-        periodic_y=True,
+        periodic_y=False,
     )
     c1 = Bubble(
         polygon=shapely.Polygon(Circle(midpoint=(0.5, 0.5), radius=0.1).discretize_hole(refs=50)),
@@ -27,7 +27,7 @@ def generate_topo():
     topo.add(c2)
 
     c3 = Bubble(
-        polygon=shapely.Polygon(Circle(midpoint=(0., 0.7), radius=0.1).discretize_hole(refs=50)),
+        polygon=shapely.Polygon(Circle(midpoint=(0., 0.5), radius=0.1).discretize_hole(refs=50)),
         level=1, 
         is_hole=False
     )
