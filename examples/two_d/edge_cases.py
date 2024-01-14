@@ -37,11 +37,13 @@ def generate_topo():
         Circle(midpoint=(-0.25, 0.0), radius=0.25).discretize_hole(refs=50)
     )
     topo.add(Bubble(polygon=c_1, level=10, is_hole=True))
+    
 
     c_2 = shapely.Polygon(
         Circle(midpoint=(-0.1, 0.4), radius=0.3).discretize_hole(refs=50)
     )
     topo.add(Bubble(polygon=c_2, level=11, is_hole=False))
+    
 
     c_3 = shapely.Polygon(
         Circle(midpoint=(0.75, 0), radius=0.25).discretize_hole(refs=50)
@@ -70,6 +72,7 @@ def generate_topo():
         Stellar(midpoint=(-0.5, -0.6), radius=0.25).discretize_hole(refs=100)
     )
     topo.add(Bubble(polygon=s_2, level=1, is_hole=False))
+    
 
     c_5 = shapely.Polygon(
         Circle(midpoint=(0.5, 0.6), radius=0.2).discretize_hole(refs=50)

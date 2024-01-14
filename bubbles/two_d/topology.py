@@ -1,4 +1,12 @@
-from typing import Any
+"""
+TODO: Problem mit der Reihenfolge: Eigentlich sollte das Hinzufügen der bubbles unabhängig
+davon sein, allerdings gilt das nicht, wenn bubbles mal collisions erlauben oder nicht. 
+Das ist trivial.
+
+TODO: Topology2 / 3 does not work, the intersection points are not added correctly, 
+check out intersection with domain holes!!!.
+"""
+from typing import Any, Callable
 from pydantic import BaseModel
 import shapely
 from shapely.geometry import Polygon
@@ -6,6 +14,7 @@ from shapely.geometry import Polygon
 from bubbles.two_d.hole import Rectangular
 
 from shapely.affinity import translate as shapely_translate
+from tqdm import tqdm
 
 
 class Bubble(BaseModel):
@@ -200,6 +209,7 @@ class Topology(object):
 
         The bubble can intersect the domain boundary, if `domain_distance` is 0, otherwise it must be disjoint and have
         distance `domain_distance` to the domain boundary.
+
         """
         if not bubble.level > 0:
             raise ValueError("Level must be positive integer.")
@@ -252,6 +262,10 @@ class Topology(object):
     def add(self, bubble: Bubble, **kwargs) -> bool:
         """
         Add a bubble to the topology.
+        TODO: Merge certain levels and others disjoint.
+        kwargs: flag to decide if bubble is merged with others having the same level.
+        list of levels to be "kollisions Frei" with,
+        list of distances to each level in the list.
         """
         if "bubble_distance" in kwargs and "domain_distance" in kwargs:
             return self.__add_bubble_disjoint(bubble, **kwargs)
@@ -304,87 +318,153 @@ class Topology(object):
         """
         Plot the reference domain and the bubbles.
         """
-        import matplotlib.pyplot as plt
-        from matplotlib.colors import Normalize
-        import matplotlib.patches as mpatches
-        from matplotlib.lines import Line2D
+        plot(self.bubbles, self.level2is_hole, self.ref_domain)
 
-        bubbles = list(self.bubbles)
-        bubbles.sort(key=lambda x: x.level)
 
-        hole_boundary_color = "orange"
-        ref_boundary_color = "black"
-        ref_domain_color = "silver"
-        ref_domain_hole_color = "white"
+def plot(bubbles, level2is_hole, ref_domain) -> Any:
+    """
+    Plot the reference domain and the bubbles.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize
+    import matplotlib.patches as mpatches
+    from matplotlib.lines import Line2D
 
-        level2is_hole = self.level2is_hole
-        # Filter out levels that are not represented by any bubble.
-        # This is necessary as previous added bubbles might have been removed.
-        present_levels = set([bubble.level for bubble in bubbles])
-        level2is_hole = {
-            lvl: is_hole
-            for lvl, is_hole in level2is_hole.items()
-            if lvl in present_levels
-        }
-        levels = set(level2is_hole.keys())
+    bubbles = list(bubbles)
+    bubbles.sort(key=lambda x: x.level)
 
-        # Create a colormap for the levels.
-        lvl2cl = dict()
-        if 0 in levels:
-            lvl2cl[0] = ref_domain_color
-            levels.remove(0)
-        if len(levels) > 0:
-            norm = Normalize(vmin=min(levels), vmax=max(levels))
-            for lvl in levels:
-                lvl2cl[lvl] = plt.cm.cool(norm(lvl))
-        # Make a legend.
-        handles = [
-            Line2D([0], [0], label="Reference boundary", color=ref_boundary_color),
-            Line2D([0], [0], label="Hole boundary", color=hole_boundary_color),
-        ]
-        for lvl, cl in lvl2cl.items():
-            if lvl == 0:
-                label_text = f"Domain lvl = {lvl}"
-            else:
-                label_text = (
-                    f"Hole lvl = {lvl}"
-                    if level2is_hole[lvl]
-                    else f"Inclusion lvl = {lvl}"
-                )
-            handles.append(mpatches.Patch(color=cl, label=label_text))
-        plt.legend(handles=handles)
+    hole_boundary_color = "orange"
+    ref_boundary_color = "black"
+    ref_domain_color = "silver"
+    ref_domain_hole_color = "white"
 
-        # Plot the reference domain.
-        x, y = self.ref_domain.polygon.exterior.xy
+    # level2is_hole = self.level2is_hole TODO: Remove this
+
+    # Filter out levels that are not represented by any bubble.
+    # This is necessary as previous added bubbles might have been removed.
+    present_levels = set([bubble.level for bubble in bubbles])
+    level2is_hole = {
+        lvl: is_hole for lvl, is_hole in level2is_hole.items() if lvl in present_levels
+    }
+    levels = set(level2is_hole.keys())
+
+    # Create a colormap for the levels.
+    lvl2cl = dict()
+    if 0 in levels:
+        lvl2cl[0] = ref_domain_color
+        levels.remove(0)
+    if len(levels) > 0:
+        norm = Normalize(vmin=min(levels), vmax=max(levels))
+        for lvl in levels:
+            lvl2cl[lvl] = plt.cm.cool(norm(lvl))
+    # Make a legend.
+    handles = [
+        Line2D([0], [0], label="Reference boundary", color=ref_boundary_color),
+        Line2D([0], [0], label="Hole boundary", color=hole_boundary_color),
+    ]
+    for lvl, cl in lvl2cl.items():
+        if lvl == 0:
+            label_text = f"Domain lvl = {lvl}"
+        else:
+            label_text = (
+                f"Hole lvl = {lvl}" if level2is_hole[lvl] else f"Inclusion lvl = {lvl}"
+            )
+        handles.append(mpatches.Patch(color=cl, label=label_text))
+    plt.legend(handles=handles)
+
+    # Plot the reference domain.
+    x, y = ref_domain.polygon.exterior.xy
+    plt.plot(x, y, color=ref_boundary_color)
+    plt.fill(x, y, color=ref_domain_color)
+    for pp in ref_domain.polygon.interiors:
+        x, y = pp.xy
         plt.plot(x, y, color=ref_boundary_color)
-        plt.fill(x, y, color=ref_domain_color)
-        for pp in self.ref_domain.polygon.interiors:
-            x, y = pp.xy
-            plt.plot(x, y, color=ref_boundary_color)
-            plt.fill(x, y, color=ref_domain_hole_color)
+        plt.fill(x, y, color=ref_domain_hole_color)
 
-        # Plot the bubbles
-        for bubble in bubbles:
-            # Filter out reference domain
-            if bubble.level != 0:
-                x, y = bubble.polygon.exterior.xy
-                plt.fill(x, y, color=lvl2cl[bubble.level])
-                if bubble.is_hole:
-                    plt.plot(x, y, color=hole_boundary_color)
+    # Plot the bubbles
+    for bubble in bubbles:
+        # Filter out reference domain
+        if bubble.level != 0:
+            x, y = bubble.polygon.exterior.xy
+            plt.fill(x, y, color=lvl2cl[bubble.level])
+            if bubble.is_hole:
+                plt.plot(x, y, color=hole_boundary_color)
 
-        # Re-Plot Bubbles without holes
-        for bubble in bubbles:
-            if len(bubble.polygon.interiors) == 0:
-                x, y = bubble.polygon.exterior.xy
-                plt.fill(x, y, color=lvl2cl[bubble.level])
-                if bubble.is_hole:
-                    plt.plot(x, y, color=hole_boundary_color)
+    # Re-Plot Bubbles without holes
+    for bubble in bubbles:
+        if len(bubble.polygon.interiors) == 0:
+            x, y = bubble.polygon.exterior.xy
+            plt.fill(x, y, color=lvl2cl[bubble.level])
+            if bubble.is_hole:
+                plt.plot(x, y, color=hole_boundary_color)
 
-        # Show the plot
-        plt.show()
+    # Show the plot
+    plt.show()
+
+
+def plot2(bubbles, level2is_hole) -> Any:
+    """
+    Plot the reference domain and the bubbles.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize
+    import matplotlib.patches as mpatches
+    from matplotlib.lines import Line2D
+
+    bubbles.sort(key=lambda x: x.level)
+
+    hole_boundary_color = "orange"
+    ref_boundary_color = "black"
+    ref_domain_color = "silver"
+    ref_domain_hole_color = "white"
+
+    # level2is_hole = self.level2is_hole TODO: Remove this
+
+    # Filter out levels that are not represented by any bubble.
+    # This is necessary as previous added bubbles might have been removed.
+    present_levels = set([bubble.level for bubble in bubbles])
+    level2is_hole = {
+        lvl: is_hole for lvl, is_hole in level2is_hole.items() if lvl in present_levels
+    }
+    levels = set(level2is_hole.keys())
+
+    # Create a colormap for the levels.
+    lvl2cl = dict()
+    if 0 in levels:
+        lvl2cl[0] = ref_domain_color
+        levels.remove(0)
+    if len(levels) > 0:
+        norm = Normalize(vmin=min(levels), vmax=max(levels))
+        for lvl in levels:
+            lvl2cl[lvl] = plt.cm.cool(norm(lvl))
+
+    # Plot the bubbles
+    for bubble in bubbles:
+        x, y = bubble.polygon.exterior.xy
+        plt.fill(x, y, color=lvl2cl[bubble.level])
+        if len(bubble.polygon.interiors) > 0:
+            for pp in bubble.polygon.interiors:
+                x, y = pp.xy
+                plt.fill(x, y, color="white")
+
+    # Re-Plot Bubbles without holes
+    for bubble in bubbles:
+        if len(bubble.polygon.interiors) == 0:
+            x, y = bubble.polygon.exterior.xy
+            plt.fill(x, y, color=lvl2cl[bubble.level])
+            if bubble.is_hole:
+                plt.plot(x, y, color=hole_boundary_color)
+
+    # Show the plot
+    plt.show()
 
 
 class PeriodicTopology(Topology):
+    """
+    # TODO: Add periodic flag to add function.
+    # (x,y, or both)
+    """
+
     def __init__(self, midpoint, width, height, periodic_x, periodic_y, grid_size=None):
         polygon = shapely.Polygon(
             Rectangular(midpoint=midpoint, width=width, height=height).discretize_hole(
@@ -464,3 +544,572 @@ class PeriodicTopology(Topology):
         else:
             return shapely.Polygon()
         return self.clip(polygon)
+
+
+class Bubble_v2(BaseModel):
+    polygon: shapely.Polygon | shapely.MultiPolygon
+    level: int
+    is_hole: bool
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    def __hash__(self) -> int:
+        return self.polygon.__hash__()
+
+
+class Topology_v2:
+    # TODO: bubbles (maybe as dict level to multipolygon), All bubbles with the same level
+    # are merged into one multipolygon.
+
+    # TODO: idea, define cutout levels, when topology is passed to gmsh api.
+    """
+    1. Sample n different Bubbles (different levels), each bubble is a polygon or Multipolygon.
+    2. write a dict level to multipolygon, where all bubbles with the same level are merged into one multipolygon.
+    3. Clipping: Clip each multipolygon with respect to the reference domain.
+    4. For each level (lower to higher), difference the higher Multipolygons.
+    """
+
+    def __init__(self, clip_polygon=None) -> None:
+        self.bubbles = []
+        self.__level2is_hole = dict()
+        self.clip_polygon = clip_polygon
+        self.grid_size = 1e-15
+
+    @property
+    def level2is_hole(self) -> dict[int, bool]:
+        """Return a dictionary that maps level to is_hole."""
+        return self.__level2is_hole
+
+    def add(self, bubble: Bubble_v2, clip: bool = True) -> bool:
+        # TODO: Check if clip_level idea is good or not. That is clipping a bubble with respect to a certain level.
+        # The clipping polygon changes over time.
+        if clip:
+            bubble.polygon = Topology_v2.intersection(
+                bubble.polygon, self.clip_polygon, grid_size=self.grid_size
+            )
+
+        # Make sure the bubble is not too small
+        if bubble.polygon.area < self.grid_size:
+            return False
+
+        new_bubbles, is_added = self.__add_bubble_merge(
+            self.bubbles, bubble, grid_size=self.grid_size
+        )
+        if is_added:
+            # Make sure that all multipolygons are split into polygons
+            bubbles_refactored = []
+            for bub in new_bubbles:
+                if isinstance(bub.polygon, shapely.MultiPolygon):
+                    for poly in bub.polygon.geoms:
+                        bubbles_refactored.append(
+                            Bubble_v2(
+                                polygon=poly, level=bub.level, is_hole=bub.is_hole
+                            )
+                        )
+                else:
+                    bubbles_refactored.append(bub)
+
+            self.bubbles = bubbles_refactored
+            self.__level2is_hole[bubble.level] = bubble.is_hole
+            return True
+        return False
+
+    def intersection(
+        *polygons: shapely.Polygon | shapely.MultiPolygon, grid_size
+    ) -> shapely.Polygon | shapely.MultiPolygon:
+        polygon = shapely.intersection_all([poly for poly in polygons])
+        if polygon.area < grid_size:
+            polygon = shapely.Polygon()
+        else:
+            if isinstance(polygon, shapely.Polygon | shapely.MultiPolygon):
+                pass
+            elif isinstance(polygon, shapely.GeometryCollection):
+                polygon = shapely.MultiPolygon(
+                    [p for p in polygon.geoms if p.area >= grid_size]
+                )
+            else:
+                raise ValueError(f"polygon is of type {type(polygon)}")
+        return polygon
+
+    def difference(
+        p: shapely.Polygon | shapely.MultiPolygon,
+        q: shapely.Polygon | shapely.MultiPolygon,
+        grid_size,
+    ) -> shapely.Polygon | shapely.MultiPolygon:
+        diff = p - q
+        if diff.area < grid_size:
+            diff = shapely.Polygon()
+        else:
+            if isinstance(diff, shapely.Polygon | shapely.MultiPolygon):
+                pass
+            elif isinstance(diff, shapely.GeometryCollection):
+                diff = shapely.MultiPolygon(
+                    [p for p in diff.geoms if p.area >= grid_size]
+                )
+            else:
+                raise ValueError(f"diff is of type {type(diff)}")
+        return diff
+
+    def union(
+        *polygons: shapely.Polygon | shapely.MultiPolygon, grid_size
+    ) -> shapely.Polygon | shapely.MultiPolygon:
+        polygon = shapely.union_all([poly for poly in polygons])
+        if polygon.area < grid_size:
+            polygon = shapely.Polygon()
+        else:
+            if isinstance(polygon, shapely.Polygon | shapely.MultiPolygon):
+                pass
+            else:
+                raise ValueError(
+                    f"polygon is of type {type(polygon)}, GeometryCollection should not appear here."
+                )
+        return polygon
+
+    @staticmethod
+    def __add_bubble_merge(bubbles, new_bubble, grid_size):
+        # Cut out higher level bubbles from new_bubble
+        # TODO: bubble.level > new_bubble.level (>= ?)
+        new_bubble.polygon = Topology_v2.difference(
+            new_bubble.polygon,
+            Topology_v2.union(
+                *[
+                    bubble.polygon
+                    for bubble in bubbles
+                    if bubble.level > new_bubble.level
+                ],
+                grid_size=grid_size,
+            ),
+            grid_size=grid_size,
+        )
+        # new_bubble is completely contained in higher level bubbles and is ignored
+        if new_bubble.polygon.area < grid_size:
+            return bubbles, False
+
+        lower_bubbles = []
+        disjoint_bubbles = []
+
+        for bubble in bubbles:
+            interserction = Topology_v2.intersection(
+                new_bubble.polygon, bubble.polygon, grid_size=grid_size
+            )
+            if interserction.area < grid_size:
+                disjoint_bubbles.append(bubble)
+            else:
+                if new_bubble.level > bubble.level:
+                    diff = Topology_v2.difference(
+                        bubble.polygon, new_bubble.polygon, grid_size=grid_size
+                    )
+                    if diff.area < grid_size:
+                        # bubble is completely contained in new_bubble and is ignored
+                        pass
+                    else:
+                        lower_bubbles.append(
+                            Bubble_v2(
+                                polygon=diff,
+                                level=bubble.level,
+                                is_hole=bubble.is_hole,
+                            )
+                        )
+                        # TODO: Add intersection points to new_bubble
+                        new_bubble.polygon = add_interserction_points(
+                            new_bubble.polygon, bubble.polygon, grid_size=grid_size
+                        )
+
+                elif new_bubble.level == bubble.level:
+                    # TODO: Check is_hole is equal
+                    # TODO: Fix Multipolygon thingy (everywhere) or generalize the Bubbles class
+                    new_bubble = Bubble_v2(
+                        polygon=new_bubble.polygon.union(
+                            bubble.polygon, grid_size=grid_size
+                        ),
+                        level=new_bubble.level,
+                        is_hole=new_bubble.is_hole,
+                    )
+                else:
+                    # Higher level bubbles are handeled in the beginning.
+
+                    pass
+
+        return disjoint_bubbles + lower_bubbles + [new_bubble], True
+
+    def plot(self) -> Any:
+        plot2(self.bubbles, self.level2is_hole)
+
+
+class Topology_v3:
+    DEFAULT_GRID_SIZE = 1e-15
+
+    def __init__(
+        self,
+        mask: shapely.Polygon | shapely.MultiPolygon | None = None,
+        grid_size: float = DEFAULT_GRID_SIZE,
+    ) -> None:
+        self.__grid_size = grid_size
+        self.__topology = dict()
+        self.__mask = mask
+
+    @property
+    def grid_size(self) -> float:
+        return self.__grid_size
+
+    @property
+    def topology(self) -> dict[int, shapely.MultiPolygon]:
+        return self.__topology
+
+    @property
+    def mask(self) -> shapely.Polygon | shapely.MultiPolygon | None:
+        return self.__mask
+
+    def add(
+        self,
+        multi_polygon: shapely.MultiPolygon,
+        level: int,
+        do_mask: bool = True,
+        mask: shapely.MultiPolygon | shapely.Polygon = None,
+        distances: dict[int, float] = dict(),
+        transform: Callable[[shapely.MultiPolygon, Any], shapely.MultiPolygon] = None,
+        transform_args: Any = None,
+    ) -> bool:
+        """Add new multipolygon to `self.topology`.
+
+        Arguments:
+            multi_polygon: shapely.MultiPolygon
+                The multipolygon to be added to the topology.
+            level: int
+                Level of the multipolygon. Higher level polygons will be layered on top of lower level polygons.
+                # TODO: Maybe rename to visibility_level.
+            mask: shapely.MultiPolygon | shapely.Polygon
+                If `None` self.mask is used, assuming it is not `None`. Only applies if `do_mask` is `True`.
+            do_mask: bool
+                If `True` the multipolygon is clipped with respect to the mask.
+            distances: dict[int, float]
+                Distances to other levels. If `None` all distances are set to 0.
+            transform: Callable[[shapely.MultiPolygon, Any], shapely.MultiPolygon]
+                Function that transforms the multipolygon before it is added to the topology.
+                NOTE: Currently this only refers to periodicity.
+            transform_args: Any
+                Arguments for the transform function.
+
+        Returns:
+            `True` if the multipolygon was added to the topology, `False` otherwise.
+        """
+        # First transform the multipolygon if a transform function is given.
+        if transform is not None:
+            multi_polygon = (
+                transform(multi_polygon, transform_args)
+                if transform_args is not None
+                else transform(multi_polygon)
+            )
+        # Apply mask if `do_mask` is `True` and a mask is given.
+        if do_mask:
+            if mask is None:
+                if self.mask is None:
+                    raise ValueError(
+                        "No mask is given. Either set `do_mask` to `False` or set `self.mask`."
+                    )
+                else:
+                    mask = self.mask
+            # NOTE: multi_polygon might be a simple polygon after the intersection.
+            multi_polygon = intersection(multi_polygon, mask, grid_size=self.grid_size)
+
+        # Make sure the multipolygon is not too small
+        if multi_polygon.area < self.grid_size:
+            return False
+
+        # Collision test
+        if len(distances) > 0 and max(distances.values()) > self.grid_size:
+            # Collision test is needed.
+            for lvl, mp in self.topology.items():
+                if lvl in distances:
+                    if multi_polygon.distance(mp) < distances[lvl]:
+                        return False
+
+        # Add multipolygon to topology
+        if level in self.topology:
+            multi_polygon = union(
+                self.topology[level], multi_polygon, grid_size=self.grid_size
+            )
+        if isinstance(multi_polygon, shapely.Polygon):
+            # Make sure that the multipolygon is a MultiPolygon.
+            print("WARNING: multi_polygon is a Polygon.")
+            multi_polygon = shapely.MultiPolygon([multi_polygon])
+        self.__topology[level] = multi_polygon
+        return True
+
+    def get_bubbles(self, cut_out_levels: list[int] = []) -> list[Bubble]:
+        flatted_topology = self.topology
+        levels = sorted(self.topology.keys())
+        for i, lvl in enumerate(levels):
+            # cut out higher level polygons from topology[lvl]
+            for j in range(i + 1, len(levels)):
+                diff = difference(
+                    flatted_topology[lvl],
+                    flatted_topology[levels[j]],
+                    grid_size=self.grid_size,
+                )
+                if diff.area < self.grid_size:
+                    flatted_topology[lvl] = shapely.Polygon()
+                    break
+
+                # Add intersection points to higher level polygons
+                # TODO: Check if this works.
+                flatted_topology[levels[j]] = intersection(
+                    flatted_topology[levels[j]],
+                    union(
+                        flatted_topology[lvl],
+                        flatted_topology[levels[j]],
+                        grid_size=self.grid_size,
+                    ),
+                    grid_size=self.grid_size,
+                )
+                flatted_topology[lvl] = diff
+
+        bubbles = []
+        for level, multipolygon in flatted_topology.items():
+            if isinstance(multipolygon, shapely.MultiPolygon):
+                for poly in multipolygon.geoms:
+                    if poly.area > self.grid_size:
+                        bubbles.append(
+                            Bubble(
+                                polygon=poly,
+                                level=level,
+                                is_hole=level in cut_out_levels,
+                            )
+                        )
+            elif isinstance(multipolygon, shapely.Polygon):
+                if multipolygon.area > self.grid_size:
+                    bubbles.append(
+                        Bubble(
+                            polygon=multipolygon,
+                            level=level,
+                            is_hole=level in cut_out_levels,
+                        )
+                    )
+            elif isinstance(multipolygon, shapely.GeometryCollection):
+                for poly in multipolygon.geoms:
+                    if poly.area > self.grid_size:
+                        bubbles.append(
+                            Bubble(
+                                polygon=poly,
+                                level=level,
+                                is_hole=level in cut_out_levels,
+                            )
+                        )
+            else:
+                raise ValueError(f"multipolygon is of type {type(multipolygon)}")
+        return bubbles
+
+    def get_bubbles_old(self, cut_out_levels: list[int] = []) -> list[Bubble]:
+        """Finalize the topology.
+
+        Given polygons P, Q with P.level < Q.level, Q is cut out from P.
+        Add intersection points to Q by doing:
+        Q = intersection(Q, union(P, Q))
+        => Get all intersection points by doing total_union = union(all polygons)
+        iterate over all polygons and do:
+            # either on polygon or on multipolygon
+            polygon = intersection(polygon, total_union)
+        total_union can be running_union.
+
+        Arguments:
+            cut_out_levels: list[int]
+                Levels that should be cut out.
+        """
+        # bubbles = []
+        # running_union = union(*self.topology.values(), grid_size=self.grid_size)
+
+        # for level in sorted(self.topology.keys(), reverse=True):
+        #     is_hole = level in cut_out_levels
+        #     multi_polygon = intersection(self.topology[level], running_union, grid_size=self.grid_size)
+        #     if isinstance(multi_polygon, shapely.Polygon):
+        #         multi_polygon = shapely.MultiPolygon([multi_polygon])
+        #     assert isinstance(multi_polygon, shapely.MultiPolygon)
+        #     for polygon in multi_polygon.geoms:
+        #         if polygon.area > self.grid_size:
+        #             bubbles.append(Bubble(polygon=polygon, level=level, is_hole=is_hole))
+        #     running_union = running_union - multi_polygon
+
+        # return bubbles
+        levels, multipolygons = zip(*sorted(self.topology.items()))
+        multipolygons = list(multipolygons)
+
+        n_multipolygons = len(multipolygons)
+        lvl2intersection = dict()  # level to list of intersection points
+        flatted_topology = dict()  # level to multipolygon
+
+        for i in range(n_multipolygons):
+            level = levels[i]
+            remaining_multipolygon = multipolygons[i]
+            is_empty = False
+            # Cut out higher level bubbles from multipolygon.
+            for j in range(i + 1, n_multipolygons):
+                _diff = difference(
+                    remaining_multipolygon, multipolygons[j], grid_size=self.grid_size
+                )
+
+                if _diff.area < self.grid_size:
+                    is_empty = True
+                    break
+                # Add intersectin points
+                multipolygons[j] = intersection(
+                    multipolygons[j],
+                    union(
+                        remaining_multipolygon,
+                        multipolygons[j],
+                        grid_size=self.grid_size,
+                    ),
+                    grid_size=self.grid_size,
+                )
+                remaining_multipolygon = _diff
+            if not is_empty:
+                flatted_topology[level] = remaining_multipolygon
+            else:
+                continue
+
+        bubbles = []
+        is_hole = level in cut_out_levels
+        for level, multipolygon in flatted_topology.items():
+            if isinstance(multipolygon, shapely.MultiPolygon):
+                for poly in multipolygon.geoms:
+                    if poly.area > self.grid_size:
+                        bubbles.append(
+                            Bubble(polygon=poly, level=level, is_hole=is_hole)
+                        )
+            elif isinstance(multipolygon, shapely.Polygon):
+                if multipolygon.area > self.grid_size:
+                    bubbles.append(
+                        Bubble(polygon=multipolygon, level=level, is_hole=is_hole)
+                    )
+            elif isinstance(multipolygon, shapely.GeometryCollection):
+                for poly in multipolygon.geoms:
+                    if poly.area > self.grid_size:
+                        bubbles.append(
+                            Bubble(polygon=poly, level=level, is_hole=is_hole)
+                        )
+            else:
+                raise ValueError(f"multipolygon is of type {type(multipolygon)}")
+        return bubbles
+
+    @staticmethod
+    def add_bubble(
+        polygon, level, level_to_distance, topology, grid_size, mask=None
+    ) -> tuple[dict[int, shapely.MultiPolygon], bool]:
+        """
+        Arguments:
+            polygon: shapely.Polygon | shapely.MultiPolygon
+            level: int
+            level_to_distance: dict[int, float]
+            topology: dict[int, shapely.MultiPolygon]
+            mask: clip along the mask
+
+        Assumptions:
+            - Each Multipolygon in topology has no empty area and is a valid MultiPolygon.
+        """
+        # Distances must be either bigger than grid_size or 0 for merging.
+        if not all(
+            [dist >= grid_size or dist == 0 for dist in level_to_distance.values()]
+        ):
+            raise ValueError(
+                "Distances must be either bigger than grid_size or 0 for merging."
+            )
+
+        # Clip the bubble with respect to the mask if given
+        # TODO: Here the periodicity can be added
+        if mask:
+            polygon = Topology_v2.intersection(polygon, mask, grid_size=grid_size)
+
+        # Make sure the bubble is not too small
+        if polygon.area < grid_size:
+            return topology, False
+
+        # Collision test
+        for lvl, dist in level_to_distance.items():
+            if polygon.distance(topology[lvl]) < dist:
+                return topology, False
+
+        if level in topology:
+            topology[level] = Topology_v2.union(
+                topology[level], polygon, grid_size=grid_size
+            )
+        else:
+            if isinstance(polygon, shapely.MultiPolygon):
+                topology[level] = shapely.MultiPolygon([p for p in polygon.geoms])
+            else:
+                topology[level] = shapely.MultiPolygon([polygon])
+
+        if isinstance(topology[level], shapely.Polygon):
+            topology[level] = shapely.MultiPolygon([topology[level]])
+
+        if not isinstance(topology[level], shapely.MultiPolygon):
+            raise ValueError(f"topology[{level}] is of type {type(topology[level])}")
+
+        return topology, True
+
+
+def intersection(
+    *polygons: shapely.Polygon | shapely.MultiPolygon, grid_size: float
+) -> shapely.Polygon | shapely.MultiPolygon:
+    """Return intersection of all polygons."""
+    polygon = shapely.intersection_all([poly for poly in polygons])
+    if polygon.area < grid_size:
+        polygon = shapely.Polygon()
+    else:
+        if isinstance(polygon, shapely.Polygon | shapely.MultiPolygon):
+            pass
+        elif isinstance(polygon, shapely.GeometryCollection):
+            polygon = shapely.MultiPolygon(
+                [p for p in polygon.geoms if p.area >= grid_size]
+            )
+        else:
+            raise ValueError(f"polygon is of type {type(polygon)}")
+    return polygon
+
+
+def union(
+    *polygons: shapely.Polygon | shapely.MultiPolygon, grid_size: float
+) -> shapely.Polygon | shapely.MultiPolygon:
+    """Return the union of all polygons."""
+    polygon = shapely.union_all([poly for poly in polygons])
+    if polygon.area < grid_size:
+        polygon = shapely.Polygon()
+    else:
+        if isinstance(polygon, shapely.Polygon | shapely.MultiPolygon):
+            pass
+        else:
+            raise ValueError(
+                f"polygon is of type {type(polygon)}, GeometryCollection should not appear here."
+            )
+    return polygon
+
+
+def difference(
+    p: shapely.Polygon | shapely.MultiPolygon,
+    q: shapely.Polygon | shapely.MultiPolygon,
+    grid_size: float,
+) -> shapely.Polygon | shapely.MultiPolygon:
+    """Return the difference p - q."""
+    diff = p - q
+    if diff.area < grid_size:
+        diff = shapely.Polygon()
+    else:
+        if isinstance(diff, shapely.Polygon | shapely.MultiPolygon):
+            pass
+        elif isinstance(diff, shapely.GeometryCollection):
+            diff = shapely.MultiPolygon([p for p in diff.geoms if p.area >= grid_size])
+        else:
+            raise ValueError(f"diff is of type {type(diff)}")
+    return diff
+
+
+def add_interserction_points(
+    multi_poly: shapely.Polygon | shapely.MultiPolygon,
+    poly: shapely.Polygon,
+    grid_size: float,
+) -> shapely.Polygon | shapely.MultiPolygon:
+    """
+    Add intersection to multi_poly.
+    """
+    return intersection(
+        multi_poly, union(poly, multi_poly, grid_size=grid_size), grid_size=grid_size
+    )
