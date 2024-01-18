@@ -152,5 +152,5 @@ if __name__ == "__main__":
 
     gmsh_entities = bubbles_to_gmsh_entities(bubbles)
     write_geo(
-        gmsh_entities=gmsh_entities, file_name="edge_cases_2", correct_curve_loops=True
+        gmsh_entities=gmsh_entities, file_name="edge_cases_v3", correct_curve_loops=True
     )
