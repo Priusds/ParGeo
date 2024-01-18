@@ -333,59 +333,59 @@ def generate_topo():
     #    bubble=Bubble(polygon=domain, level=0, is_hole=False)
     #)
     
-    # Add bubbles
-    # c_1 = shapely.Polygon(
-    #     Circle(midpoint=(-0.25, 0.0), radius=0.25).discretize_hole(refs=50)
-    # )
-    # topo.add(Bubble(polygon=c_1, level=10, is_hole=True))
+    #Add bubbles
+    c_1 = shapely.Polygon(
+        Circle(midpoint=(-0.25, 0.0), radius=0.25).discretize_hole(refs=50)
+    )
+    topo.add(Bubble(polygon=c_1, level=10, is_hole=True))
     
     
-    # c_2 = shapely.Polygon(
-    #     Circle(midpoint=(-0.1, 0.4), radius=0.3).discretize_hole(refs=50)
-    # )
-    # topo.add(Bubble(polygon=c_2, level=11, is_hole=False))
-    
-
-    # c_3 = shapely.Polygon(
-    #     Circle(midpoint=(0.75, 0), radius=0.25).discretize_hole(refs=50)
-    # )
-    # topo.add(Bubble(polygon=c_3, level=1, is_hole=False))
+    c_2 = shapely.Polygon(
+        Circle(midpoint=(-0.1, 0.4), radius=0.3).discretize_hole(refs=50)
+    )
+    topo.add(Bubble(polygon=c_2, level=11, is_hole=False))
     
 
-    # c_4 = shapely.Polygon(
-    #     Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
-    # )
-    # topo.add(Bubble(polygon=c_4, level=1, is_hole=False))
-    
-    # # this guy is intersection with the domain
-    # e_1 = shapely.Polygon(
-    #     Ellipse(
-    #         midpoint=(-0.5, 0.75), axis=(1, 0.1), angle=0.25 * math.pi
-    #     ).discretize_hole(refs=200)
-    # )
-    # topo.add(Bubble(polygon=e_1, level=1, is_hole=False))
+    c_3 = shapely.Polygon(
+        Circle(midpoint=(0.75, 0), radius=0.25).discretize_hole(refs=50)
+    )
+    topo.add(Bubble(polygon=c_3, level=1, is_hole=False))
     
 
-    # s_1 = shapely.Polygon(
-    #     Stellar(midpoint=(-0.75, -0.6), radius=0.2).discretize_hole(refs=100)
-    # )
-    # topo.add(Bubble(polygon=s_1, level=1, is_hole=False))
-
-    # s_2 = shapely.Polygon(
-    #     Stellar(midpoint=(-0.5, -0.6), radius=0.25).discretize_hole(refs=100)
-    # )
-    # topo.add(Bubble(polygon=s_2, level=1, is_hole=False))
+    c_4 = shapely.Polygon(
+        Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
+    )
+    topo.add(Bubble(polygon=c_4, level=1, is_hole=False))
+    
+    # this guy is intersection with the domain
+    e_1 = shapely.Polygon(
+        Ellipse(
+            midpoint=(-0.5, 0.75), axis=(1, 0.1), angle=0.25 * math.pi
+        ).discretize_hole(refs=200)
+    )
+    topo.add(Bubble(polygon=e_1, level=1, is_hole=False))
     
 
-    # c_5 = shapely.Polygon(
-    #     Circle(midpoint=(0.5, 0.6), radius=0.2).discretize_hole(refs=50)
-    # )
-    # topo.add(Bubble(polygon=c_5, level=3, is_hole=False))
+    s_1 = shapely.Polygon(
+        Stellar(midpoint=(-0.75, -0.6), radius=0.2).discretize_hole(refs=100)
+    )
+    topo.add(Bubble(polygon=s_1, level=1, is_hole=False))
 
-    # c_6 = shapely.Polygon(
-    #     Circle(midpoint=(0.6, 0.6), radius=0.2).discretize_hole(refs=50)
-    # )
-    # topo.add(Bubble(polygon=c_6, level=2, is_hole=False))
+    s_2 = shapely.Polygon(
+        Stellar(midpoint=(-0.5, -0.6), radius=0.25).discretize_hole(refs=100)
+    )
+    topo.add(Bubble(polygon=s_2, level=1, is_hole=False))
+    
+
+    c_5 = shapely.Polygon(
+        Circle(midpoint=(0.5, 0.6), radius=0.2).discretize_hole(refs=50)
+    )
+    topo.add(Bubble(polygon=c_5, level=3, is_hole=False))
+
+    c_6 = shapely.Polygon(
+        Circle(midpoint=(0.6, 0.6), radius=0.2).discretize_hole(refs=50)
+    )
+    topo.add(Bubble(polygon=c_6, level=2, is_hole=False))
     
     c_7 = shapely.Polygon(
         Circle(midpoint=(0.24, -0.8), radius=0.22).discretize_hole(refs=50)
@@ -423,18 +423,25 @@ def generate_topo():
     )
     topo.add(Bubble(polygon=e_5, level=level, is_hole=is_hole))
 
-    # c_8 = shapely.Polygon(
-    #     Circle(midpoint=(-0.5, 0.4), radius=0.45).discretize_hole(refs=50)
-    # )
-    # topo.add(Bubble(polygon=c_8, level=3, is_hole=False))
+    c_8 = shapely.Polygon(
+        Circle(midpoint=(-0.5, 0.4), radius=0.45).discretize_hole(refs=50)
+    )
+    topo.add(Bubble(polygon=c_8, level=3, is_hole=False))
 
-    # c_9 = shapely.Polygon(
-    #     Circle(midpoint=(0.0, 0.75), radius=0.01).discretize_hole(refs=50)
-    # )
+    c_9 = shapely.Polygon(
+        Circle(midpoint=(0.0, 0.75), radius=0.01).discretize_hole(refs=50)
+    )
 
-    # topo.add(Bubble(polygon=c_9, level=3, is_hole=False))
+    topo.add(Bubble(polygon=c_9, level=3, is_hole=False))
 
-    return topo
+
+    c_10 = shapely.Polygon(
+        Circle(midpoint=(1, -1.), radius=0.2).discretize_hole(refs=50)
+    )
+
+    topo.add(Bubble(polygon=c_10, level=10, is_hole=True))
+
+    return topo, domain
 
 
 def test_sorting():
@@ -459,25 +466,34 @@ def test_sorting():
         compare_key = cmp_to_key(polygon_compare)
 
         def polygon_compare_simple(poly_1, poly_2):
-            polygon_1, _ = poly_1
-            polygon_2, _ = poly_2
+            polygon_1, lvl1 = poly_1
+            polygon_2, lvl2 = poly_2
 
-            polygon_1 = shapely.Polygon(polygon_1.exterior)
-            polygon_2 = shapely.Polygon(polygon_2.exterior)
-            if polygon_1.contains(polygon_2):
-                return 1
-            elif polygon_2.contains(polygon_1):
+            # polygon_1 = shapely.Polygon(polygon_1.exterior)
+            # polygon_2 = shapely.Polygon(polygon_2.exterior)
+            # if polygon_1.contains(polygon_2):
+            #     return 1
+            # elif polygon_2.contains(polygon_1):
+            #     return -1
+
+            # elements with interiors must always be before elements without interiors
+            if len(polygon_1.interiors) > 0 and len(polygon_2.interiors) == 0 :
                 return -1
-            # if len(polygon_1.interiors) > 0 : 
-            #     for pp in polygon_1.interiors :
-            #         if pp.contains(polygon_2): 
-            #             return -1
-            # if len(polygon_2.interiors) > 0 : 
-            #     for pp in polygon_2.interiors :
-            #         if pp.contains(polygon_1): 
-            #             return 1 
-            return 0
+            if len(polygon_2.interiors) > 0 and len(polygon_1.interiors) == 0 :
+                return 1
 
+            if len(polygon_1.interiors) > 0 : 
+                for pp in polygon_1.interiors :
+                    if shapely.Polygon(pp).contains(polygon_2): 
+                        print("THERE")
+                        return -1
+            if len(polygon_2.interiors) > 0 : 
+                for pp in polygon_2.interiors :
+                    if shapely.Polygon(pp).contains(polygon_1): 
+                        print("HERE")
+                        return 1 
+            
+            return 0 
 
         return polygon_compare_simple
         
@@ -489,7 +505,7 @@ def test_sorting():
 
 if __name__ == "__main__":
     from functools import cmp_to_key
-    topo = generate_topo()
+    topo, reference_domain = generate_topo()
 
     # print(topo.bubbles)
 
@@ -505,23 +521,33 @@ if __name__ == "__main__":
 
 
     
-    sorted_bubbles = sorted(flattened_polygons, key = cmp_to_key(polygon_compare_simple), reverse=True)
+    sorted_bubbles = sorted(flattened_polygons, key = cmp_to_key(polygon_compare_simple), reverse=False)
 
     for k, A_t in enumerate(sorted_bubbles):
         for  l, B_t in enumerate(sorted_bubbles):
-            if k > l : 
+            if k < l : 
                 A, lvlA = A_t
                 B, lvlB = B_t
                 print(f"{lvlA} : {lvlB} -> {polygon_compare_simple(A_t,B_t) }")
                 print(f" A has interior : {len(A.interiors)}")
                 print(f" B has interior : {len(B.interiors)}")
                 print("================================================")
+        print("--------------")
+
+    print("#################")
+    for A, lvl in sorted_bubbles:
+        print(f"{lvl} -> {A.area}  has interior : {len(A.interiors)> 0}")
+    print("#################")
 
 
     #exit()
 
+    # new plot routine: 
+
+    holes_levels = [10]
+
     #hole_boundary_color = "orange"
-    #ref_boundary_color = "black"
+    boundary_color = "black"
     ref_domain_color = "silver"
     ref_domain_hole_color = "white"
     levels = topo.levels
@@ -536,6 +562,10 @@ if __name__ == "__main__":
         for lvl in levels:
             lvl2cl[lvl] = plt.cm.cool(norm(lvl))
 
+    # draw initial boundary 
+    x,y = reference_domain.exterior.xy
+    plt.plot(x, y, '-', linewidth = 2, color=boundary_color)
+    
     for polygon, level in sorted_bubbles: 
         x, y = polygon.exterior.xy
         plt.fill(x, y, color=lvl2cl[level])
@@ -543,5 +573,18 @@ if __name__ == "__main__":
             for pp in polygon.interiors:
                 x, y = pp.xy
                 plt.fill(x, y, color="white")
+        
+        if level in holes_levels: 
+            x,y = polygon.exterior.xy
+            plt.plot(x, y, '-', linewidth = 2, color=boundary_color)
+
+            if polygon.intersects(reference_domain.exterior):
+                boundary_line = polygon.intersection(reference_domain.exterior)
+                print(type(boundary_line))
+                for line in  boundary_line.geoms: 
+                    x,y = line.xy
+                    plt.plot(x, y, '-', linewidth = 2, color="white")
+                    #print(boundary_line)
+
                 
     plt.show()
