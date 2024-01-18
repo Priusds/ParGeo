@@ -867,6 +867,15 @@ class Topology_v3:
                     grid_size=self.grid_size,
                 )
                 flatted_topology[lvl] = diff
+                flatted_topology[lvl] = intersection(
+                    flatted_topology[lvl],
+                    union(
+                        flatted_topology[levels[j]],
+                        flatted_topology[lvl],
+                        grid_size=self.grid_size,
+                    ),
+                    grid_size=self.grid_size,
+                )
 
         bubbles = []
         for level, multipolygon in flatted_topology.items():
