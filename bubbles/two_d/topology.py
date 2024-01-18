@@ -1357,21 +1357,21 @@ class Distance_Constraint(object):
     def set_level_all(self, infos: dict()):
         pass
 
-    def set_geometry_distance(self, level, shapely.Geometry, distance):
+    def set_geometry_distance(self, level: shapely.Geometry, distance):
         pass
 
     def __call__(self, polygon):
         pass 
 
 
-distance_constraint = Distance_Constraint()
+"""distance_constraint = Distance_Constraint()
 distance_constraint.set_level_distance(1,1,delta) 
 
   {1:  {1 : delta}}
 
 distance_constraint.set_level_distance(1,[2,3,4], 2*delta) 
 distance_constraint.set_geometry_distance(1, topology.domain.boundary, delta2)
-topo.add(polygon, 1 , False, distance_constraint = distance_constraint)
+topo.add(polygon, 1 , False, distance_constraint = distance_constraint)"""
 
 
  
