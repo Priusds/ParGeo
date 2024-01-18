@@ -19,7 +19,6 @@ from shapely.affinity import translate as shapely_translate
 from tqdm import tqdm
 
 
-
 class Bubble(BaseModel):
     polygon: shapely.Polygon
     level: int
@@ -584,16 +583,22 @@ class Topology_v2:
         """Return a dictionary that maps level to is_hole."""
         return self.__level2is_hole
 
-    def add(self, bubble: Bubble_v2, clip: bool = True) -> bool:
+    def add(
+        self,
+        polygon: shapely.Polygon | shapely.MultiPolygon,
+        level: int,
+        is_hole: bool,
+        clip: bool = False,
+    ) -> bool:
         # TODO: Check if clip_level idea is good or not. That is clipping a bubble with respect to a certain level.
         # The clipping polygon changes over time.
         if clip:
-            bubble.polygon = Topology_v2.intersection(
-                bubble.polygon, self.clip_polygon, grid_size=self.grid_size
+            polygon = Topology_v2.intersection(
+                polygon, self.clip_polygon, grid_size=self.grid_size
             )
 
         # Make sure the bubble is not too small
-        if bubble.polygon.area < self.grid_size:
+        if polygon.area < self.grid_size:
             return False
 
         new_bubbles, is_added = self.__add_bubble_merge(
@@ -614,7 +619,7 @@ class Topology_v2:
                     bubbles_refactored.append(bub)
 
             self.bubbles = bubbles_refactored
-            self.__level2is_hole[bubble.level] = bubble.is_hole
+            self.__level2is_hole[level] = is_hole
             return True
         return False
 
@@ -670,11 +675,11 @@ class Topology_v2:
         return polygon
 
     @staticmethod
-    def __add_bubble_merge(bubbles, new_bubble, grid_size):
+    def __add_bubble_merge(bubbles, polygon, level, is_hole, grid_size):
         # Cut out higher level bubbles from new_bubble
         # TODO: bubble.level > new_bubble.level (>= ?)
-        new_bubble.polygon = Topology_v2.difference(
-            new_bubble.polygon,
+        polygon = Topology_v2.difference(
+            polygon,
             Topology_v2.union(
                 *[
                     bubble.polygon
@@ -686,7 +691,7 @@ class Topology_v2:
             grid_size=grid_size,
         )
         # new_bubble is completely contained in higher level bubbles and is ignored
-        if new_bubble.polygon.area < grid_size:
+        if polygon.area < grid_size:
             return bubbles, False
 
         lower_bubbles = []
@@ -694,12 +699,12 @@ class Topology_v2:
 
         for bubble in bubbles:
             interserction = Topology_v2.intersection(
-                new_bubble.polygon, bubble.polygon, grid_size=grid_size
+                polygon, bubble.polygon, grid_size=grid_size
             )
             if interserction.area < grid_size:
                 disjoint_bubbles.append(bubble)
             else:
-                if new_bubble.level > bubble.level:
+                if level > bubble.level:
                     diff = Topology_v2.difference(
                         bubble.polygon, new_bubble.polygon, grid_size=grid_size
                     )
@@ -719,7 +724,7 @@ class Topology_v2:
                             new_bubble.polygon, bubble.polygon, grid_size=grid_size
                         )
 
-                elif new_bubble.level == bubble.level:
+                elif level == bubble.level:
                     # TODO: Check is_hole is equal
                     # TODO: Fix Multipolygon thingy (everywhere) or generalize the Bubbles class
                     new_bubble = Bubble_v2(
@@ -731,7 +736,6 @@ class Topology_v2:
                     )
                 else:
                     # Higher level bubbles are handeled in the beginning.
-
                     pass
 
         return disjoint_bubbles + lower_bubbles + [new_bubble], True
@@ -1127,7 +1131,7 @@ def add_interserction_points(
     )
 
 
-class Domain(): 
+class Domain:
     DEFAULT_GRID_SIZE = 1e-15
 
     def __init__(
@@ -1135,24 +1139,30 @@ class Domain():
         reference_domain: shapely.Polygon | shapely.MultiPolygon,
         grid_size: float = DEFAULT_GRID_SIZE,
     ) -> None:
-        
         self.__grid_size = grid_size
         self.__topology_constrained = dict()
         self.__ref_domain = reference_domain
 
-        self.__topology_unconstrained = dict() # level to unconstrained bubbles  used if stuff is removed
+        self.__topology_unconstrained = (
+            dict()
+        )  # level to unconstrained bubbles  used if stuff is removed
 
-    def remove(self, level : int): 
-        pass 
-
-
-def is_valid(entity): 
-    assert isinstance(entity, shapely.Polygon) or isinstance(entity, shapely.MultiPolygon)
-
-
-class Transform(object): 
-    def __call__(self, polygon : shapely.Polygon | shapely.MultiPolygon ) ->  shapely.Polygon | shapely.MultiPolygon:
+    def remove(self, level: int):
         pass
+
+
+def is_valid(entity):
+    assert isinstance(entity, shapely.Polygon) or isinstance(
+        entity, shapely.MultiPolygon
+    )
+
+
+class Transform(object):
+    def __call__(
+        self, polygon: shapely.Polygon | shapely.MultiPolygon
+    ) -> shapely.Polygon | shapely.MultiPolygon:
+        pass
+
 
 class PeriodicXY(Transform):
     def __init__(self, midpoint, width, height):
@@ -1163,13 +1173,13 @@ class PeriodicX(Transform):
     def __init__(self, midpoint, width, height):
         pass
 
+
 class PeriodicY(Transform):
     def __init__(self, midpoint, width, height):
         pass
 
-class Distance_Constraint(object): 
 
-    
+class Distance_Constraint(object):
     def set_level_distance(self, lvl_set_1, lvl_set_2, distance):
         pass
 
@@ -1180,7 +1190,7 @@ class Distance_Constraint(object):
         pass
 
     def __call__(self, polygon):
-        pass 
+        pass
 
 
 """distance_constraint = Distance_Constraint()
@@ -1193,7 +1203,6 @@ distance_constraint.set_geometry_distance(1, topology.domain.boundary, delta2)
 topo.add(polygon, 1 , False, distance_constraint = distance_constraint)"""
 
 
- 
 class Topology_new:
     DEFAULT_GRID_SIZE = 1e-15
 
@@ -1202,8 +1211,8 @@ class Topology_new:
         grid_size: float = DEFAULT_GRID_SIZE,
     ) -> None:
         self.__grid_size = grid_size
-        self.__topology= dict()
-        #self.__topology_unconstrained = [] #dict()
+        self.__topology = dict()
+        # self.__topology_unconstrained = [] #dict()
 
         self.__hole_levels = set()
 
@@ -1218,33 +1227,38 @@ class Topology_new:
     @property
     def mask(self) -> shapely.Polygon | shapely.MultiPolygon | None:
         return self.__mask
-    
-    def __update_topology(self, polygon, level, is_hole, topology, merge = False):
-        if is_hole: 
+
+    def __update_topology(self, polygon, level, is_hole, topology, merge=False):
+        if is_hole:
             # if level not yet associated to holes...
-            if level not in self.__hole_levels: 
+            if level not in self.__hole_levels:
                 # make sure it has not been treated as non level yet.
                 if level in self.topology:
-                    raise ValueError("Given level for hole was already associated with inclusion") 
+                    raise ValueError(
+                        "Given level for hole was already associated with inclusion"
+                    )
             self.__hole_levels.add(level)
         else:
-            # make sure added level is not associated to holes 
+            # make sure added level is not associated to holes
             if level in self.__hole_levels:
-                raise ValueError("Given level was already associated with hole and cannot be used for an inclusion.") 
+                raise ValueError(
+                    "Given level was already associated with hole and cannot be used for an inclusion."
+                )
 
-        if not merge:  
-            if level not in topology: 
+        if not merge:
+            if level not in topology:
                 topology[level] = []
             self.topology[level].append(Bubble_v2(polygon, level, is_hole))
-        else: 
-            if level not in topology: 
+        else:
+            if level not in topology:
                 self.__topology[level] = polygon
-            else: 
-                self.__topology[level] = shapely.union([self.__topology[level], polygon])
+            else:
+                self.__topology[level] = shapely.union(
+                    [self.__topology[level], polygon]
+                )
 
-
-    def __get_higher_levels(self, level): 
-        return [lvl for lvl in self.__topology.keys() if lvl > level]      
+    def __get_higher_levels(self, level):
+        return [lvl for lvl in self.__topology.keys() if lvl > level]
 
     def add(
         self,
@@ -1252,23 +1266,24 @@ class Topology_new:
         level: int,
         is_hole: bool = False,
         mask: shapely.Polygon | shapely.MultiPolygon | None = None,
-        distance_constrained:  Callable[[shapely.Polygon | shapely.MultiPolygon, Topology_new], bool] = None,
-        transform: Callable[[shapely.Polygon | shapely.MultiPolygon], shapely.MultiPolygon] = None,
+        distance_constrained: Callable[
+            [shapely.Polygon | shapely.MultiPolygon, Topology_new], bool
+        ] = None,
+        transform: Callable[
+            [shapely.Polygon | shapely.MultiPolygon], shapely.MultiPolygon
+        ] = None,
     ) -> bool:
-        
         if transform is not None:
             polygon = transform(polygon)
-     
-        if mask is not None: 
-            polygon = intersection(polygon, mask, grid_size=self.grid_size)
-        
-        #self.__update_topology(polygon, level, is_hole, self.__topology_unconstrained)
-        if distance_constrained is not None:
-            if distance_constrained(polygon, self): 
-                return False
-      
 
-        
+        if mask is not None:
+            polygon = intersection(polygon, mask, grid_size=self.grid_size)
+
+        # self.__update_topology(polygon, level, is_hole, self.__topology_unconstrained)
+        if distance_constrained is not None:
+            if distance_constrained(polygon, self):
+                return False
+
         # level hiearchy based constraints applied
         for higher_level in self.__get_higher_levels(level):
             assert len(self.__topology[level]) == 1
@@ -1296,16 +1311,14 @@ class Topology_new:
             #     )
             #     flatted_topology[lvl] = diff
 
-            
-
         # Make sure the multipolygon is not too small
         if polygon.area < self.grid_size:
             return False
 
         # at this point the polygon must be polygon or multi polygon
         assert is_valid(polygon)
-        self.__update_topology(polygon, level, is_hole, self.__topology, merge = True)
-    
+        self.__update_topology(polygon, level, is_hole, self.__topology, merge=True)
+
         return True
 
     def get_bubbles(self, cut_out_levels: list[int] = []) -> list[Bubble]:
@@ -1516,9 +1529,6 @@ class Topology_new:
             raise ValueError(f"topology[{level}] is of type {type(topology[level])}")
 
         return topology, True
-
-
-
 
 
 def union(
