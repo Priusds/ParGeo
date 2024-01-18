@@ -143,7 +143,7 @@ def generate_topo():
 if __name__ == "__main__":
     topo = generate_topo()
     topo.plot()
-
+    exit()
     gmsh_entities = topology_to_gmsh_entities(topo)
     write_geo(
         gmsh_entities=gmsh_entities, file_name="edge_cases_v2", correct_curve_loops=True

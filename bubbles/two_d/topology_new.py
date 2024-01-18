@@ -68,9 +68,9 @@ class Topology:
         if transform is not None:
             polygon = transform(polygon)
 
-        if mask is not None:
-            polygon = shapely.intersection(polygon, self.reference_domain, grid_size=self.grid_size)
-            # TODO: Intersection points needed ? 
+        # clip with respect to the underlying reference domain
+        polygon = shapely.intersection(polygon, self.reference_domain, grid_size=self.grid_size)
+        # TODO: Intersection points needed ? needs to be done after the area test.
 
         if distance_constrained is not None:
             if distance_constrained(polygon, self):
@@ -88,6 +88,7 @@ class Topology:
             return False
 
         # TODO: NOW is the correct time to check if intersection points have to be ADDED
+        # TODO: Add intersection points with on the level_0 reference domain if needed. 
         # TODO: Add intersection points possible to both polygon and self.__topology[higher_level]
         # e.g. intersection is a Linestring, single point, or polygon with additional points
 
