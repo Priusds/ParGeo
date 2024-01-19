@@ -8,7 +8,8 @@ import gmsh
 from pydantic import BaseModel, StrictInt
 import shapely
 
-from bubbles.two_d.topology import Bubble, Topology
+from bubbles.two_d.topology import Bubble
+from bubbles.two_d.topology_new import Topology
 
 
 class PhysicalDimension(IntEnum):
@@ -233,21 +234,21 @@ def write_geo(
 
 
 def bubble_to_gmsh_entities(
-    bubble: Bubble, point_tag, line_tag, curve_loop_tag, plane_surface_tag
+    polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag
 ):
-    assert not bubble.is_hole
+    #assert not bubble.is_hole
     points_total = []
     lines_total = []
     curve_loops = []
 
-    physical_group_tag = bubble.level + 1  # +1 because physical group tags start at 1
+    physical_group_tag = level + 1  # +1 because physical group tags start at 1
     # ==================================================
     # Write exterior loop
     # ==================================================
-    assert isinstance(bubble.polygon, shapely.Polygon)
+    assert isinstance(polygon, shapely.Polygon)
     # Add points
     points_local = []
-    for x, y in bubble.polygon.exterior.coords[:-1]:
+    for x, y in polygon.exterior.coords[:-1]:
         point = Point(x=x, y=y, z=0.0, lc=0.1, tag=point_tag)
         points_local.append(point)
         point_tag += 1
@@ -278,7 +279,7 @@ def bubble_to_gmsh_entities(
     # ==================================================
     # Write interior loops
     # ==================================================
-    for loop in bubble.polygon.interiors:
+    for loop in polygon.interiors:
         points_local = []
         lines_local = []
         for x, y in loop.coords[:-1]:
@@ -342,15 +343,15 @@ def bubble_to_gmsh_entities(
 def topology_to_gmsh_entities(topo: Topology):
     all_entities_list = []
 
-    bubbles = list(topo.bubbles)
+    bubbles = topo.flatten()
 
     point_tag = 1
     line_tag = 1
     curve_loop_tag = 1
     plane_surface_tag = 1
 
-    for bubble in bubbles:
-        if not bubble.is_hole:
+    for polygon, level in bubbles:
+        if not level in topo.hole_levels:
             (
                 gmsh_entities,
                 point_tag,
@@ -358,7 +359,7 @@ def topology_to_gmsh_entities(topo: Topology):
                 curve_loop_tag,
                 plane_surface_tag,
             ) = bubble_to_gmsh_entities(
-                bubble, point_tag, line_tag, curve_loop_tag, plane_surface_tag
+                polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag
             )
             all_entities_list.append(gmsh_entities)
 
@@ -399,7 +400,7 @@ def bubbles_to_gmsh_entities(bubbles: list[Bubble]):
                 curve_loop_tag,
                 plane_surface_tag,
             ) = bubble_to_gmsh_entities(
-                bubble, point_tag, line_tag, curve_loop_tag, plane_surface_tag
+                polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag
             )
             all_entities_list.append(gmsh_entities)
 
