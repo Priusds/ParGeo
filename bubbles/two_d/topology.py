@@ -147,23 +147,24 @@ class Topology:
                 intersection = higher_polygon.intersection(
                     lower_polygon, grid_size=self.grid_size
                 )
-                # ==================================
-                # TODO: Change logic here with union
-                # ==================================
+
                 if isinstance(intersection, shapely.GeometryCollection):
                     for geom in intersection.geoms:
                         if geom.area == 0:
-                            print(f"type geom: {type(geom)}")
-                            print(f"higher_polygon type : {type(higher_polygon)}")
-                            try:
-                                higher_polygon = higher_polygon.union(
-                                    geom, grid_size=self.grid_size
-                                )
-                            except shapely.errors.GEOSException:
-                                print("GEOSException")
-                                assert isinstance(
-                                    higher_polygon,
-                                    (shapely.Polygon, shapely.MultiPolygon),
+                            # Note geom.area == 0 is needed to remove polygons that,
+                            # given our grid_size are not visible, *but* if a new
+                            # polygon is added with some epsilon area, then this needs to be
+                            # removed, which happens in the next if statement.
+                            higher_polygon = higher_polygon.union(
+                                geom, grid_size=self.grid_size
+                            )
+                            if isinstance(higher_polygon, shapely.GeometryCollection):
+                                higher_polygon = shapely.MultiPolygon(
+                                    [
+                                        p
+                                        for p in higher_polygon.geoms
+                                        if p.area > self.grid_size
+                                    ]
                                 )
                 else:
                     higher_polygon = higher_polygon.union(
