@@ -37,13 +37,11 @@ def generate_topo():
         Circle(midpoint=(-0.25, 0.0), radius=0.25).discretize_hole(refs=50)
     )
     topo.add(polygon=c_1, level=10)
-    
 
     c_2 = shapely.Polygon(
         Circle(midpoint=(-0.1, 0.4), radius=0.3).discretize_hole(refs=50)
     )
     topo.add(polygon=c_2, level=11)
-    
 
     c_3 = shapely.Polygon(
         Circle(midpoint=(0.75, 0), radius=0.25).discretize_hole(refs=50)
@@ -55,10 +53,10 @@ def generate_topo():
     #   lower_polygon = lower_polygon.difference(higher_polygon, grid_size=self.grid_size)
     # shapely.errors.GEOSException: IllegalArgumentException: Overlay input is mixed-dimension
     # TODO: Check the cause!
-    # c_4 = shapely.Polygon(
-    #     Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
-    # )
-    # topo.add(polygon=c_4, level=1)
+    c_4 = shapely.Polygon(
+        Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
+    )
+    topo.add(polygon=c_4, level=1)
 
     # this guy is intersection with the domain
     e_1 = shapely.Polygon(
@@ -77,7 +75,6 @@ def generate_topo():
         Stellar(midpoint=(-0.5, -0.6), radius=0.25).discretize_hole(refs=100)
     )
     topo.add(polygon=s_2, level=1)
-    
 
     c_5 = shapely.Polygon(
         Circle(midpoint=(0.5, 0.6), radius=0.2).discretize_hole(refs=50)
@@ -137,7 +134,7 @@ def generate_topo():
     topo.add(polygon=c_9, level=3)
 
     c_10 = shapely.Polygon(
-        Circle(midpoint=(1, -1.), radius=0.2).discretize_hole(refs=50)
+        Circle(midpoint=(1, -1.0), radius=0.2).discretize_hole(refs=50)
     )
 
     topo.add(polygon=c_10, level=10)
@@ -147,6 +144,7 @@ def generate_topo():
 
 if __name__ == "__main__":
     topo = generate_topo()
+    print(topo.hole_levels)
     topo.plot()
 
     gmsh_entities = topology_to_gmsh_entities(topo)
