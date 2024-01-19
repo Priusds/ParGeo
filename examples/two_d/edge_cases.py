@@ -30,7 +30,7 @@ def generate_topo():
     domain = domain.difference(dh_1)
     domain = domain.difference(dh_2)
     domain = domain.difference(dh_3)
-    topo = Topology(domain, hole_levels={10})
+    topo = Topology(domain, hole_levels={3})
 
     # Add bubbles
     c_1 = shapely.Polygon(
@@ -48,11 +48,6 @@ def generate_topo():
     )
     topo.add(polygon=c_3, level=1)
 
-    # Here comes following error SOMETIMES:
-    # File "/Users/gruhlke/Documents/python/Bubbles/bubbles/two_d/topology_new.py", line 115, in add
-    #   lower_polygon = lower_polygon.difference(higher_polygon, grid_size=self.grid_size)
-    # shapely.errors.GEOSException: IllegalArgumentException: Overlay input is mixed-dimension
-    # TODO: Check the cause!
     c_4 = shapely.Polygon(
         Circle(midpoint=(1.0, 0), radius=0.25).discretize_hole(refs=50)
     )
@@ -91,7 +86,6 @@ def generate_topo():
     )
     topo.add(polygon=c_7, level=1)
 
-    is_hole = False
     level = 3
     e_2 = shapely.Polygon(
         Ellipse(midpoint=(0.25, -0.6), axis=(0.05, 0.2), angle=0.0).discretize_hole(
