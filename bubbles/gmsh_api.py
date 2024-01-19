@@ -8,8 +8,8 @@ import gmsh
 from pydantic import BaseModel, StrictInt
 import shapely
 
-from bubbles.two_d.topology import Bubble
-from bubbles.two_d.topology_new import Topology
+from bubbles.two_d.topology_deprecated import Bubble
+from bubbles.two_d.topology import Topology
 
 
 class PhysicalDimension(IntEnum):

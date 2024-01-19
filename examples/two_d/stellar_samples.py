@@ -2,7 +2,7 @@ import random
 import shapely
 from bubbles.gmsh_api import topology_to_gmsh_entities, write_geo
 from bubbles.two_d.hole import Rectangular, Stellar
-from bubbles.two_d.topology import Bubble, Topology
+from bubbles.two_d.topology import Topology
 
 
 def generate_topo():
@@ -19,7 +19,7 @@ def generate_topo():
 
     for mid, rad, lvl in zip(midpoints, radii, levels):
         C = shapely.Polygon(Stellar(midpoint=mid, radius=rad).discretize_hole(refs=50))
-        topo.add(Bubble(polygon=C, level=lvl, is_hole=False))
+        topo.add(polygon=C, level=lvl)
 
     return topo
 

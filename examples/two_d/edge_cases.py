@@ -2,7 +2,7 @@ import shapely
 import math
 from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
 from bubbles.two_d.hole import Circle, Rectangular, Stellar, Ellipse
-from bubbles.two_d.topology_new import Topology
+from bubbles.two_d.topology import Topology
 
 
 def generate_topo():
