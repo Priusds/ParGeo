@@ -127,44 +127,52 @@ class Topology:
                 )
 
                 # subdomain can be a Point, LineString, MultiLineString, Polygon, Multipolygon or even GeometryCollection
-                # TODO: higher_polygon might be a GeometryCollection
-                diff_polygon = lower_polygon.difference(
+
+                lower_polygon = lower_polygon.difference(
                     higher_polygon, grid_size=self.grid_size
                 )
-                if isinstance(diff_polygon, shapely.GeometryCollection):
-                    raise ValueError(f"diff_polygon is a GeometryCollection")
+
+                if isinstance(lower_polygon, shapely.GeometryCollection):
+                    lower_polygon = shapely.MultiPolygon(
+                        [p for p in lower_polygon.geoms if p.area > self.grid_size]
+                    )
+
                 # in case of Point, Linestring, MultiLineString  or Polygon/MultiPolygon/GeometryCollection with area 0 dont add
-                if diff_polygon.area < self.grid_size:
+                if lower_polygon.area < self.grid_size:
                     if level < running_level:
                         return False
                     continue
 
-                # it might happen that the object is still MultiPolygon/GeometryCollection that has sub geometries with area 0
-                # or that are not polygons
-                if isinstance(
-                    diff_polygon, (shapely.MultiPolygon, shapely.GeometryCollection)
-                ):
-                    diff_polygon = shapely.MultiPolygon(
-                        [
-                            p
-                            for p in diff_polygon.geoms
-                            if p.area > self.grid_size
-                            and isinstance(p, shapely.Polygon)
-                        ]
-                    )
-
                 # add the intersection points
                 intersection = higher_polygon.intersection(
-                    diff_polygon, grid_size=self.grid_size
+                    lower_polygon, grid_size=self.grid_size
                 )
-                higher_polygon = higher_polygon.union(
-                    intersection, grid_size=self.grid_size
-                )
-                if isinstance(higher_polygon, shapely.GeometryCollection):
-                    raise ValueError(f"higher_polygon is a GeometryCollection")
-
+                # ==================================
+                # TODO: Change logic here with union
+                # ==================================
                 if isinstance(intersection, shapely.GeometryCollection):
-                    raise ValueError(f"intersection is a GeometryCollection")
+                    for geom in intersection.geoms:
+                        if geom.area == 0:
+                            print(f"type geom: {type(geom)}")
+                            print(f"higher_polygon type : {type(higher_polygon)}")
+                            try:
+                                higher_polygon = higher_polygon.union(
+                                    geom, grid_size=self.grid_size
+                                )
+                            except shapely.errors.GEOSException:
+                                print("GEOSException")
+                                assert isinstance(
+                                    higher_polygon,
+                                    (shapely.Polygon, shapely.MultiPolygon),
+                                )
+                else:
+                    higher_polygon = higher_polygon.union(
+                        intersection, grid_size=self.grid_size
+                    )
+                if isinstance(higher_polygon, shapely.GeometryCollection):
+                    higher_polygon = shapely.MultiPolygon(
+                        [p for p in higher_polygon.geoms if p.area > self.grid_size]
+                    )
 
                 # TODO: This might be unnecessary
                 # diff_polygon = diff_polygon.union(
@@ -174,7 +182,7 @@ class Topology:
                 # update the running level polygons
                 if running_level == lower_level:
                     # update running level polygon shrinked by the higher level polygon that was added (with added intersection points)
-                    updated_topo[running_level] = diff_polygon
+                    updated_topo[running_level] = lower_polygon
                     # update the added polygon with added intersection points
                     polygon = higher_polygon
 
@@ -182,21 +190,31 @@ class Topology:
                     # update running level polygon enriched by intersection points
                     updated_topo[running_level] = higher_polygon
                     # update the added polygon shrinked by the higher polygon (with added intersection points)
-                    polygon = diff_polygon
+                    polygon = lower_polygon
 
         # Make sure the multipolygon is not too small
         # TODO: This might be unnecessary
         # if polygon.area < self.grid_size:
         #     return False
 
-        updated_topo[level] = (
+        if level in self.topology:
+            if isinstance(self.topology[level], shapely.GeometryCollection):
+                raise ValueError(f"self.topology[level] is a GeometryCollection")
+
+        polygon = (
             polygon
             if not level in self.topology
             else polygon.union(self.topology[level], grid_size=self.grid_size)
         )
 
+        if isinstance(polygon, shapely.GeometryCollection):
+            polygon = shapely.MultiPolygon(
+                [p for p in polygon.geoms if p.area > self.grid_size]
+            )
+
+        updated_topo[level] = polygon
+
         # at this point the polygon must be polygon or multi polygon
-        assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
 
         self.__topology = updated_topo
         return True
