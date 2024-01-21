@@ -71,25 +71,31 @@ class Topology:
         self,
         polygon: shapely.Polygon | shapely.MultiPolygon,
         level: int,
-        distance_constrained: Callable[
-            [shapely.Polygon | shapely.MultiPolygon, Topology], bool
-        ] = None,
+        constraints: Callable[[shapely.Polygon | shapely.MultiPolygon], bool] = None,
         transform: Callable[
             [shapely.Polygon | shapely.MultiPolygon], shapely.MultiPolygon
         ] = None,
     ) -> bool:
-        # # check for valid level status
-        # self.__is_valid_level(level,is_hole)
-        # if is_hole:
-        #     self.__hole_levels.add(level)
+        """
+        Add a polygon to the topology.
 
+        Args:
+            polygon: The polygon to add.
+            level: The level of the polygon.
+            constraints: A function that checks if the polygon satisfies some constraints.
+                Example: The polygon must be inside the reference domain.
+            transform: A function that transforms the polygon before adding it to the topology.
+                Note: first the polygon is transformed and then the constraints are checked.
+        """
+        # Apply transform if given
         if transform is not None:
             polygon = transform(polygon)
 
-        # clip with respect to the underlying reference domain
+        # Clip the transformed polygon w.r.t. the reference domain
         polygon = shapely.intersection(
             polygon, self.reference_domain, grid_size=self.grid_size
         )
+
         # Make sure polygon is not a GeometryCollection
         if isinstance(polygon, (shapely.GeometryCollection, shapely.MultiPolygon)):
             polygon = shapely.MultiPolygon(
@@ -102,8 +108,9 @@ class Topology:
 
         # TODO: Apply segmentize strategy
 
-        if distance_constrained is not None:
-            if distance_constrained(polygon, self):
+        # Check if the polygon satisfies the constraints
+        if constraints is not None:
+            if not constraints(polygon):
                 return False
 
         # apply geometrical constraints by level ordering
@@ -319,22 +326,28 @@ def clip_x(
             shapely.geometry.box(x_min, poly_y_min, poly_x_max, poly_y_max),
             grid_size=grid_size,
         )
-        poly_translated = shapely_translate(shapely.intersection(
-            polygon,
-            shapely.geometry.box(poly_x_min, poly_y_min, x_min, poly_y_max),
-            grid_size=grid_size,
-        ), xoff=x_max-x_min)
+        poly_translated = shapely_translate(
+            shapely.intersection(
+                polygon,
+                shapely.geometry.box(poly_x_min, poly_y_min, x_min, poly_y_max),
+                grid_size=grid_size,
+            ),
+            xoff=x_max - x_min,
+        )
     elif poly_x_max > x_max + grid_size:
         poly_in = shapely.intersection(
             polygon,
             shapely.geometry.box(poly_x_min, poly_y_min, x_max, poly_y_max),
             grid_size=grid_size,
         )
-        poly_translated = shapely_translate(shapely.intersection(
-            polygon,
-            shapely.geometry.box(x_max, poly_y_min, poly_x_max, poly_y_max),
-            grid_size=grid_size,
-        ), xoff=x_min-x_max)
+        poly_translated = shapely_translate(
+            shapely.intersection(
+                polygon,
+                shapely.geometry.box(x_max, poly_y_min, poly_x_max, poly_y_max),
+                grid_size=grid_size,
+            ),
+            xoff=x_min - x_max,
+        )
     else:
         assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
         return polygon
@@ -345,7 +358,8 @@ def clip_x(
     polygon = poly_in.union(poly_translated, grid_size=grid_size)
     assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
     return clip_x(polygon, x_min, x_max, grid_size=grid_size)
-    
+
+
 def clip_y(
     polygon: shapely.Polygon | shapely.MultiPolygon,
     y_min: float,
@@ -360,22 +374,28 @@ def clip_y(
             shapely.geometry.box(poly_x_min, y_min, poly_x_max, poly_y_max),
             grid_size=grid_size,
         )
-        poly_translated = shapely_translate(shapely.intersection(
-            polygon,
-            shapely.geometry.box(poly_x_min, poly_y_min, poly_y_max, y_min),
-            grid_size=grid_size,
-        ), yoff=y_max-y_min)
+        poly_translated = shapely_translate(
+            shapely.intersection(
+                polygon,
+                shapely.geometry.box(poly_x_min, poly_y_min, poly_y_max, y_min),
+                grid_size=grid_size,
+            ),
+            yoff=y_max - y_min,
+        )
     elif poly_y_max > y_max + grid_size:
         poly_in = shapely.intersection(
             polygon,
             shapely.geometry.box(poly_x_min, poly_y_min, poly_x_max, y_max),
             grid_size=grid_size,
         )
-        poly_translated = shapely_translate(shapely.intersection(
-            polygon,
-            shapely.geometry.box(poly_x_min, y_max, poly_x_max, poly_y_max),
-            grid_size=grid_size,
-        ), yoff=y_min-y_max)
+        poly_translated = shapely_translate(
+            shapely.intersection(
+                polygon,
+                shapely.geometry.box(poly_x_min, y_max, poly_x_max, poly_y_max),
+                grid_size=grid_size,
+            ),
+            yoff=y_min - y_max,
+        )
     else:
         assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
         return polygon
@@ -386,3 +406,25 @@ def clip_y(
     polygon = poly_in.union(poly_translated, grid_size=grid_size)
     assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
     return clip_y(polygon, y_min, y_max, grid_size=grid_size)
+
+
+# TODO: Just add a collision: poly -> bool argument to the add function, it could for example
+# check the number of refs.
+def polygon_distance_req(
+    poly1: shapely.Polygon | shapely.MultiPolygon,
+    poly2: shapely.Polygon | shapely.MultiPolygon,
+    distance: float,
+    grid_size: float = 1e-15,
+):
+    """Check if two polygons are not too close."""
+    return poly1.distance(poly2) > distance + grid_size
+
+
+def boundary_distance_req(
+    poly1: shapely.Polygon | shapely.MultiPolygon,
+    poly2: shapely.Polygon | shapely.MultiPolygon,
+    distance: float,
+    grid_size: float = 1e-15,
+):
+    """Check if the boundary of two polygons are not too close."""
+    return poly1.boundary.distance(poly2.boundary) > distance + grid_size
