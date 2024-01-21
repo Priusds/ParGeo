@@ -1,20 +1,20 @@
+"""Module for the topology of the two-dimensional domain.
+
+TODO:
+- Add periodicity
+- Add collision detection
+Open Ideas:
+- Create tree structure for the topology, useful for plotting and collision detection.
+"""
 from __future__ import annotations
-from typing import Any, Callable
-from pydantic import BaseModel
+from typing import Callable
 import shapely
-from shapely.geometry import Polygon
-
-from bubbles.two_d.hole import Rectangular
-
 from shapely.affinity import translate as shapely_translate
 
 from functools import cmp_to_key
 
-
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
-import matplotlib.patches as mpatches
-from matplotlib.lines import Line2D
 
 
 class Topology:
@@ -22,7 +22,7 @@ class Topology:
 
     def __init__(
         self,
-        domain,
+        domain: shapely.Polygon | shapely.MultiPolygon,
         hole_levels: set[int] = set(),
         grid_size: float = DEFAULT_GRID_SIZE,
     ) -> None:
@@ -303,3 +303,86 @@ def polygon_compare(poly_1, poly_2):
                 return 1
 
     return 0
+
+
+def clip_x(
+    polygon: shapely.Polygon | shapely.MultiPolygon,
+    x_min: float,
+    x_max: float,
+    grid_size: float = 1e-15,
+):
+    """Clip the polygon along the x-axis."""
+    poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
+    if poly_x_min < x_min - grid_size:
+        poly_in = shapely.intersection(
+            polygon,
+            shapely.geometry.box(x_min, poly_y_min, poly_x_max, poly_y_max),
+            grid_size=grid_size,
+        )
+        poly_translated = shapely_translate(shapely.intersection(
+            polygon,
+            shapely.geometry.box(poly_x_min, poly_y_min, x_min, poly_y_max),
+            grid_size=grid_size,
+        ), xoff=x_max-x_min)
+    elif poly_x_max > x_max + grid_size:
+        poly_in = shapely.intersection(
+            polygon,
+            shapely.geometry.box(poly_x_min, poly_y_min, x_max, poly_y_max),
+            grid_size=grid_size,
+        )
+        poly_translated = shapely_translate(shapely.intersection(
+            polygon,
+            shapely.geometry.box(x_max, poly_y_min, poly_x_max, poly_y_max),
+            grid_size=grid_size,
+        ), xoff=x_min-x_max)
+    else:
+        assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+        return polygon
+    if isinstance(poly_translated, shapely.GeometryCollection):
+        poly_translated = shapely.MultiPolygon(
+            [p for p in poly_translated.geoms if p.area > grid_size]
+        )
+    polygon = poly_in.union(poly_translated, grid_size=grid_size)
+    assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+    return clip_x(polygon, x_min, x_max, grid_size=grid_size)
+    
+def clip_y(
+    polygon: shapely.Polygon | shapely.MultiPolygon,
+    y_min: float,
+    y_max: float,
+    grid_size: float = 1e-15,
+):
+    """Clip the polygon along the y-axis."""
+    poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
+    if poly_y_min < y_min - grid_size:
+        poly_in = shapely.intersection(
+            polygon,
+            shapely.geometry.box(poly_x_min, y_min, poly_x_max, poly_y_max),
+            grid_size=grid_size,
+        )
+        poly_translated = shapely_translate(shapely.intersection(
+            polygon,
+            shapely.geometry.box(poly_x_min, poly_y_min, poly_y_max, y_min),
+            grid_size=grid_size,
+        ), yoff=y_max-y_min)
+    elif poly_y_max > y_max + grid_size:
+        poly_in = shapely.intersection(
+            polygon,
+            shapely.geometry.box(poly_x_min, poly_y_min, poly_x_max, y_max),
+            grid_size=grid_size,
+        )
+        poly_translated = shapely_translate(shapely.intersection(
+            polygon,
+            shapely.geometry.box(poly_x_min, y_max, poly_x_max, poly_y_max),
+            grid_size=grid_size,
+        ), yoff=y_min-y_max)
+    else:
+        assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+        return polygon
+    if isinstance(poly_translated, shapely.GeometryCollection):
+        poly_translated = shapely.MultiPolygon(
+            [p for p in poly_translated.geoms if p.area > grid_size]
+        )
+    polygon = poly_in.union(poly_translated, grid_size=grid_size)
+    assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+    return clip_y(polygon, y_min, y_max, grid_size=grid_size)

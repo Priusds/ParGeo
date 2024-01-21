@@ -2,8 +2,8 @@ import shapely
 import math
 from bubbles.gmsh_api import bubbles_to_gmsh_entities, write_geo, topology_to_gmsh_entities
 from bubbles.two_d.hole import Circle, Rectangular, Stellar, Ellipse
-from bubbles.two_d.topology import Topology_v3 as Topology
-from bubbles.two_d.topology import Bubble
+from bubbles.two_d.topology_deprecated import Topology_v3 as Topology
+from bubbles.two_d.topology_deprecated import Bubble
 
 
 def generate_topo():
@@ -138,7 +138,7 @@ def generate_topo():
 
 
 if __name__ == "__main__":
-    from bubbles.two_d.topology import plot2
+    from bubbles.two_d.topology_deprecated import plot2
     topo = generate_topo()
 
     cut_out_levels = {}
@@ -150,7 +150,8 @@ if __name__ == "__main__":
 
     plot2(bubbles, level2is_hole)
 
-    gmsh_entities = bubbles_to_gmsh_entities(bubbles)
+    holes = [l for l in level2is_hole if level2is_hole[l]]
+    gmsh_entities = bubbles_to_gmsh_entities([(b.polygon, b.level) for b in bubbles], holes)
     write_geo(
         gmsh_entities=gmsh_entities, file_name="edge_cases_v3", correct_curve_loops=True
     )
