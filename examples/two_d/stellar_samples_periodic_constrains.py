@@ -30,7 +30,7 @@ def generate_topo():
             polygon=C,
             level=lvl,
             transform=lambda x: clip_x(x, 0, 1),
-            constraints=(lambda x: boundary_distance_req(x, topo.topology[1], 0.1)) if 1 in topo.topology else None,
+            constraints=(lambda x: polygon_distance_req(x, topo.topology[1], 0.1)) if 1 in topo.topology else None,
         )
 
     return topo
@@ -38,6 +38,7 @@ def generate_topo():
 
 if __name__ == "__main__":
     topo = generate_topo()
+    topo.set_holes({2,3})
     topo.plot()
     gmsh_entities = topology_to_gmsh_entities(topo)
     write_geo(

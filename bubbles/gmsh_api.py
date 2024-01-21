@@ -351,7 +351,7 @@ def topology_to_gmsh_entities(topo: Topology):
     plane_surface_tag = 1
 
     for polygon, level in bubbles:
-        if not level in topo.hole_levels:
+        if not level in topo.holes:
             (
                 gmsh_entities,
                 point_tag,

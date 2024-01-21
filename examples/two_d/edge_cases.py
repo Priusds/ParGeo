@@ -30,7 +30,7 @@ def generate_topo():
     domain = domain.difference(dh_1)
     domain = domain.difference(dh_2)
     domain = domain.difference(dh_3)
-    topo = Topology(domain, hole_levels={3})
+    topo = Topology(domain, holes={3})
 
     # Add bubbles
     c_1 = shapely.Polygon(
@@ -138,7 +138,7 @@ def generate_topo():
 
 if __name__ == "__main__":
     topo = generate_topo()
-    print(topo.hole_levels)
+
     topo.plot()
 
     gmsh_entities = topology_to_gmsh_entities(topo)
