@@ -1,85 +1,98 @@
+"""Module for the topology of the two-dimensional domain.
+
+Open Ideas:
+- Create tree structure for the topology, useful for plotting and collision detection.
+"""
 from __future__ import annotations
-from typing import Any, Callable
-from pydantic import BaseModel
+from typing import Callable
 import shapely
-from shapely.geometry import Polygon
-
-from bubbles.two_d.hole import Rectangular
-
 from shapely.affinity import translate as shapely_translate
 
 from functools import cmp_to_key
 
-
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
-import matplotlib.patches as mpatches
-from matplotlib.lines import Line2D
+
+DEFAULT_GRID_SIZE = 1e-15
+DOMAIN_LEVEL = 0
 
 
 class Topology:
-    DEFAULT_GRID_SIZE = 1e-15
+    """Class for the topology of the two-dimensional domain."""
 
     def __init__(
         self,
-        domain,
-        hole_levels: set[int] = set(),
+        domain: shapely.Polygon | shapely.MultiPolygon,
+        holes: set[int] = set(),
         grid_size: float = DEFAULT_GRID_SIZE,
     ) -> None:
-        self.__reference_domain = domain
-        self.__grid_size = grid_size
-        self.__topology = dict()
-        self.__hole_levels = hole_levels
+        """Initialize the topology.
 
-        # level = 0 associated with the domain
-        self.__topology[0] = domain
+        Args:
+            domain: The reference domain.
+            holes: Levels that are holes. This can be changed at any time.
+            grid_size: The grid size.
+        """
+        if isinstance(domain, shapely.Polygon):
+            domain = shapely.MultiPolygon([domain])
+        self.__domain = domain
+        self.__holes = holes  # Can be changed at any time.
+        self.__grid_size = grid_size
+        self.__lvl2multipoly = {DOMAIN_LEVEL: domain}
 
     @property
-    def hole_levels(self):
-        return self.__hole_levels
+    def holes(self):
+        """Return the levels that are holes."""
+        return self.__holes
 
-    def set_hole_levels(self, hole_levels: set[int]):
-        self.__hole_levels = hole_levels
+    def set_holes(self, new_holes: set[int]):
+        """Define the levels that are holes."""
+        self.__holes = new_holes
 
     @property
     def grid_size(self) -> float:
         return self.__grid_size
 
     @property
-    def topology(self) -> dict[int, shapely.Polygon | shapely.MultiPolygon]:
-        return self.__topology
-
-    @property
-    def reference_domain(self) -> shapely.Polygon | shapely.MultiPolygon:
-        return self.__reference_domain
+    def domain(self) -> shapely.Polygon | shapely.MultiPolygon:
+        return self.__domain
 
     @property
     def levels(self):
-        return sorted(self.topology.keys())
+        return sorted(self.__lvl2multipoly.keys())
 
     def add(
         self,
         polygon: shapely.Polygon | shapely.MultiPolygon,
         level: int,
-        distance_constrained: Callable[
-            [shapely.Polygon | shapely.MultiPolygon, Topology], bool
-        ] = None,
+        domain_clip: bool = True,
+        constraints: Callable[[shapely.Polygon | shapely.MultiPolygon], bool] = None,
         transform: Callable[
             [shapely.Polygon | shapely.MultiPolygon], shapely.MultiPolygon
         ] = None,
     ) -> bool:
-        # # check for valid level status
-        # self.__is_valid_level(level,is_hole)
-        # if is_hole:
-        #     self.__hole_levels.add(level)
+        """
+        Add a polygon to the topology.
 
+        Args:
+            polygon: The polygon to add.
+            level: The level of the polygon.
+            domain_clip: If True, clip the polygon w.r.t. the reference domain.
+            constraints: A function that checks if the polygon satisfies some constraints.
+                Example: The polygon must be inside the reference domain.
+            transform: A function that transforms the polygon before adding it to the topology.
+                Note: first the polygon is transformed and then the constraints are checked.
+        """
+        # Apply transform if given
         if transform is not None:
             polygon = transform(polygon)
 
-        # clip with respect to the underlying reference domain
-        polygon = shapely.intersection(
-            polygon, self.reference_domain, grid_size=self.grid_size
-        )
+        # Clip the transformed polygon w.r.t. the reference domain
+        if domain_clip:
+            polygon = shapely.intersection(
+                polygon, self.domain, grid_size=self.grid_size
+            )
+
         # Make sure polygon is not a GeometryCollection
         if isinstance(polygon, (shapely.GeometryCollection, shapely.MultiPolygon)):
             polygon = shapely.MultiPolygon(
@@ -92,13 +105,14 @@ class Topology:
 
         # TODO: Apply segmentize strategy
 
-        if distance_constrained is not None:
-            if distance_constrained(polygon, self):
+        # Check if the polygon satisfies the constraints
+        if constraints is not None:
+            if not constraints(polygon):
                 return False
 
         # apply geometrical constraints by level ordering
         updated_topo = dict()
-        for running_level, running_polygon in self.topology.items():
+        for running_level, running_polygon in self.__lvl2multipoly.items():
             if not polygon.intersects(running_polygon):
                 updated_topo[running_level] = running_polygon
                 continue
@@ -192,14 +206,14 @@ class Topology:
                     polygon = lower_polygon
 
 
-        # if level in self.topology:
-        #     if isinstance(self.topology[level], shapely.GeometryCollection):
-        #         raise ValueError(f"self.topology[level] is a GeometryCollection")
+        # if level in self.__lvl2multipoly:
+        #     if isinstance(self.__lvl2multipoly[level], shapely.GeometryCollection):
+        #         raise ValueError(f"self.__lvl2multipoly[level] is a GeometryCollection")
 
         polygon = (
             polygon
-            if not level in self.topology
-            else polygon.union(self.topology[level], grid_size=self.grid_size)
+            if not level in self.__lvl2multipoly
+            else polygon.union(self.__lvl2multipoly[level], grid_size=self.grid_size)
         )
 
         # TODO: This case is really necessary, but should not be possible at this point !?
@@ -208,16 +222,19 @@ class Topology:
                 [p for p in polygon.geoms if p.area > self.grid_size]
             )
 
+        if isinstance(polygon, shapely.Polygon):
+            polygon = shapely.MultiPolygon([polygon])
+
+        if not isinstance(polygon, shapely.MultiPolygon):
+            raise ValueError(f"`polygon` is not a MultiPolygon, but a {type(polygon)}.")
+
         updated_topo[level] = polygon
-
-        # at this point the polygon must be polygon or multi polygon
-
-        self.__topology = updated_topo
+        self.__lvl2multipoly = updated_topo
         return True
 
     def flatten(self):
         flattened_polygons = []
-        for level, running_polygon in self.topology.items():
+        for level, running_polygon in self.__lvl2multipoly.items():
             if isinstance(running_polygon, shapely.MultiPolygon):
                 for polygon in running_polygon.geoms:
                     flattened_polygons.append((polygon, level))
@@ -231,7 +248,7 @@ class Topology:
         sorted_bubbles = sorted(
             flattened_polygons, key=cmp_to_key(polygon_compare), reverse=False
         )
-        holes_levels = self.hole_levels
+        holes_levels = self.holes
 
         # hole_boundary_color = "orange"
         boundary_color = "black"
@@ -239,7 +256,7 @@ class Topology:
         # ref_domain_hole_color = "white"
         levels = self.levels
 
-        reference_domain = self.reference_domain
+        domain = self.domain
         # Create a colormap for the levels.
         lvl2cl = dict()
         if 0 in levels:
@@ -250,8 +267,20 @@ class Topology:
             for lvl in levels:
                 lvl2cl[lvl] = plt.cm.cool(norm(lvl))
 
-        # draw initial boundary
-        x, y = reference_domain.exterior.xy
+        # Make a legend for the levels.
+        handles = []
+        for lvl, color in lvl2cl.items():
+            handles.append(plt.Rectangle((0, 0), 1, 1, fc=color))
+        plt.legend(
+            handles,
+            [f"Level {lvl}" for lvl in lvl2cl.keys()],
+            loc="upper left",
+            bbox_to_anchor=(0.95, 1),
+        )
+
+        # Draw the reference domain's boundary.
+        # TODO: Fix AttributeError: 'MultiPolygon' object has no attribute 'exterior'
+        x, y = domain.exterior.xy
         plt.plot(x, y, "-", linewidth=2, color=boundary_color)
 
         for polygon, level in sorted_bubbles:
@@ -265,10 +294,10 @@ class Topology:
             if level in holes_levels:
                 x, y = polygon.exterior.xy
                 plt.plot(x, y, "-", linewidth=2, color=boundary_color)
-                if polygon.intersects(reference_domain.exterior):
-                    boundary_line = polygon.intersection(reference_domain.exterior)
+                if polygon.intersects(domain.exterior):
+                    boundary_line = polygon.intersection(domain.exterior)
                     if isinstance(boundary_line, shapely.MultiLineString):
-                        for k, line in enumerate(boundary_line.geoms):
+                        for line in boundary_line.geoms:
                             x, y = line.xy
                             plt.plot(x, y, "-", linewidth=2, color="white")
                     elif isinstance(boundary_line, shapely.LineString):
@@ -298,3 +327,121 @@ def polygon_compare(poly_1, poly_2):
                 return 1
 
     return 0
+
+
+def clip_x(
+    polygon: shapely.Polygon | shapely.MultiPolygon,
+    x_min: float,
+    x_max: float,
+    grid_size: float = 1e-15,
+):
+    """Clip the polygon along the x-axis."""
+    poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
+    if poly_x_min < x_min - grid_size:
+        poly_in = shapely.intersection(
+            polygon,
+            shapely.geometry.box(x_min, poly_y_min, poly_x_max, poly_y_max),
+            grid_size=grid_size,
+        )
+        poly_translated = shapely_translate(
+            shapely.intersection(
+                polygon,
+                shapely.geometry.box(poly_x_min, poly_y_min, x_min, poly_y_max),
+                grid_size=grid_size,
+            ),
+            xoff=x_max - x_min,
+        )
+    elif poly_x_max > x_max + grid_size:
+        poly_in = shapely.intersection(
+            polygon,
+            shapely.geometry.box(poly_x_min, poly_y_min, x_max, poly_y_max),
+            grid_size=grid_size,
+        )
+        poly_translated = shapely_translate(
+            shapely.intersection(
+                polygon,
+                shapely.geometry.box(x_max, poly_y_min, poly_x_max, poly_y_max),
+                grid_size=grid_size,
+            ),
+            xoff=x_min - x_max,
+        )
+    else:
+        assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+        return polygon
+    if isinstance(poly_translated, shapely.GeometryCollection):
+        poly_translated = shapely.MultiPolygon(
+            [p for p in poly_translated.geoms if p.area > grid_size]
+        )
+    polygon = poly_in.union(poly_translated, grid_size=grid_size)
+    assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+    return clip_x(polygon, x_min, x_max, grid_size=grid_size)
+
+
+def clip_y(
+    polygon: shapely.Polygon | shapely.MultiPolygon,
+    y_min: float,
+    y_max: float,
+    grid_size: float = 1e-15,
+):
+    """Clip the polygon along the y-axis."""
+    poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
+    if poly_y_min < y_min - grid_size:
+        poly_in = shapely.intersection(
+            polygon,
+            shapely.geometry.box(poly_x_min, y_min, poly_x_max, poly_y_max),
+            grid_size=grid_size,
+        )
+        poly_translated = shapely_translate(
+            shapely.intersection(
+                polygon,
+                shapely.geometry.box(poly_x_min, poly_y_min, poly_y_max, y_min),
+                grid_size=grid_size,
+            ),
+            yoff=y_max - y_min,
+        )
+    elif poly_y_max > y_max + grid_size:
+        poly_in = shapely.intersection(
+            polygon,
+            shapely.geometry.box(poly_x_min, poly_y_min, poly_x_max, y_max),
+            grid_size=grid_size,
+        )
+        poly_translated = shapely_translate(
+            shapely.intersection(
+                polygon,
+                shapely.geometry.box(poly_x_min, y_max, poly_x_max, poly_y_max),
+                grid_size=grid_size,
+            ),
+            yoff=y_min - y_max,
+        )
+    else:
+        assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+        return polygon
+    if isinstance(poly_translated, shapely.GeometryCollection):
+        poly_translated = shapely.MultiPolygon(
+            [p for p in poly_translated.geoms if p.area > grid_size]
+        )
+    polygon = poly_in.union(poly_translated, grid_size=grid_size)
+    assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+    return clip_y(polygon, y_min, y_max, grid_size=grid_size)
+
+
+# TODO: Just add a collision: poly -> bool argument to the add function, it could for example
+# check the number of refs.
+def polygon_distance_req(
+    poly1: shapely.Polygon | shapely.MultiPolygon,
+    poly2: shapely.Polygon | shapely.MultiPolygon,
+    distance: float,
+    grid_size: float = 1e-15,
+):
+    """Check if two polygons are not too close."""
+    return poly1.distance(poly2) > distance + grid_size
+
+
+def boundary_distance_req(
+    poly1: shapely.Polygon | shapely.MultiPolygon,
+    poly2: shapely.Polygon | shapely.MultiPolygon,
+    distance: float,
+    grid_size: float = 1e-15,
+):
+    """Check if the boundary of two polygons are not too close."""
+    return poly1.boundary.distance(poly2.boundary) > distance + grid_size

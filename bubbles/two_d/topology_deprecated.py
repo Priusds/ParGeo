@@ -602,7 +602,7 @@ class Topology_v2:
             return False
 
         new_bubbles, is_added = self.__add_bubble_merge(
-            self.bubbles, bubble, grid_size=self.grid_size
+            self.bubbles, polygon, level, is_hole=is_hole, grid_size=self.grid_size
         )
         if is_added:
             # Make sure that all multipolygons are split into polygons
@@ -745,6 +745,10 @@ class Topology_v2:
 
 
 class Topology_v3:
+    """
+    NOTE: In this version the intersection points are still not added correctly.
+    """
+
     DEFAULT_GRID_SIZE = 1e-15
 
     def __init__(
@@ -861,25 +865,39 @@ class Topology_v3:
 
                 # Add intersection points to higher level polygons
                 # TODO: Check if this works.
-                flatted_topology[levels[j]] = intersection(
+                flatted_topology[levels[j]] = union(
                     flatted_topology[levels[j]],
-                    union(
-                        flatted_topology[lvl],
-                        flatted_topology[levels[j]],
-                        grid_size=self.grid_size,
+                    intersection(
+                        flatted_topology[levels[j]], diff, grid_size=self.grid_size
                     ),
                     grid_size=self.grid_size,
                 )
-                flatted_topology[lvl] = diff
-                flatted_topology[lvl] = intersection(
-                    flatted_topology[lvl],
-                    union(
-                        flatted_topology[levels[j]],
-                        flatted_topology[lvl],
-                        grid_size=self.grid_size,
+                # flatted_topology[levels[j]] = intersection(
+                #     flatted_topology[levels[j]],
+                #     union(
+                #         flatted_topology[lvl],
+                #         flatted_topology[levels[j]],
+                #         grid_size=self.grid_size,
+                #     ),
+                #     grid_size=self.grid_size,
+                # )
+                # flatted_topology[lvl] = diff
+                flatted_topology[lvl] = union(
+                    diff,
+                    intersection(
+                        flatted_topology[levels[j]], diff, grid_size=self.grid_size
                     ),
                     grid_size=self.grid_size,
                 )
+                # flatted_topology[lvl] = intersection(
+                #     flatted_topology[lvl],
+                #     union(
+                #         flatted_topology[levels[j]],
+                #         flatted_topology[lvl],
+                #         grid_size=self.grid_size,
+                #     ),
+                #     grid_size=self.grid_size,
+                # )
 
         bubbles = []
         for level, multipolygon in flatted_topology.items():
@@ -1126,17 +1144,15 @@ def add_interserction_points(
     """
     Add intersection to multi_poly.
     """
-    return intersection(
-        multi_poly, union(poly, multi_poly, grid_size=grid_size), grid_size=grid_size
+    # return intersection(
+    #     multi_poly, union(poly, multi_poly, grid_size=grid_size), grid_size=grid_size
+    # )
+    return union(
+        multi_poly,
+        intersection(multi_poly, poly, grid_size=grid_size),
+        grid_size=grid_size,
     )
 
-
-
-
-def is_valid(entity):
-    assert isinstance(entity, shapely.Polygon) or isinstance(
-        entity, shapely.MultiPolygon
-    )
 
 def union(
     *polygons: shapely.Geometry, grid_size

@@ -2,8 +2,8 @@ import shapely
 import math
 from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
 from bubbles.two_d.hole import Circle, Rectangular, Stellar, Ellipse
-from bubbles.two_d.topology import Topology_v2 as Topology
-from bubbles.two_d.topology import Bubble_v2 as Bubble
+from bubbles.two_d.topology_deprecated import Topology_v2 as Topology
+from bubbles.two_d.topology_deprecated import Bubble_v2 as Bubble
 
 
 def generate_topo():
@@ -33,7 +33,7 @@ def generate_topo():
     #domain = domain.difference(dh_3)
     topo = Topology(clip_polygon=domain)
     topo.add(
-        bubble=Bubble(polygon=domain, level=0, is_hole=False)
+        polygon=domain, level=0, is_hole=False
     )
     
     # Add bubbles
