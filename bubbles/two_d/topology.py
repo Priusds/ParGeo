@@ -6,7 +6,6 @@ Open Ideas:
 from __future__ import annotations
 from typing import Callable
 import shapely
-
 from bubbles.two_d.utils import plot
 
 
