@@ -35,7 +35,6 @@ def generate_topo():
 
     return topo
 
-
 if __name__ == "__main__":
     topo = generate_topo()
     topo.set_holes({2,3})
