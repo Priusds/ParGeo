@@ -80,6 +80,40 @@ class Periodic(Transform):
         return periodic_polygons
 
 
+class Diffeomorphism(Transform): 
+
+    def __init__(self, mapping): 
+        """_summary_
+
+        Args:
+            mapping (_type_): _description_ Callable mapping IR^{2,batchsize} -> IR^2^{2,batchsize}
+        """
+        self.__mapping = mapping
+
+    def __call__(
+        self, polygon, level, topology
+    ) -> shapely.Polygon | shapely.MultiPolygon:
+        if isinstance(polygon, shapely.Polygon):
+            return self.__map_polygon(polygon)
+        elif isinstance(polygon, shapely.MultiPolygon):
+            return shapely.MultiPolygon([self.__map_polygon(poly) for poly in polygon])
+        
+    
+    def __map_polygon(self, polygon: shapely.Polygon): 
+        x, y = polygon.exterior.xy
+        x_mapped, y_mapped = self.__mapping(x,y)
+
+        shell = [ (xx,yy) for xx,yy in zip(x_mapped,y_mapped)]
+
+        holes = []
+        if len(polygon.interiors) > 0 : 
+            for hole in polygon.interiors: 
+                x,y  = hole.exterior
+                x_mapped, y_mapped = self.__mapping(x,y)
+                hole_mapped =  [ (xx,yy) for xx,yy in zip(x_mapped,y_mapped)]
+                holes.append(hole_mapped)
+        return shapely.Polygon(shell, holes)
+
 # def clip_x(
 #     polygon: shapely.Polygon | shapely.MultiPolygon,
 #     x_min: float,
