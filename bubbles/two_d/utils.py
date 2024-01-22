@@ -22,11 +22,8 @@ def plot(
     sorted_bubbles = sorted(
         flattened_polygons, key=cmp_to_key(polygon_compare), reverse=False
     )
-
-    # hole_boundary_color = "orange"
     domain_boundary_color = "black"
     domain_color = "silver"
-    # ref_domain_hole_color = "white"
 
     # Create a colormap for the levels.
     lvl2cl = dict()
@@ -103,7 +100,6 @@ def plot(
                     #         color=domain_boundary_color,
                     #         markersize=1,
                     #     )
-
             for interior in polygon.interiors:
                 x, y = interior.xy
                 plt.plot(x, y, "-", linewidth=2, color=domain_boundary_color)
