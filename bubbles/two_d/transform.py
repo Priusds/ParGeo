@@ -2,6 +2,7 @@ from typing import Any
 import shapely
 from shapely.affinity import translate as shapely_translate
 from shapely.geometry import MultiPolygon, Polygon
+import math
 
 
 class Transform(object):
@@ -30,7 +31,9 @@ class Periodic_New(Transform):
                 raise ValueError(f"Levels specification as string must be 'any' but given {levels}")
             if not isinstance(periodic_length_x, float) or not isinstance(periodic_length_y, float): 
                 raise ValueError(f"If given levels as 'any' periodic lengths must be given as a float")
-            
+            if not periodic_length_x > 0 or not periodic_length_y > 0: 
+                raise ValueError(f"If given periodic length is supposed to be positive, but got {periodic_length_x} and {periodic_length_y}.")
+                                 
             # any case overwrites all values ever set for fixed levels
             self.periodic_length_x = {"any": periodic_length_x}
             self.periodic_length_y = {"any": periodic_length_y}
@@ -45,6 +48,9 @@ class Periodic_New(Transform):
                 raise ValueError(f"Parameter periodic_length_y has no matching dimension, needed {len(levels_list)} but got {len(periodic_length_y_list)}")
 
             for lvl, Lx, Ly in zip(levels_list, periodic_length_x_list, periodic_length_y_list):
+                if not Lx > 0 or not Ly > 0: 
+                    raise ValueError(f"If given periodic length is supposed to be positive, but got {Lx} and {Ly}.")
+                    
                 self.periodic_length_x[lvl] = Lx 
                 self.periodic_length_y[lvl] = Ly
                         
@@ -53,42 +59,58 @@ class Periodic_New(Transform):
         
         minx, miny, maxx, maxy = topology.domain.bounds()
 
-        # TODO: update min max values according to polygon bounds() as they should add up
+        poly_minx, poly_miny, poly_maxx, poly_maxy = polygon.bounds()
 
         Lx = self.periodic_length_x["any"] if "any" in self.periodic_length_x else self.periodic_length_x[level]
         Ly = self.periodic_length_y["any"] if "any" in self.periodic_length_y else self.periodic_length_y[level]
 
-        periodic_polygons = [polygon]
-        if Ly == 0.: 
-            inside = True
-            kx = 1
-            ky = 1
-            while inside : 
-                inside = False
-                if (kx-1)  * Lx < maxx :
-                    if (ky-1) * Ly < maxy : 
-                        poly = shapely.affinity.translate(polygon, xoff=kx * Lx, yoff= ky * Ly)
-                        periodic_polygons.append(poly)
-                        inside = True
-                    if (-ky +1) * Ly > miny: 
-                        poly = shapely.affinity.translate(polygon, xoff=kx * Lx, yoff= -ky * Ly)
-                        periodic_polygons.append(poly)
-                        inside = True
+        # poly_minx + kx_max * Lx <= maxx <=>   (maxx - poly_minx)/Lx >= kx_max 
+        kx_max = math.floor((maxx - poly_minx)/Lx)  
+        # poly_maxx + kx_min * Lx >= minx  <=>  (minx - poly_maxx)/Lx <= kx_min
+        kx_min = math.ceil((minx - poly_maxx) / Lx)  
+        # analog for y axis
+        ky_max = math.floor((maxy - poly_miny)/Ly)  
+        ky_min = math.ceil((miny - poly_maxy) / Ly)  
+
+        # collect possible polygons for periodic rule
+        periodic_polygons = [shapely.affinity.translate(polygon, xoff=kx * Lx, yoff= ky * Ly) for kx in range(kx_min, kx_max+1) for ky in range(ky_min, ky_max+1)]
+        # and possible union them 
+        periodic_polygons = shapely.union_all(periodic_polygons, 
+                          grid_size=topology.grid_size)
 
 
-                if (-k+1) * Lx > minx : 
-                    if (ky-1) * Ly < maxy : 
-                        poly = shapely.affinity.translate(polygon, xoff=-kx * Lx, yoff= ky * Ly)
-                        periodic_polygons.append(poly)
-                        inside = True
-                    if (-ky +1) * Ly > miny: 
-                        poly = shapely.affinity.translate(polygon, xoff=-kx * Lx, yoff= -ky * Ly)
-                        periodic_polygons.append(poly)
-                        inside = True
-                kx+=1
-                ky+=1
+        # periodic_polygons = [polygon]
+        # if Ly == 0.: 
+        #     inside = True
+        #     kx = 1
+        #     ky = 1
+        #     while inside : 
+        #         inside = False
+        #         if (kx-1)  * Lx < maxx :
+        #             if (ky-1) * Ly < maxy : 
+        #                 poly = shapely.affinity.translate(polygon, xoff=kx * Lx, yoff= ky * Ly)
+        #                 periodic_polygons.append(poly)
+        #                 inside = True
+        #             if (-ky +1) * Ly > miny: 
+        #                 poly = shapely.affinity.translate(polygon, xoff=kx * Lx, yoff= -ky * Ly)
+        #                 periodic_polygons.append(poly)
+        #                 inside = True
 
-        periodic_polygons = shapely.MultiPolygon(periodic_polygons)
+
+        #         if (-k+1) * Lx > minx : 
+        #             if (ky-1) * Ly < maxy : 
+        #                 poly = shapely.affinity.translate(polygon, xoff=-kx * Lx, yoff= ky * Ly)
+        #                 periodic_polygons.append(poly)
+        #                 inside = True
+        #             if (-ky +1) * Ly > miny: 
+        #                 poly = shapely.affinity.translate(polygon, xoff=-kx * Lx, yoff= -ky * Ly)
+        #                 periodic_polygons.append(poly)
+        #                 inside = True
+        #         kx+=1
+        #         ky+=1
+
+        #periodic_polygons = shapely.MultiPolygon(periodic_polygons)
+        return periodic_polygons
 
 
 
