@@ -65,7 +65,7 @@ class Topology:
         domain_clip: bool = True,
         constraints: Callable[[shapely.Polygon | shapely.MultiPolygon], bool] = None,
         transform: Callable[
-            [shapely.Polygon | shapely.MultiPolygon, int, Topology], shapely.MultiPolygon
+            [shapely.Polygon | shapely.MultiPolygon], shapely.MultiPolygon
         ] = None,
     ) -> bool:
         """
@@ -85,7 +85,7 @@ class Topology:
 
         # Apply transform if given
         if transform is not None:
-            polygon = transform(polygon, level, self)
+            polygon = transform(polygon)
 
         # Clip the transformed polygon w.r.t. the reference domain
         if domain_clip:
