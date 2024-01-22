@@ -56,6 +56,10 @@ class Topology:
     @property
     def levels(self):
         return sorted(self.__lvl2multipoly.keys())
+    
+    @property
+    def lvl2multipoly(self):
+        return self.__lvl2multipoly
 
     def add(
         self,
