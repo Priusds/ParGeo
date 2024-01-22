@@ -1,11 +1,120 @@
+from typing import Any
 import shapely
 from shapely.affinity import translate as shapely_translate
+from shapely.geometry import MultiPolygon, Polygon
+
 
 class Transform(object):
+    """Base class for transforms."""
+
     def __call__(
-        self, polygon: shapely.Polygon | shapely.MultiPolygon
+        self, polygon, level, topology
     ) -> shapely.Polygon | shapely.MultiPolygon:
         pass
+
+class Repeat(Transform):
+    pass
+
+class Periodic_New(Transform):
+    def __init__(self): #, levels: int | list[int] | str = "any"):
+        #self.set_levels(levels)
+        self.periodic_length_x = {}
+        self.periodic_length_y = {}
+
+    def set_periodicty(self, levels: int | list[int] | str = "any",
+                             periodic_length_x : float | list[float] = float('inf'),
+                             periodic_length_y : float | list[float] = float('inf')):
+                    
+        if isinstance(levels, str): 
+            if not levels == "any": 
+                raise ValueError(f"Levels specification as string must be 'any' but given {levels}")
+            if not isinstance(periodic_length_x, float) or not isinstance(periodic_length_y, float): 
+                raise ValueError(f"If given levels as 'any' periodic lengths must be given as a float")
+            
+            # any case overwrites all values ever set for fixed levels
+            self.periodic_length_x = {"any": periodic_length_x}
+            self.periodic_length_y = {"any": periodic_length_y}
+            
+        else: 
+            levels_list = levels if isinstance(levels, list) else [levels]
+            periodic_length_x_list = [periodic_length_x] * len(levels_list) if isinstance(periodic_length_x, float) else periodic_length_x
+            periodic_length_y_list = [periodic_length_y] * len(levels_list) if isinstance(periodic_length_y, float) else periodic_length_y
+            if not len(levels_list) == len(periodic_length_x_list):
+                raise ValueError(f"Parameter periodic_length_x has no matching dimension, needed {len(levels_list)} but got {len(periodic_length_x_list)}")
+            if not len(levels_list) == len(periodic_length_y_list):
+                raise ValueError(f"Parameter periodic_length_y has no matching dimension, needed {len(levels_list)} but got {len(periodic_length_y_list)}")
+
+            for lvl, Lx, Ly in zip(levels_list, periodic_length_x_list, periodic_length_y_list):
+                self.periodic_length_x[lvl] = Lx 
+                self.periodic_length_y[lvl] = Ly
+                        
+
+    def __call__(self, polygon, level, topology) -> shapely.Polygon | shapely.MultiPolygon:
+        
+        minx, miny, maxx, maxy = topology.domain.bounds()
+
+        # TODO: update min max values according to polygon bounds() as they should add up
+
+        Lx = self.periodic_length_x["any"] if "any" in self.periodic_length_x else self.periodic_length_x[level]
+        Ly = self.periodic_length_y["any"] if "any" in self.periodic_length_y else self.periodic_length_y[level]
+
+        periodic_polygons = [polygon]
+        if Ly == 0.: 
+            inside = True
+            kx = 1
+            ky = 1
+            while inside : 
+                inside = False
+                if (kx-1)  * Lx < maxx :
+                    if (ky-1) * Ly < maxy : 
+                        poly = shapely.affinity.translate(polygon, xoff=kx * Lx, yoff= ky * Ly)
+                        periodic_polygons.append(poly)
+                        inside = True
+                    if (-ky +1) * Ly > miny: 
+                        poly = shapely.affinity.translate(polygon, xoff=kx * Lx, yoff= -ky * Ly)
+                        periodic_polygons.append(poly)
+                        inside = True
+
+
+                if (-k+1) * Lx > minx : 
+                    if (ky-1) * Ly < maxy : 
+                        poly = shapely.affinity.translate(polygon, xoff=-kx * Lx, yoff= ky * Ly)
+                        periodic_polygons.append(poly)
+                        inside = True
+                    if (-ky +1) * Ly > miny: 
+                        poly = shapely.affinity.translate(polygon, xoff=-kx * Lx, yoff= -ky * Ly)
+                        periodic_polygons.append(poly)
+                        inside = True
+                kx+=1
+                ky+=1
+
+        periodic_polygons = shapely.MultiPolygon(periodic_polygons)
+
+
+
+
+        
+                                                                      
+
+
+class Periodic(Transform):
+    def __init__(self, levels: int | list[int] | str = "any"):
+        self.set_levels(levels)
+
+    @property
+    def levels(self):
+        return self.__levels
+
+    def set_levels(self, levels: int | list[int] | str = "any"):
+        if isinstance(levels, int):
+            self.__levels = [levels]
+        elif isinstance(levels, list):
+            self.__levels = levels
+        elif isinstance(levels, str):
+            if levels == "any":
+                self.__levels = list("any")
+            else:
+                raise ValueError(f"levels={levels} is not valid.")
 
 
 class PeriodicXY(Transform):
@@ -14,8 +123,23 @@ class PeriodicXY(Transform):
 
 
 class PeriodicX(Transform):
-    def __init__(self, midpoint, width, height):
-        pass
+    # phi(x_max + r) = phi(x_min + r)
+    # phi(x_min - r) = phi(x_max - r)
+    # f(x) = f(x+l)
+    def __init__(
+        self, base: float, period_length: float, levels: int | list[int] | str = "any"
+    ):
+        super().__init__(levels=levels)
+        self.__x_min = x_min
+        self.__x_max = x_max
+
+    def __call__(self, polygon, level, topology) -> Polygon | MultiPolygon:
+        return clip_x(
+            polygon,
+            self.__x_min,
+            self.__x_max,
+            grid_size=topology.grid_size,
+        )
 
 
 class PeriodicY(Transform):
