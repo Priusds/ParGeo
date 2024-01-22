@@ -1,9 +1,15 @@
+from typing import Any
 import shapely
 from shapely.affinity import translate as shapely_translate
+#from shapely.geometry import MultiPolygon, Polygon
+import math
+
 
 class Transform(object):
+    """Base class for transforms."""
+
     def __call__(
-        self, polygon: shapely.Polygon | shapely.MultiPolygon
+        self, polygon, level, topology
     ) -> shapely.Polygon | shapely.MultiPolygon:
         pass
 

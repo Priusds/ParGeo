@@ -3,7 +3,7 @@ import shapely
 from bubbles.gmsh_api import topology_to_gmsh_entities, write_geo
 from bubbles.two_d.hole import Rectangular, Stellar, Circle
 from bubbles.two_d.constraints import DistanceConstraint
-from bubbles.two_d.transform import clip_x, clip_y
+#from bubbles.two_d.transform import clip_x, clip_y
 from bubbles.two_d.topology import Topology
 
 def debug_constraint(): 
