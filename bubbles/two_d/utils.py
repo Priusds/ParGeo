@@ -83,24 +83,26 @@ def plot(
                     elif isinstance(boundary_line, shapely.LineString):
                         x, y = boundary_line.xy
                         plt.plot(x, y, "-", linewidth=2, color="white")
-                    p = boundary_domain_poly.intersection(
-                        boundary_line, grid_size=1e-15
-                    )
-                    p = (
-                        p
-                        if isinstance(p, shapely.MultiPoint)
-                        else shapely.MultiPoint([p])
-                    )
-                    for pp in p.geoms:
-                        x, y = pp.xy
-                        plt.plot(
-                            x,
-                            y,
-                            "s",
-                            linewidth=2,
-                            color=domain_boundary_color,
-                            markersize=1,
-                        )
+
+                    # TODO: p can be Geometrycollection, bugfix this
+                    # p = boundary_domain_poly.intersection(
+                    #     boundary_line, grid_size=1e-15
+                    # )
+                    # p = (
+                    #     p
+                    #     if isinstance(p, shapely.MultiPoint)
+                    #     else shapely.MultiPoint([p])   # TODO: p can be Geometrycollection
+                    # )
+                    # for pp in p.geoms:
+                    #     x, y = pp.xy
+                    #     plt.plot(
+                    #         x,
+                    #         y,
+                    #         "s",
+                    #         linewidth=2,
+                    #         color=domain_boundary_color,
+                    #         markersize=1,
+                    #     )
 
             for interior in polygon.interiors:
                 x, y = interior.xy
