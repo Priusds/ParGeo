@@ -30,7 +30,7 @@ def generate_topo():
     domain = domain.difference(dh_1)
     domain = domain.difference(dh_2)
     domain = domain.difference(dh_3)
-    topo = Topology(domain, holes={3})
+    topo = Topology(domain, holes={3, 10})
 
     # Add bubbles
     c_1 = shapely.Polygon(
@@ -130,8 +130,13 @@ def generate_topo():
     c_10 = shapely.Polygon(
         Circle(midpoint=(1, -1.0), radius=0.2).discretize_hole(refs=50)
     )
-
     topo.add(polygon=c_10, level=10)
+
+    c_11 = shapely.Polygon(
+        Circle(midpoint=(1, -.8), radius=0.1).discretize_hole(refs=50)
+    )
+    topo.add(polygon=c_11, level=2)
+    
 
     return topo
 

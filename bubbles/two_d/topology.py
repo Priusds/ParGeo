@@ -6,12 +6,9 @@ Open Ideas:
 from __future__ import annotations
 from typing import Callable
 import shapely
-from shapely.affinity import translate as shapely_translate
 
-from functools import cmp_to_key
+from bubbles.two_d.utils import plot
 
-import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
 
 DEFAULT_GRID_SIZE = 1e-15
 DOMAIN_LEVEL = 0
@@ -30,7 +27,7 @@ class Topology:
 
         Args:
             domain: The reference domain.
-            holes: Levels that are holes. This can be changed at any time.
+            holes: Levels that are holes. This can be changed at any time through `set_holes`.
             grid_size: The grid size.
         """
         if isinstance(domain, shapely.Polygon):
@@ -83,7 +80,7 @@ class Topology:
             transform: A function that transforms the polygon before adding it to the topology.
                 Note: first the polygon is transformed and then the constraints are checked.
         """
-        if level <= 0: 
+        if level <= 0:
             raise ValueError(f"Given level must be positive value, but given {level}.")
 
         # Apply transform if given
@@ -155,12 +152,9 @@ class Topology:
                     lower_polygon, grid_size=self.grid_size
                 )
 
-                print("type intersection : ", type(intersection))
-                print(intersection.area)
-                print(intersection)
-                #assert( not isinstance(intersection, shapely.MultiPolygon) and not isinstance(intersection,shapely.Polygon))
-                #TODO: intersection can be a polygon as well ! update logic here! in particular an empty polygon
-                
+                # TODO: Control intersection consistency.
+                # assert( not isinstance(intersection, shapely.MultiPolygon) and not isinstance(intersection,shapely.Polygon))
+                # TODO: intersection can be a polygon as well ! update logic here! in particular an empty polygon
 
                 if isinstance(intersection, shapely.GeometryCollection):
                     for geom in intersection.geoms:
@@ -184,7 +178,7 @@ class Topology:
                     higher_polygon = higher_polygon.union(
                         intersection, grid_size=self.grid_size
                     )
-                #TODO: avoid this: if statement
+                # TODO: avoid this: if statement
                 if isinstance(higher_polygon, shapely.GeometryCollection):
                     higher_polygon = shapely.MultiPolygon(
                         [p for p in higher_polygon.geoms if p.area > self.grid_size]
@@ -207,7 +201,6 @@ class Topology:
                     updated_topo[running_level] = higher_polygon
                     # update the added polygon shrinked by the higher polygon (with added intersection points)
                     polygon = lower_polygon
-
 
         # if level in self.__lvl2multipoly:
         #     if isinstance(self.__lvl2multipoly[level], shapely.GeometryCollection):
@@ -235,7 +228,17 @@ class Topology:
         self.__lvl2multipoly = updated_topo
         return True
 
-    def flatten(self):
+    def plot(self):
+        """Plot the topology."""
+        plot(
+            self.flatten(),
+            self.holes,
+            self.levels,
+            self.domain,
+            hole_color_mode="white",
+        )
+
+    def flatten(self) -> list[(shapely.Polygon, int)]:
         flattened_polygons = []
         for level, running_polygon in self.__lvl2multipoly.items():
             if isinstance(running_polygon, shapely.MultiPolygon):
@@ -244,207 +247,3 @@ class Topology:
             else:
                 flattened_polygons.append((running_polygon, level))
         return flattened_polygons
-
-    def plot(self):
-        flattened_polygons = self.flatten()
-
-        sorted_bubbles = sorted(
-            flattened_polygons, key=cmp_to_key(polygon_compare), reverse=False
-        )
-        holes_levels = self.holes
-
-        # hole_boundary_color = "orange"
-        boundary_color = "black"
-        ref_domain_color = "silver"
-        # ref_domain_hole_color = "white"
-        levels = self.levels
-
-        domain = self.domain
-        # Create a colormap for the levels.
-        lvl2cl = dict()
-        if 0 in levels:
-            lvl2cl[0] = ref_domain_color
-            levels.remove(0)
-        if len(levels) > 0:
-            norm = Normalize(vmin=min(levels), vmax=max(levels))
-            for lvl in levels:
-                lvl2cl[lvl] = plt.cm.cool(norm(lvl))
-
-        # Make a legend for the levels.
-        handles = []
-        for lvl, color in lvl2cl.items():
-            handles.append(plt.Rectangle((0, 0), 1, 1, fc=color))
-        plt.legend(
-            handles,
-            [f"Level {lvl}" for lvl in lvl2cl.keys()],
-            loc="upper left",
-            bbox_to_anchor=(0.95, 1),
-        )
-
-        # Draw the reference domain's boundary.
-        # TODO: Fix AttributeError: 'MultiPolygon' object has no attribute 'exterior'
-        x, y = domain.exterior.xy
-        plt.plot(x, y, "-", linewidth=2, color=boundary_color)
-
-        for polygon, level in sorted_bubbles:
-            x, y = polygon.exterior.xy
-            plt.fill(x, y, color=lvl2cl[level])
-            if len(polygon.interiors) > 0:
-                for pp in polygon.interiors:
-                    x, y = pp.xy
-                    plt.fill(x, y, color="white")
-
-            if level in holes_levels:
-                x, y = polygon.exterior.xy
-                plt.plot(x, y, "-", linewidth=2, color=boundary_color)
-                if polygon.intersects(domain.exterior):
-                    boundary_line = polygon.intersection(domain.exterior)
-                    if isinstance(boundary_line, shapely.MultiLineString):
-                        for line in boundary_line.geoms:
-                            x, y = line.xy
-                            plt.plot(x, y, "-", linewidth=2, color="white")
-                    elif isinstance(boundary_line, shapely.LineString):
-                        x, y = boundary_line.xy
-                        plt.plot(x, y, "-", linewidth=2, color="white")
-
-        plt.show()
-
-
-def polygon_compare(poly_1, poly_2):
-    polygon_1, lvl1 = poly_1
-    polygon_2, lvl2 = poly_2
-
-    # elements with interiors must always be before elements without interiors
-    if len(polygon_1.interiors) > 0 and len(polygon_2.interiors) == 0:
-        return -1
-    if len(polygon_2.interiors) > 0 and len(polygon_1.interiors) == 0:
-        return 1
-
-    if len(polygon_1.interiors) > 0:
-        for pp in polygon_1.interiors:
-            if shapely.Polygon(pp).contains(polygon_2):
-                return -1
-    if len(polygon_2.interiors) > 0:
-        for pp in polygon_2.interiors:
-            if shapely.Polygon(pp).contains(polygon_1):
-                return 1
-
-    return 0
-
-
-def clip_x(
-    polygon: shapely.Polygon | shapely.MultiPolygon,
-    x_min: float,
-    x_max: float,
-    grid_size: float = 1e-15,
-):
-    """Clip the polygon along the x-axis."""
-    poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
-    if poly_x_min < x_min - grid_size:
-        poly_in = shapely.intersection(
-            polygon,
-            shapely.geometry.box(x_min, poly_y_min, poly_x_max, poly_y_max),
-            grid_size=grid_size,
-        )
-        poly_translated = shapely_translate(
-            shapely.intersection(
-                polygon,
-                shapely.geometry.box(poly_x_min, poly_y_min, x_min, poly_y_max),
-                grid_size=grid_size,
-            ),
-            xoff=x_max - x_min,
-        )
-    elif poly_x_max > x_max + grid_size:
-        poly_in = shapely.intersection(
-            polygon,
-            shapely.geometry.box(poly_x_min, poly_y_min, x_max, poly_y_max),
-            grid_size=grid_size,
-        )
-        poly_translated = shapely_translate(
-            shapely.intersection(
-                polygon,
-                shapely.geometry.box(x_max, poly_y_min, poly_x_max, poly_y_max),
-                grid_size=grid_size,
-            ),
-            xoff=x_min - x_max,
-        )
-    else:
-        assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
-        return polygon
-    if isinstance(poly_translated, shapely.GeometryCollection):
-        poly_translated = shapely.MultiPolygon(
-            [p for p in poly_translated.geoms if p.area > grid_size]
-        )
-    polygon = poly_in.union(poly_translated, grid_size=grid_size)
-    assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
-    return clip_x(polygon, x_min, x_max, grid_size=grid_size)
-
-
-def clip_y(
-    polygon: shapely.Polygon | shapely.MultiPolygon,
-    y_min: float,
-    y_max: float,
-    grid_size: float = 1e-15,
-):
-    """Clip the polygon along the y-axis."""
-    poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
-    if poly_y_min < y_min - grid_size:
-        poly_in = shapely.intersection(
-            polygon,
-            shapely.geometry.box(poly_x_min, y_min, poly_x_max, poly_y_max),
-            grid_size=grid_size,
-        )
-        poly_translated = shapely_translate(
-            shapely.intersection(
-                polygon,
-                shapely.geometry.box(poly_x_min, poly_y_min, poly_y_max, y_min),
-                grid_size=grid_size,
-            ),
-            yoff=y_max - y_min,
-        )
-    elif poly_y_max > y_max + grid_size:
-        poly_in = shapely.intersection(
-            polygon,
-            shapely.geometry.box(poly_x_min, poly_y_min, poly_x_max, y_max),
-            grid_size=grid_size,
-        )
-        poly_translated = shapely_translate(
-            shapely.intersection(
-                polygon,
-                shapely.geometry.box(poly_x_min, y_max, poly_x_max, poly_y_max),
-                grid_size=grid_size,
-            ),
-            yoff=y_min - y_max,
-        )
-    else:
-        assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
-        return polygon
-    if isinstance(poly_translated, shapely.GeometryCollection):
-        poly_translated = shapely.MultiPolygon(
-            [p for p in poly_translated.geoms if p.area > grid_size]
-        )
-    polygon = poly_in.union(poly_translated, grid_size=grid_size)
-    assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
-    return clip_y(polygon, y_min, y_max, grid_size=grid_size)
-
-
-# TODO: Just add a collision: poly -> bool argument to the add function, it could for example
-# check the number of refs.
-def polygon_distance_req(
-    poly1: shapely.Polygon | shapely.MultiPolygon,
-    poly2: shapely.Polygon | shapely.MultiPolygon,
-    distance: float,
-    grid_size: float = 1e-15,
-):
-    """Check if two polygons are not too close."""
-    return poly1.distance(poly2) > distance + grid_size
-
-
-def boundary_distance_req(
-    poly1: shapely.Polygon | shapely.MultiPolygon,
-    poly2: shapely.Polygon | shapely.MultiPolygon,
-    distance: float,
-    grid_size: float = 1e-15,
-):
-    """Check if the boundary of two polygons are not too close."""
-    return poly1.boundary.distance(poly2.boundary) > distance + grid_size
