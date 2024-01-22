@@ -13,10 +13,7 @@ class Transform(object):
     ) -> shapely.Polygon | shapely.MultiPolygon:
         pass
 
-class Repeat(Transform):
-    pass
-
-class Periodic_New(Transform):
+class Periodic(Transform):
     def __init__(self): #, levels: int | list[int] | str = "any"):
         #self.set_levels(levels)
         self.periodic_length_x = {}
@@ -57,9 +54,9 @@ class Periodic_New(Transform):
 
     def __call__(self, polygon, level, topology) -> shapely.Polygon | shapely.MultiPolygon:
         
-        minx, miny, maxx, maxy = topology.domain.bounds()
+        minx, miny, maxx, maxy = topology.domain.bounds
 
-        poly_minx, poly_miny, poly_maxx, poly_maxy = polygon.bounds()
+        poly_minx, poly_miny, poly_maxx, poly_maxy = polygon.bounds
 
         Lx = self.periodic_length_x["any"] if "any" in self.periodic_length_x else self.periodic_length_x[level]
         Ly = self.periodic_length_y["any"] if "any" in self.periodic_length_y else self.periodic_length_y[level]
@@ -77,189 +74,103 @@ class Periodic_New(Transform):
         # and possible union them 
         periodic_polygons = shapely.union_all(periodic_polygons, 
                           grid_size=topology.grid_size)
+        
+        # TODO: If the periodic length matches with the boundary we possible need to add intersection points
 
-
-        # periodic_polygons = [polygon]
-        # if Ly == 0.: 
-        #     inside = True
-        #     kx = 1
-        #     ky = 1
-        #     while inside : 
-        #         inside = False
-        #         if (kx-1)  * Lx < maxx :
-        #             if (ky-1) * Ly < maxy : 
-        #                 poly = shapely.affinity.translate(polygon, xoff=kx * Lx, yoff= ky * Ly)
-        #                 periodic_polygons.append(poly)
-        #                 inside = True
-        #             if (-ky +1) * Ly > miny: 
-        #                 poly = shapely.affinity.translate(polygon, xoff=kx * Lx, yoff= -ky * Ly)
-        #                 periodic_polygons.append(poly)
-        #                 inside = True
-
-
-        #         if (-k+1) * Lx > minx : 
-        #             if (ky-1) * Ly < maxy : 
-        #                 poly = shapely.affinity.translate(polygon, xoff=-kx * Lx, yoff= ky * Ly)
-        #                 periodic_polygons.append(poly)
-        #                 inside = True
-        #             if (-ky +1) * Ly > miny: 
-        #                 poly = shapely.affinity.translate(polygon, xoff=-kx * Lx, yoff= -ky * Ly)
-        #                 periodic_polygons.append(poly)
-        #                 inside = True
-        #         kx+=1
-        #         ky+=1
-
-        #periodic_polygons = shapely.MultiPolygon(periodic_polygons)
         return periodic_polygons
 
 
+# def clip_x(
+#     polygon: shapely.Polygon | shapely.MultiPolygon,
+#     x_min: float,
+#     x_max: float,
+#     grid_size: float = 1e-15,
+# ):
+#     """Clip the polygon along the x-axis."""
+#     poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
+#     if poly_x_min < x_min - grid_size:
+#         poly_in = shapely.intersection(
+#             polygon,
+#             shapely.geometry.box(x_min, poly_y_min, poly_x_max, poly_y_max),
+#             grid_size=grid_size,
+#         )
+#         poly_translated = shapely_translate(
+#             shapely.intersection(
+#                 polygon,
+#                 shapely.geometry.box(poly_x_min, poly_y_min, x_min, poly_y_max),
+#                 grid_size=grid_size,
+#             ),
+#             xoff=x_max - x_min,
+#         )
+#     elif poly_x_max > x_max + grid_size:
+#         poly_in = shapely.intersection(
+#             polygon,
+#             shapely.geometry.box(poly_x_min, poly_y_min, x_max, poly_y_max),
+#             grid_size=grid_size,
+#         )
+#         poly_translated = shapely_translate(
+#             shapely.intersection(
+#                 polygon,
+#                 shapely.geometry.box(x_max, poly_y_min, poly_x_max, poly_y_max),
+#                 grid_size=grid_size,
+#             ),
+#             xoff=x_min - x_max,
+#         )
+#     else:
+#         assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+#         return polygon
+#     if isinstance(poly_translated, shapely.GeometryCollection):
+#         poly_translated = shapely.MultiPolygon(
+#             [p for p in poly_translated.geoms if p.area > grid_size]
+#         )
+#     polygon = poly_in.union(poly_translated, grid_size=grid_size)
+#     assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+#     return clip_x(polygon, x_min, x_max, grid_size=grid_size)
 
 
-        
-                                                                      
-
-
-class Periodic(Transform):
-    def __init__(self, levels: int | list[int] | str = "any"):
-        self.set_levels(levels)
-
-    @property
-    def levels(self):
-        return self.__levels
-
-    def set_levels(self, levels: int | list[int] | str = "any"):
-        if isinstance(levels, int):
-            self.__levels = [levels]
-        elif isinstance(levels, list):
-            self.__levels = levels
-        elif isinstance(levels, str):
-            if levels == "any":
-                self.__levels = list("any")
-            else:
-                raise ValueError(f"levels={levels} is not valid.")
-
-
-class PeriodicXY(Transform):
-    def __init__(self, midpoint, width, height):
-        pass
-
-
-class PeriodicX(Transform):
-    # phi(x_max + r) = phi(x_min + r)
-    # phi(x_min - r) = phi(x_max - r)
-    # f(x) = f(x+l)
-    def __init__(
-        self, base: float, period_length: float, levels: int | list[int] | str = "any"
-    ):
-        super().__init__(levels=levels)
-        self.__x_min = x_min
-        self.__x_max = x_max
-
-    def __call__(self, polygon, level, topology) -> Polygon | MultiPolygon:
-        return clip_x(
-            polygon,
-            self.__x_min,
-            self.__x_max,
-            grid_size=topology.grid_size,
-        )
-
-
-class PeriodicY(Transform):
-    def __init__(self, midpoint, width, height):
-        pass
-
-
-def clip_x(
-    polygon: shapely.Polygon | shapely.MultiPolygon,
-    x_min: float,
-    x_max: float,
-    grid_size: float = 1e-15,
-):
-    """Clip the polygon along the x-axis."""
-    poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
-    if poly_x_min < x_min - grid_size:
-        poly_in = shapely.intersection(
-            polygon,
-            shapely.geometry.box(x_min, poly_y_min, poly_x_max, poly_y_max),
-            grid_size=grid_size,
-        )
-        poly_translated = shapely_translate(
-            shapely.intersection(
-                polygon,
-                shapely.geometry.box(poly_x_min, poly_y_min, x_min, poly_y_max),
-                grid_size=grid_size,
-            ),
-            xoff=x_max - x_min,
-        )
-    elif poly_x_max > x_max + grid_size:
-        poly_in = shapely.intersection(
-            polygon,
-            shapely.geometry.box(poly_x_min, poly_y_min, x_max, poly_y_max),
-            grid_size=grid_size,
-        )
-        poly_translated = shapely_translate(
-            shapely.intersection(
-                polygon,
-                shapely.geometry.box(x_max, poly_y_min, poly_x_max, poly_y_max),
-                grid_size=grid_size,
-            ),
-            xoff=x_min - x_max,
-        )
-    else:
-        assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
-        return polygon
-    if isinstance(poly_translated, shapely.GeometryCollection):
-        poly_translated = shapely.MultiPolygon(
-            [p for p in poly_translated.geoms if p.area > grid_size]
-        )
-    polygon = poly_in.union(poly_translated, grid_size=grid_size)
-    assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
-    return clip_x(polygon, x_min, x_max, grid_size=grid_size)
-
-
-def clip_y(
-    polygon: shapely.Polygon | shapely.MultiPolygon,
-    y_min: float,
-    y_max: float,
-    grid_size: float = 1e-15,
-):
-    """Clip the polygon along the y-axis."""
-    poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
-    if poly_y_min < y_min - grid_size:
-        poly_in = shapely.intersection(
-            polygon,
-            shapely.geometry.box(poly_x_min, y_min, poly_x_max, poly_y_max),
-            grid_size=grid_size,
-        )
-        poly_translated = shapely_translate(
-            shapely.intersection(
-                polygon,
-                shapely.geometry.box(poly_x_min, poly_y_min, poly_y_max, y_min),
-                grid_size=grid_size,
-            ),
-            yoff=y_max - y_min,
-        )
-    elif poly_y_max > y_max + grid_size:
-        poly_in = shapely.intersection(
-            polygon,
-            shapely.geometry.box(poly_x_min, poly_y_min, poly_x_max, y_max),
-            grid_size=grid_size,
-        )
-        poly_translated = shapely_translate(
-            shapely.intersection(
-                polygon,
-                shapely.geometry.box(poly_x_min, y_max, poly_x_max, poly_y_max),
-                grid_size=grid_size,
-            ),
-            yoff=y_min - y_max,
-        )
-    else:
-        assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
-        return polygon
-    if isinstance(poly_translated, shapely.GeometryCollection):
-        poly_translated = shapely.MultiPolygon(
-            [p for p in poly_translated.geoms if p.area > grid_size]
-        )
-    polygon = poly_in.union(poly_translated, grid_size=grid_size)
-    assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
-    return clip_y(polygon, y_min, y_max, grid_size=grid_size)
+# def clip_y(
+#     polygon: shapely.Polygon | shapely.MultiPolygon,
+#     y_min: float,
+#     y_max: float,
+#     grid_size: float = 1e-15,
+# ):
+#     """Clip the polygon along the y-axis."""
+#     poly_x_min, poly_y_min, poly_x_max, poly_y_max = polygon.bounds
+#     if poly_y_min < y_min - grid_size:
+#         poly_in = shapely.intersection(
+#             polygon,
+#             shapely.geometry.box(poly_x_min, y_min, poly_x_max, poly_y_max),
+#             grid_size=grid_size,
+#         )
+#         poly_translated = shapely_translate(
+#             shapely.intersection(
+#                 polygon,
+#                 shapely.geometry.box(poly_x_min, poly_y_min, poly_y_max, y_min),
+#                 grid_size=grid_size,
+#             ),
+#             yoff=y_max - y_min,
+#         )
+#     elif poly_y_max > y_max + grid_size:
+#         poly_in = shapely.intersection(
+#             polygon,
+#             shapely.geometry.box(poly_x_min, poly_y_min, poly_x_max, y_max),
+#             grid_size=grid_size,
+#         )
+#         poly_translated = shapely_translate(
+#             shapely.intersection(
+#                 polygon,
+#                 shapely.geometry.box(poly_x_min, y_max, poly_x_max, poly_y_max),
+#                 grid_size=grid_size,
+#             ),
+#             yoff=y_min - y_max,
+#         )
+#     else:
+#         assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+#         return polygon
+#     if isinstance(poly_translated, shapely.GeometryCollection):
+#         poly_translated = shapely.MultiPolygon(
+#             [p for p in poly_translated.geoms if p.area > grid_size]
+#         )
+#     polygon = poly_in.union(poly_translated, grid_size=grid_size)
+#     assert isinstance(polygon, (shapely.Polygon, shapely.MultiPolygon))
+#     return clip_y(polygon, y_min, y_max, grid_size=grid_size)
