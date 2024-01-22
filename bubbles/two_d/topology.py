@@ -83,6 +83,9 @@ class Topology:
             transform: A function that transforms the polygon before adding it to the topology.
                 Note: first the polygon is transformed and then the constraints are checked.
         """
+        if level <= 0: 
+            raise ValueError(f"Given level must be positive value, but given {level}.")
+
         # Apply transform if given
         if transform is not None:
             polygon = transform(polygon)
