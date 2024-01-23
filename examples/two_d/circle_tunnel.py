@@ -1,7 +1,7 @@
 import shapely
 from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
 from bubbles.two_d.hole import Circle
-from bubbles.two_d.topology import Bubble, Topology
+from bubbles.two_d.topology import Topology
 
 def generate_topo():
     """Generate a topology with a sequence of centered inclusions."""
@@ -14,7 +14,7 @@ def generate_topo():
 
     for lvl, rad in zip(level, radii): 
         C = shapely.Polygon(Circle(midpoint=(0, 0), radius=rad).discretize_hole(refs=50))
-        topo.add(Bubble(polygon=C, level= lvl, is_hole= False))
+        topo.add(polygon=C, level= lvl)
 
     return topo
 

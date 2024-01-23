@@ -1,7 +1,7 @@
 import shapely
 from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
 from bubbles.two_d.hole import Rectangular
-from bubbles.two_d.topology import Bubble, Topology
+from bubbles.two_d.topology import Topology
 
 
 def generate_topo():
@@ -12,7 +12,7 @@ def generate_topo():
             midpoint=((N - 1) / 2, (N - 1) / 2), width=N, height=N
         ).discretize_hole(refs=4)
     )
-    topo = Topology(R)
+    topo = Topology(R, holes={1})
     for i in range(N):
         for j in range(N):
             R = shapely.Polygon(
@@ -20,7 +20,7 @@ def generate_topo():
                     refs=4
                 )
             )
-            topo.add(Bubble(polygon=R, level=(i + j) % 2 + 1, is_hole=(i + j) % 2))
+            topo.add(polygon=R, level=(i + j) % 2 + 1)
 
     return topo
 
