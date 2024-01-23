@@ -13,7 +13,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 
-class Hole(ABC):
+class ContinuousGeometry(ABC):
     """Abstract class for two-dimensional bubbles."""
 
     def __init__(self, type_):
@@ -50,7 +50,7 @@ class Hole(ABC):
         raise NotImplementedError
 
 
-class Circle(Hole):
+class Circle(ContinuousGeometry):
     """Circle bubble."""
 
     def __init__(self, midpoint: tuple[float, float], radius: float):
@@ -91,7 +91,7 @@ class Circle(Hole):
             raise ValueError("Only axis = 0 or 1 supported")
 
 
-class Ellipse(Hole):
+class Ellipse(ContinuousGeometry):
     """Ellipse bubble."""
 
     def __init__(
@@ -142,7 +142,7 @@ class Ellipse(Hole):
             raise ValueError("Only axis = 0 or 1 supported")
 
 
-class Stellar(Hole):
+class Stellar(ContinuousGeometry):
     """Stellar bubble."""
 
     def __init__(
@@ -208,7 +208,7 @@ class Stellar(Hole):
             raise ValueError("Only axis = 0 or 1 supported")
 
 
-class Rectangular(Hole):
+class Rectangle(ContinuousGeometry):
     """Rectangular bubble."""
 
     def __init__(self, midpoint: tuple[float, float], width: float, height: float):

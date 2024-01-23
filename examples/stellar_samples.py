@@ -1,13 +1,13 @@
 import random
 import shapely
 from bubbles.gmsh_api import topology_to_gmsh_entities, write_geo
-from bubbles.two_d.hole import Rectangular, Stellar
+from bubbles.two_d.geometry import Rectangle, Stellar
 from bubbles.two_d.topology import Topology
 
 
 def generate_topo():
     """Generate a rectangular topology with many stellar inclusions."""
-    domain =  shapely.Polygon(Rectangular(midpoint=(.5,.5), width=1, height=1).discretize_hole(refs=4))
+    domain =  shapely.Polygon(Rectangle(midpoint=(.5,.5), width=1, height=1).discretize_hole(refs=4))
     topo = Topology(domain)
 
     n_stellar = 100

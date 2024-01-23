@@ -1,6 +1,6 @@
 import shapely
 from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
-from bubbles.two_d.hole import Circle
+from bubbles.two_d.geometry import Circle
 from bubbles.two_d.topology import Topology
 
 def generate_topo():

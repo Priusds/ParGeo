@@ -1,7 +1,7 @@
 import random
 import shapely
 from bubbles.gmsh_api import topology_to_gmsh_entities, write_geo
-from bubbles.two_d.hole import Rectangular, Stellar, Circle
+from bubbles.two_d.geometry import Rectangle, Stellar, Circle
 from bubbles.two_d.topology import Topology
 from bubbles.two_d.transform import Periodic
 
@@ -16,7 +16,7 @@ from bubbles.two_d.transform import Periodic
 
 def generate_topo_simple():
     domain = shapely.Polygon(
-        Rectangular(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
+        Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
     )
     topo = Topology(domain)
 
@@ -40,7 +40,7 @@ def generate_topo_simple():
 
 def generate_topo_variation():
     domain = shapely.Polygon(
-        Rectangular(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
+        Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
     )
     topo = Topology(domain)
 
@@ -69,7 +69,7 @@ def generate_topo():
     H = 1.0
 
     domain = shapely.Polygon(
-        Rectangular(midpoint=(0.5, 0.5), width=W, height=H).discretize_hole(refs=4)
+        Rectangle(midpoint=(0.5, 0.5), width=W, height=H).discretize_hole(refs=4)
     )
     topo = Topology(domain)
 

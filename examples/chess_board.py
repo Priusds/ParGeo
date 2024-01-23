@@ -1,6 +1,6 @@
 import shapely
 from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
-from bubbles.two_d.hole import Rectangular
+from bubbles.two_d.geometry import Rectangle
 from bubbles.two_d.topology import Topology
 
 
@@ -8,7 +8,7 @@ def generate_topo():
     """Generate a topology with a chess board pattern."""
     N = 10
     R = shapely.Polygon(
-        Rectangular(
+        Rectangle(
             midpoint=((N - 1) / 2, (N - 1) / 2), width=N, height=N
         ).discretize_hole(refs=4)
     )
@@ -16,7 +16,7 @@ def generate_topo():
     for i in range(N):
         for j in range(N):
             R = shapely.Polygon(
-                Rectangular(midpoint=(i, j), width=1.0, height=1.0).discretize_hole(
+                Rectangle(midpoint=(i, j), width=1.0, height=1.0).discretize_hole(
                     refs=4
                 )
             )

@@ -1,13 +1,13 @@
 import shapely
 import math
 from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
-from bubbles.two_d.hole import Circle, Rectangular
+from bubbles.two_d.geometry import Circle, Rectangle
 from bubbles.two_d.topology import Topology
 
 
 def generate_topo():
     d_1 = shapely.Polygon(
-        Rectangular(midpoint=(0.0, 0), width=2, height=2).discretize_hole(refs=4)
+        Rectangle(midpoint=(0.0, 0), width=2, height=2).discretize_hole(refs=4)
     )
 
     dh_1 = shapely.Polygon(

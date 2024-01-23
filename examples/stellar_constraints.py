@@ -1,7 +1,7 @@
 import random
 import shapely
 from bubbles.gmsh_api import topology_to_gmsh_entities, write_geo
-from bubbles.two_d.hole import Rectangular, Stellar, Circle
+from bubbles.two_d.geometry import Rectangle, Stellar, Circle
 from bubbles.two_d.constraints import DistanceConstraint
 
 
@@ -10,7 +10,7 @@ from bubbles.two_d.topology import Topology
 
 def debug_constraint():
     domain = shapely.Polygon(
-        Rectangular(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
+        Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
     )
 
     topo = Topology(domain)
@@ -34,7 +34,7 @@ def debug_constraint():
 def generate_topo():
     """Generate a rectangular topology with many stellar inclusions."""
     domain = shapely.Polygon(
-        Rectangular(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
+        Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
     )
 
     # c1 = shapely.Polygon(Circle(midpoint=(0., 0.), radius=0.1).discretize_hole(refs=50))

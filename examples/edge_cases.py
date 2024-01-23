@@ -1,7 +1,7 @@
 import shapely
 import math
 from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
-from bubbles.two_d.hole import Circle, Rectangular, Stellar, Ellipse
+from bubbles.two_d.geometry import Circle, Rectangle, Stellar, Ellipse
 from bubbles.two_d.topology import Topology
 
 
@@ -9,7 +9,7 @@ def generate_topo():
     """Generate a topology with a few edge cases."""
     # Make the domain
     d_1 = shapely.Polygon(
-        Rectangular(midpoint=(0.0, 0), width=2, height=2).discretize_hole(refs=4)
+        Rectangle(midpoint=(0.0, 0), width=2, height=2).discretize_hole(refs=4)
     )
     d_2 = shapely.Polygon(
         Circle(midpoint=(1.0, 0), radius=0.5).discretize_hole(refs=50)
