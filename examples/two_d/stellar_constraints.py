@@ -65,6 +65,6 @@ if __name__ == "__main__":
     gmsh_entities = topology_to_gmsh_entities(topo)
     write_geo(
         gmsh_entities=gmsh_entities,
-        file_name="stellar_samples_periodic_constrains",
+        file_name="stellar_samples_constrains",
         correct_curve_loops=True,
     )
