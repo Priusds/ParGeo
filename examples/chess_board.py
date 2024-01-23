@@ -1,6 +1,6 @@
 from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
-from bubbles.two_d.geometry import Rectangle
-from bubbles.two_d.topology import Topology
+from bubbles.geometry import Rectangle
+from bubbles.topology import Topology
 
 
 def generate_topo():

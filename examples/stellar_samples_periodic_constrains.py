@@ -1,8 +1,8 @@
 import random
 from bubbles.gmsh_api import topology_to_gmsh_entities, write_geo
-from bubbles.two_d.geometry import Rectangle, Stellar, Circle
-from bubbles.two_d.topology import Topology
-from bubbles.two_d.transform import Periodic
+from bubbles.geometry import Rectangle, Stellar, Circle
+from bubbles.topology import Topology
+from bubbles.transform import Periodic
 
 # (
 #     Topology,

@@ -1,8 +1,8 @@
 import random
 import shapely
 from bubbles.gmsh_api import topology_to_gmsh_entities, write_geo
-from bubbles.two_d.geometry import Rectangle, Stellar, Circle
-from bubbles.two_d.constraints import DistanceConstraint
+from bubbles.geometry import Rectangle, Stellar, Circle
+from bubbles.constraints import DistanceConstraint
 
 
 from bubbles.two_d.topology import Topology

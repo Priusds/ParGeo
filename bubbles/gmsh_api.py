@@ -9,7 +9,7 @@ from pydantic import BaseModel, StrictInt
 import shapely
 
 
-from bubbles.two_d.topology import Topology
+from bubbles.topology import Topology
 
 
 class PhysicalDimension(IntEnum):
