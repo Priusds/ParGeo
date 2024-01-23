@@ -9,23 +9,16 @@ from bubbles.two_d.topology import Topology
 
 
 def debug_constraint():
-    domain = shapely.Polygon(
-        Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
-    )
-
+    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize(refs=4)
     topo = Topology(domain)
 
-    c1 = shapely.Polygon(
-        Circle(midpoint=(0.4, 0.5), radius=0.1).discretize_hole(refs=50)
-    )
-    c2 = shapely.Polygon(
-        Circle(midpoint=(0.5, 0.5), radius=0.1).discretize_hole(refs=50)
-    )
     constraint = DistanceConstraint()
     constraint.set_level_distance(0.1, 1, "any")
 
+    c1 = Circle(midpoint=(0.4, 0.5), radius=0.1).discretize(refs=50)
     topo.add(c1, level=1, constraints=constraint)
 
+    c2 = Circle(midpoint=(0.5, 0.5), radius=0.1).discretize(refs=50)
     topo.add(c2, level=2, constraints=constraint)
 
     return topo
@@ -33,11 +26,8 @@ def debug_constraint():
 
 def generate_topo():
     """Generate a rectangular topology with many stellar inclusions."""
-    domain = shapely.Polygon(
-        Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
-    )
+    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize(refs=4)
 
-    # c1 = shapely.Polygon(Circle(midpoint=(0., 0.), radius=0.1).discretize_hole(refs=50))
     P = shapely.Point(0.5, 0.5)
 
     topo = Topology(domain)
@@ -53,7 +43,7 @@ def generate_topo():
     radii = [min((0.09, random.random() * 0.1)) for _ in range(n_stellar)]
 
     for mid, rad, lvl in zip(midpoints, radii, levels):
-        C = shapely.Polygon(Stellar(midpoint=mid, radius=rad).discretize_hole(refs=50))
+        C = Stellar(midpoint=mid, radius=rad).discretize(refs=50)
         topo.add(
             polygon=C,
             level=lvl,

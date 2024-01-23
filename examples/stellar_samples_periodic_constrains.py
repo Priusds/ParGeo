@@ -1,5 +1,4 @@
 import random
-import shapely
 from bubbles.gmsh_api import topology_to_gmsh_entities, write_geo
 from bubbles.two_d.geometry import Rectangle, Stellar, Circle
 from bubbles.two_d.topology import Topology
@@ -15,18 +14,14 @@ from bubbles.two_d.transform import Periodic
 
 
 def generate_topo_simple():
-    domain = shapely.Polygon(
-        Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
-    )
+    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize(refs=4)
     topo = Topology(domain)
 
-    c = shapely.Polygon(Circle(midpoint=(0, 0), radius=0.1).discretize_hole(refs=50))
+    c = Circle(midpoint=(0, 0), radius=0.1).discretize(refs=50)
 
     rand_midpoint = (random.random(), random.random())
     rand_radius = min(0.09, random.random() * 0.5)
-    S = shapely.Polygon(
-        Stellar(midpoint=rand_midpoint, radius=rand_radius).discretize_hole(refs=50)
-    )
+    S = Stellar(midpoint=rand_midpoint, radius=rand_radius).discretize(refs=50)
 
     transform = Periodic()
     transform.set_periodicty("any", 0.3, 0.5)
@@ -39,18 +34,14 @@ def generate_topo_simple():
 
 
 def generate_topo_variation():
-    domain = shapely.Polygon(
-        Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize_hole(refs=4)
-    )
+    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize(refs=4)
     topo = Topology(domain)
 
-    c = shapely.Polygon(Circle(midpoint=(0, 0), radius=0.02).discretize_hole(refs=50))
+    c = Circle(midpoint=(0, 0), radius=0.02).discretize(refs=50)
 
     rand_midpoint = (random.random(), random.random())
     rand_radius = min(0.05, random.random() * 0.2)
-    S = shapely.Polygon(
-        Stellar(midpoint=rand_midpoint, radius=rand_radius).discretize_hole(refs=50)
-    )
+    S = Stellar(midpoint=rand_midpoint, radius=rand_radius).discretize(refs=50)
 
     transform = Periodic()
     transform.set_periodicty([1, 4], [0.07, 0.1], [0.2, 0.15])
@@ -68,9 +59,8 @@ def generate_topo():
     W = 1.0
     H = 1.0
 
-    domain = shapely.Polygon(
-        Rectangle(midpoint=(0.5, 0.5), width=W, height=H).discretize_hole(refs=4)
-    )
+    domain = Rectangle(midpoint=(0.5, 0.5), width=W, height=H).discretize(refs=4)
+
     topo = Topology(domain)
 
     n_stellar = 100
@@ -83,7 +73,7 @@ def generate_topo():
     transform.set_periodicty([1, 2, 3, 4, 5], W, H)
 
     for mid, rad, lvl in zip(midpoints, radii, levels):
-        C = shapely.Polygon(Stellar(midpoint=mid, radius=rad).discretize_hole(refs=50))
+        C = Stellar(midpoint=mid, radius=rad).discretize(refs=50)
         topo.add(
             polygon=C,
             level=lvl,

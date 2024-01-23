@@ -9,6 +9,7 @@ TODO: Refactor this module. Do following:
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional
 
+import shapely
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -20,7 +21,7 @@ class ContinuousGeometry(ABC):
         self.type = type_
 
     @abstractmethod
-    def discretize_hole(self, refs: int) -> list[tuple[float, float]]:
+    def discretize(self, refs: int) -> shapely.Polygon:
         """Discretize the boundary of the hole.
 
         Return the boundary points in counter-clockwise order.
@@ -70,7 +71,7 @@ class Circle(ContinuousGeometry):
         """Returns the hole information in dict format."""
         return {"type": self.type, "midpoint": self.midpoint, "radius": self.radius}
 
-    def discretize_hole(self, refs: int) -> list[tuple[float, float]]:
+    def discretize(self, refs: int) -> shapely.Polygon:
         """Discretize the boundary of the hole.
 
         Return the boundary points in counter-clockwise order.
@@ -121,7 +122,7 @@ class Ellipse(ContinuousGeometry):
             "angle": self.angle,
         }
 
-    def discretize_hole(self, refs: int) -> list[tuple[float, float]]:
+    def discretize(self, refs: int) -> shapely.Polygon:
         """Discretize the boundary of the hole.
 
         Return the boundary points in counter-clockwise order.
@@ -183,7 +184,7 @@ class Stellar(ContinuousGeometry):
             "radius": self.radius,
         }
 
-    def discretize_hole(self, refs: int) -> list[tuple[float, float]]:
+    def discretize(self, refs: int) -> shapely.Polygon:
         """Discretize the boundary of the hole.
 
         Return the boundary points in counter-clockwise order.
@@ -236,7 +237,7 @@ class Rectangle(ContinuousGeometry):
             "height": self.height,
         }
 
-    def discretize_hole(self, refs: Any) -> list[tuple[float, float]]:
+    def discretize(self, refs: Any = None) -> shapely.Polygon:
         """Discretize the boundary of the hole.
 
         Return only the corner points in counter-clockwise order.
@@ -253,12 +254,12 @@ class Rectangle(ContinuousGeometry):
         p2 = (midpoint[0] + width / 2, midpoint[1] + height / 2)
         p3 = (midpoint[0] - width / 2, midpoint[1] + height / 2)
 
-        return [p0, p1, p2, p3]
+        return shapely.Polygon([p0, p1, p2, p3])
 
 
 def discretize_ellipse(
     midpoint: tuple[float, float], axis: tuple[float, float], angle: float, refs: int
-) -> list[tuple[float, float]]:
+) -> shapely.Polygon:
     """Discretize the ellipse.
 
     Args:
@@ -278,7 +279,7 @@ def discretize_ellipse(
     coords = polar_to_cartesian(angles, axis[0], axis[1])
     transformed_coords = rotate_counterclockwise(coords, angle) + midpoint
 
-    return [tuple(coords) for coords in transformed_coords]  # type: ignore
+    return shapely.Polygon([tuple(coords) for coords in transformed_coords])  # type: ignore
 
 
 def discretize_ellipse_noisy(
@@ -287,7 +288,7 @@ def discretize_ellipse_noisy(
     angle: float,
     refs: int,
     var: float,
-) -> list[tuple[float, float]]:
+) -> shapely.Polygon:
     """Discretize the ellipse with additional noise.
 
     Args:
@@ -311,12 +312,12 @@ def discretize_ellipse_noisy(
     coords = polar_to_cartesian(angles, axis[0] + noise, axis[1] + noise)
     transformed_coords = rotate_counterclockwise(coords, angle) + midpoint
 
-    return [tuple(coords) for coords in transformed_coords]  # type: ignore
+    return shapely.Polygon([tuple(coords) for coords in transformed_coords])
 
 
 def discetize_stellar_polygon(
     midpoint: tuple[float, float], radius: float, coefficients: np.ndarray, refs: int
-) -> list[tuple[float, float]]:
+) -> shapely.Polygon:
     """Discretize the stellar polygon.
 
     Args:
@@ -335,7 +336,7 @@ def discetize_stellar_polygon(
         midpoint
     )
 
-    return [tuple(coords) for coords in polygon]  # type: ignore
+    return shapely.Polygon([tuple(coords) for coords in polygon])  # type: ignore
 
 
 def trigonometric_function(
