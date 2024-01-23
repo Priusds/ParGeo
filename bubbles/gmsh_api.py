@@ -8,7 +8,7 @@ import gmsh
 from pydantic import BaseModel, StrictInt
 import shapely
 
-from bubbles.two_d.topology_deprecated import Bubble
+
 from bubbles.two_d.topology import Topology
 
 
@@ -236,7 +236,7 @@ def write_geo(
 def bubble_to_gmsh_entities(
     polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag
 ):
-    #assert not bubble.is_hole
+    # assert not bubble.is_hole
     points_total = []
     lines_total = []
     curve_loops = []
@@ -352,47 +352,6 @@ def topology_to_gmsh_entities(topo: Topology):
 
     for polygon, level in bubbles:
         if not level in topo.holes:
-            (
-                gmsh_entities,
-                point_tag,
-                line_tag,
-                curve_loop_tag,
-                plane_surface_tag,
-            ) = bubble_to_gmsh_entities(
-                polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag
-            )
-            all_entities_list.append(gmsh_entities)
-
-    # Group all physical groups by tag
-    physical_groups_merged = []
-    physical_groups = [e.physical_groups[0] for e in all_entities_list]
-    physical_groups.sort(key=lambda x: x.tag)
-
-    for tag, physical_group in groupby(physical_groups, lambda x: x.tag):
-        entity_tags = [s.entity_tags[0] for s in physical_group]
-        physical_groups_merged.append(
-            PhysicalGroup(dim=2, entity_tags=entity_tags, tag=tag)
-        )
-
-    return GmshEntities(
-        points=[i for ent in all_entities_list for i in ent.points],
-        lines=[i for ent in all_entities_list for i in ent.lines],
-        curve_loops=[i for ent in all_entities_list for i in ent.curve_loops],
-        plane_surfaces=[i for ent in all_entities_list for i in ent.plane_surfaces],
-        physical_groups=physical_groups_merged,
-    )
-
-
-def bubbles_to_gmsh_entities(bubbles: list[Bubble], holes: set[int]):
-    all_entities_list = []
-
-    point_tag = 1
-    line_tag = 1
-    curve_loop_tag = 1
-    plane_surface_tag = 1
-
-    for polygon, level in bubbles:
-        if not level in holes:
             (
                 gmsh_entities,
                 point_tag,
