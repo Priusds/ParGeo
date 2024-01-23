@@ -10,7 +10,7 @@ from bubbles.two_d.utils import plot
 
 
 DEFAULT_GRID_SIZE = 1e-15
-DOMAIN_LEVEL = 0
+INITIAL_LEVEL = 0
 
 
 class Topology:
@@ -25,7 +25,7 @@ class Topology:
         """Initialize the topology.
 
         Args:
-            domain: The reference domain.
+            domain: The domain.
             holes: Levels that are holes. This can be changed at any time through `set_holes`.
             grid_size: The grid size.
         """
@@ -34,7 +34,7 @@ class Topology:
         self.__domain = domain
         self.__holes = holes  # Can be changed at any time.
         self.__grid_size = grid_size
-        self.__lvl2multipoly = {DOMAIN_LEVEL: domain}
+        self.__lvl2multipoly = {INITIAL_LEVEL: domain}
 
     @property
     def holes(self):
@@ -56,7 +56,7 @@ class Topology:
     @property
     def levels(self):
         return sorted(self.__lvl2multipoly.keys())
-    
+
     @property
     def lvl2multipoly(self):
         return self.__lvl2multipoly
@@ -65,10 +65,13 @@ class Topology:
         self,
         polygon: shapely.Polygon | shapely.MultiPolygon,
         level: int,
-        domain_clip: bool = True,
-        constraints: Callable[[shapely.Polygon | shapely.MultiPolygon, int, Topology], bool] = None,
+        extend_domain: bool = False,
+        constraints: Callable[
+            [shapely.Polygon | shapely.MultiPolygon, int, Topology], bool
+        ] = None,
         transform: Callable[
-            [shapely.Polygon | shapely.MultiPolygon, int, Topology], shapely.MultiPolygon
+            [shapely.Polygon | shapely.MultiPolygon, int, Topology],
+            shapely.MultiPolygon,
         ] = None,
     ) -> bool:
         """
@@ -77,9 +80,9 @@ class Topology:
         Args:
             polygon: The polygon to add.
             level: The level of the polygon.
-            domain_clip: If True, clip the polygon w.r.t. the reference domain.
+            extend_domain: If False, clip the polygon w.r.t. the domain.
             constraints: A function that checks if the polygon satisfies some constraints.
-                Example: The polygon must be inside the reference domain.
+                Example: The polygon must be inside the domain.
             transform: A function that transforms the polygon before adding it to the topology.
                 Note: first the polygon is transformed and then the constraints are checked.
         """
@@ -90,11 +93,18 @@ class Topology:
         if transform is not None:
             polygon = transform(polygon, level, self)
 
-        # Clip the transformed polygon w.r.t. the reference domain
-        if domain_clip:
+        # Clip the transformed polygon w.r.t. the domain
+        if not extend_domain:
             polygon = shapely.intersection(
                 polygon, self.domain, grid_size=self.grid_size
             )
+        else:
+            extended_domain = shapely.union_all(
+                [self.domain, polygon], grid_size=self.grid_size
+            )
+            if isinstance(extended_domain, shapely.Polygon):
+                extended_domain = shapely.MultiPolygon([extended_domain])
+            self.__domain = extended_domain
 
         # Make sure polygon is not a GeometryCollection
         if isinstance(polygon, (shapely.GeometryCollection, shapely.MultiPolygon)):
