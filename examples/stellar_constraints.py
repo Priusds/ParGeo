@@ -46,7 +46,7 @@ def generate_topo():
     constraint.set_geometry_distance(P, 0.2, "any")
     # constraint.set_level_distance(0.05, 1, 2)
 
-    n_stellar = 500
+    n_stellar = 2000
     # random.seed(0)
     levels = [random.choice([1, 2, 3]) for _ in range(n_stellar)]
     midpoints = [(random.random(), random.random()) for _ in range(n_stellar)]

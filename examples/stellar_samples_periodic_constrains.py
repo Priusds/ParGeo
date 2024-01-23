@@ -94,7 +94,7 @@ def generate_topo():
 
 
 if __name__ == "__main__":
-    topo = generate_topo()  # generate_topo_simple() #generate_topo()
+    topo = generate_topo_variation()  # generate_topo_simple() #generate_topo()
     topo.set_holes({2})
     topo.plot()
     gmsh_entities = topology_to_gmsh_entities(topo)
