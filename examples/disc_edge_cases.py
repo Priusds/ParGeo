@@ -4,7 +4,7 @@ from bubbles.topology import Topology
 
 
 def generate_topo():
-    d_1 = Rectangle(midpoint=(0.0, 0), width=2, height=2).discretize()
+    d_1 = Rectangle(midpoint=(0.0, 0), width=2, height=2).to_polygon()
 
     dh_1 = Circle(midpoint=(0.0, 0.0), radius=0.5).discretize(refs=50)
 

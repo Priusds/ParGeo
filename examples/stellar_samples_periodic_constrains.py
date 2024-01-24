@@ -6,7 +6,7 @@ from bubbles.transform import Periodic
 
 
 def generate_topo_simple():
-    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize()
+    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).to_polygon()
     topo = Topology(domain)
 
     c = Circle(midpoint=(0, 0), radius=0.1).discretize(refs=50)
@@ -26,7 +26,7 @@ def generate_topo_simple():
 
 
 def generate_topo_variation():
-    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize()
+    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).to_polygon()
     topo = Topology(domain)
 
     c = Circle(midpoint=(0, 0), radius=0.02).discretize(refs=50)
@@ -51,7 +51,7 @@ def generate_topo():
     W = 1.0
     H = 1.0
 
-    domain = Rectangle(midpoint=(0.5, 0.5), width=W, height=H).discretize()
+    domain = Rectangle(midpoint=(0.5, 0.5), width=W, height=H).to_polygon()
 
     topo = Topology(domain)
 

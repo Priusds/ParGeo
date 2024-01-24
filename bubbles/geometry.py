@@ -14,16 +14,44 @@ from numpy.typing import ArrayLike
 from shapely.geometry import Polygon
 
 
-class ContinuousGeometry(ABC):
-    """Abstract class for continuous geometries."""
+class Geometry(ABC):
+    """Abstract class for geometries."""
 
     @abstractmethod
-    def discretize(self, *Args) -> shapely.Polygon:
-        """Return a shapely polygon from the discretized boundary."""
+    def to_polygon(self, *Args) -> shapely.Polygon:
+        """Return a shapely polygon representation of self."""
         pass
 
 
-class StarLike(ContinuousGeometry):
+class Rectangle(Geometry):
+    """Rectangular geometry."""
+
+    def __init__(self, midpoint: tuple[float, float], width: float, height: float):
+        """Creates a rectangle.
+
+        Args:
+            midpoint: The midpoint.
+            width: Width of the rectangle.
+            height: Height of the rectangle.
+        """
+        self.midpoint = midpoint
+        self.width = width
+        self.height = height
+
+    def to_polygon(self) -> shapely.Polygon:
+        """Return the corners of the rectangle in counter-clockwise order."""
+        midpoint = self.midpoint
+        width = self.width
+        height = self.height
+        p0 = (midpoint[0] - width / 2, midpoint[1] - height / 2)
+        p1 = (midpoint[0] + width / 2, midpoint[1] - height / 2)
+        p2 = (midpoint[0] + width / 2, midpoint[1] + height / 2)
+        p3 = (midpoint[0] - width / 2, midpoint[1] + height / 2)
+
+        return shapely.Polygon([p0, p1, p2, p3])
+
+
+class StarLike(Geometry):
     def __init__(self, midpoint: tuple[float, float]) -> None:
         self.midpoint = midpoint
 
@@ -31,6 +59,10 @@ class StarLike(ContinuousGeometry):
     def distance(self, angle: float) -> float:
         """Returns the distance at a given angle to the midpoint."""
         raise NotImplementedError
+
+    def to_polygon(self, refs) -> shapely.Polygon:
+        """Return a shapely polygon representation of self."""
+        return self.discretize(refs)
 
     def discretize(self, refs) -> Polygon:
         angles = np.linspace(0, 2 * np.pi, refs, endpoint=False)
@@ -100,34 +132,6 @@ class Stellar(StarLike):
 
     def distance(self, angle: float) -> float:
         return self.f(angle)
-
-
-class Rectangle(ContinuousGeometry):
-    """Rectangular geometry."""
-
-    def __init__(self, midpoint: tuple[float, float], width: float, height: float):
-        """Creates a rectangle.
-
-        Args:
-            midpoint: The midpoint.
-            width: Width of the rectangle.
-            height: Height of the rectangle.
-        """
-        self.midpoint = midpoint
-        self.width = width
-        self.height = height
-
-    def discretize(self) -> shapely.Polygon:
-        """Return the corners of the rectangle in counter-clockwise order."""
-        midpoint = self.midpoint
-        width = self.width
-        height = self.height
-        p0 = (midpoint[0] - width / 2, midpoint[1] - height / 2)
-        p1 = (midpoint[0] + width / 2, midpoint[1] - height / 2)
-        p2 = (midpoint[0] + width / 2, midpoint[1] + height / 2)
-        p3 = (midpoint[0] - width / 2, midpoint[1] + height / 2)
-
-        return shapely.Polygon([p0, p1, p2, p3])
 
 
 def discretize_ellipse(
