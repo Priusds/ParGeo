@@ -72,7 +72,7 @@ class Topology:
                 MultiPolygon,
             ]
         ] = None,
-        constraints: Optional[
+        constraint: Optional[
             Callable[[Polygon | MultiPolygon, int, Topology], bool]
         ] = None,
         extend_domain: bool = False,
@@ -85,7 +85,7 @@ class Topology:
             level: The level of the polygon.
             transform: Is called to transform the polygon before adding it.
                 If will call `transform(polygon, level, self)`.
-            constraints: Is called to check if the polygon satisfies the constraints.
+            constraint: Is called to check if the polygon satisfies the constraints.
                 The constraints are checked after the polygon is transformed.
                 If the constraints are not satisfied, the polygon is not added.
                 It will call `constraints(polygon, level, self)`.
@@ -120,8 +120,8 @@ class Topology:
         # TODO: Apply segmentize strategy
 
         # Check if the polygon satisfies the constraints
-        if constraints is not None:
-            if not constraints(polygon, level, self):
+        if constraint is not None:
+            if not constraint(polygon, level, self):
                 return False
 
         # Update self.__lvl2multipoly, this is the main logic of the class.

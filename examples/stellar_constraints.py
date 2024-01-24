@@ -1,7 +1,7 @@
 import random
 
 import shapely
-from bubbles.constraints import DistanceConstraint
+from bubbles.constraint import DistanceConstraint
 from bubbles.geometry import Circle, Rectangle, Stellar
 from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
 from bubbles.topology import Topology
@@ -15,10 +15,10 @@ def debug_constraint():
     constraint.set_level_distance(0.1, 1, "any")
 
     c1 = Circle(midpoint=(0.4, 0.5), radius=0.1).discretize(refs=50)
-    topo.add(c1, level=1, constraints=constraint)
+    topo.add(c1, level=1, constraint=constraint)
 
     c2 = Circle(midpoint=(0.5, 0.5), radius=0.1).discretize(refs=50)
-    topo.add(c2, level=2, constraints=constraint)
+    topo.add(c2, level=2, constraint=constraint)
 
     return topo
 
@@ -47,7 +47,7 @@ def generate_topo():
             polygon=C,
             level=lvl,
             transform=None,  # lambda x: clip_x(x, 0, 1),
-            constraints=constraint,
+            constraint=constraint,
         )
 
     return topo

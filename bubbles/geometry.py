@@ -55,17 +55,18 @@ class StarLike(Geometry):
         self.midpoint = midpoint
 
     @abstractmethod
-    def distance(self, angle: float) -> float:
+    def radius_at(self, angle: float) -> float:
         """Returns the distance at a given angle to the midpoint."""
         raise NotImplementedError
 
-    def to_polygon(self, refs) -> Polygon:
+    def to_polygon(self, refs: int) -> Polygon:
         """Return a shapely polygon representation of self."""
         return self.discretize(refs)
 
-    def discretize(self, refs) -> Polygon:
+    def discretize(self, refs: int) -> Polygon:
+        # TODO: also give angles as alternative.
         angles = np.linspace(0, 2 * np.pi, refs, endpoint=False)
-        radii = [self.distance(angle) for angle in angles]
+        radii = [self.radius_at(angle) for angle in angles]
         x_coords = np.cos(angles) * radii + self.midpoint[0]
         y_coords = np.sin(angles) * radii + self.midpoint[1]
 
@@ -77,7 +78,7 @@ class Circle(StarLike):
         self.radius = radius
         super().__init__(midpoint)
 
-    def distance(self, angle: float) -> float:
+    def radius_at(self, angle: float) -> float:
         return self.radius
 
 
@@ -89,7 +90,7 @@ class Ellipse(StarLike):
         self.angle = angle
         super().__init__(midpoint)
 
-    def distance(self, angle: float) -> float:
+    def radius_at(self, angle: float) -> float:
         # TODO: Check if this is correct
         return math.sqrt(
             (self.axis[0] * math.cos(angle)) ** 2
@@ -129,7 +130,7 @@ class Stellar(StarLike):
         self.coefficient = coefficient
         self.f = trigonometric_function(self.coefficient, self.radius)
 
-    def distance(self, angle: float) -> float:
+    def radius_at(self, angle: float) -> float:
         return self.f(angle)
 
 
