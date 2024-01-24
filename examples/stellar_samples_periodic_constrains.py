@@ -4,17 +4,9 @@ from bubbles.geometry import Rectangle, Stellar, Circle
 from bubbles.topology import Topology
 from bubbles.transform import Periodic
 
-# (
-#     Topology,
-#     #clip_x,
-#     #clip_y,
-#     #polygon_distance_req,
-#     #boundary_distance_req,
-# )
-
 
 def generate_topo_simple():
-    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize(refs=4)
+    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize()
     topo = Topology(domain)
 
     c = Circle(midpoint=(0, 0), radius=0.1).discretize(refs=50)
@@ -34,7 +26,7 @@ def generate_topo_simple():
 
 
 def generate_topo_variation():
-    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize(refs=4)
+    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize()
     topo = Topology(domain)
 
     c = Circle(midpoint=(0, 0), radius=0.02).discretize(refs=50)
@@ -59,7 +51,7 @@ def generate_topo():
     W = 1.0
     H = 1.0
 
-    domain = Rectangle(midpoint=(0.5, 0.5), width=W, height=H).discretize(refs=4)
+    domain = Rectangle(midpoint=(0.5, 0.5), width=W, height=H).discretize()
 
     topo = Topology(domain)
 

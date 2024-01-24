@@ -1,147 +1,75 @@
-"""Define two-dimensional bubbles here.
+"""Geometry module.
 
-TODO: Refactor this module. Do following:
-    - Rename `Hole`
-    - Integrate Shapely
-    - Rename `Rectangular` to `Rectangle` and add more boundary points.
-    - Maybe move Bubble class here.
+TODO: Maybe Rename to `continuous_geometries.py`?
+
+Create geometries that can be added to the topology.
 """
+import math
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
-import shapely
 import numpy as np
+import shapely
 from numpy.typing import ArrayLike
+from shapely.geometry import Polygon
 
 
 class ContinuousGeometry(ABC):
-    """Abstract class for two-dimensional bubbles."""
-
-    def __init__(self, type_):
-        self.type = type_
+    """Abstract class for continuous geometries."""
 
     @abstractmethod
-    def discretize(self, refs: int) -> shapely.Polygon:
-        """Discretize the boundary of the hole.
-
-        Return the boundary points in counter-clockwise order.
-
-        Args:
-            refs:
-                Number of boundary points that are returned.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def to_dict(self) -> dict:
-        """Returns the hole information in dict format."""
-        raise NotImplementedError
-
-    def info(self):
-        """Prints information about the hole."""
-        print(self.to_dict())
-
-    def get_point(self, angle: float) -> tuple[float, float]:
-        """Returns the corresponding boundary point.
-
-        Note: So far all holes are stellar-like polygons, which means
-        that every hole has a midpoint, and to a given angle corresponds
-        a boundary point, which is returned by this method.
-        """
-        raise NotImplementedError
+    def discretize(self, *Args) -> shapely.Polygon:
+        """Return a shapely polygon from the discretized boundary."""
+        pass
 
 
-class Circle(ContinuousGeometry):
-    """Circle bubble."""
-
-    def __init__(self, midpoint: tuple[float, float], radius: float):
-        """Creates a circle.
-
-        Args:
-            midpoint:
-                The midpoint.
-            radius:
-                Length of the radius.
-        """
-        super().__init__("circle")
+class StarLike(ContinuousGeometry):
+    def __init__(self, midpoint: tuple[float, float]) -> None:
         self.midpoint = midpoint
+
+    @abstractmethod
+    def distance(self, angle: float) -> float:
+        """Returns the distance at a given angle to the midpoint."""
+        raise NotImplementedError
+
+    def discretize(self, refs) -> Polygon:
+        angles = np.linspace(0, 2 * np.pi, refs, endpoint=False)
+        radii = [self.distance(angle) for angle in angles]
+        x_coords = np.cos(angles) * radii + self.midpoint[0]
+        y_coords = np.sin(angles) * radii + self.midpoint[1]
+
+        return shapely.Polygon(zip(x_coords, y_coords))
+
+
+class Circle(StarLike):
+    def __init__(self, midpoint: tuple[float, float], radius) -> None:
         self.radius = radius
+        super().__init__(midpoint)
 
-    def to_dict(self):
-        """Returns the hole information in dict format."""
-        return {"type": self.type, "midpoint": self.midpoint, "radius": self.radius}
-
-    def discretize(self, refs: int) -> shapely.Polygon:
-        """Discretize the boundary of the hole.
-
-        Return the boundary points in counter-clockwise order.
-
-        Args:
-            refs:
-                Number of boundary points that are returned.
-        """
-        return discretize_ellipse(self.midpoint, (self.radius, self.radius), 0, refs)
-
-    def get_point(self, angle, axis):
-        """Returns the corresponding boundary point."""
-        if axis == 0:
-            return self.radius * np.cos(angle) + self.midpoint[0]
-        elif axis == 1:
-            return self.radius * np.sin(angle) + self.midpoint[1]
-        else:
-            raise ValueError("Only axis = 0 or 1 supported")
+    def distance(self, angle: float) -> float:
+        return self.radius
 
 
-class Ellipse(ContinuousGeometry):
-    """Ellipse bubble."""
-
-    def __init__(self, midpoint: tuple[float, float], axis: tuple[float, float], angle: float):
-        """Creates an ellipse.
-
-        Args:
-            midpoint:
-                The midpoint.
-            axis:
-                Length of the two axis.
-            angle:
-                In radian, rotates the ellipse counter-clockwise.
-        """
-        super().__init__("ellipse")
-        self.midpoint = midpoint
+class Ellipse(StarLike):
+    def __init__(
+        self, midpoint: tuple[float, float], axis: tuple[float, float], angle: float
+    ) -> None:
         self.axis = axis
         self.angle = angle
+        super().__init__(midpoint)
 
-    def to_dict(self):
-        """Returns the hole information in dict format."""
-        return {
-            "type": self.type,
-            "midpoint": self.midpoint,
-            "axis": self.axis,
-            "angle": self.angle,
-        }
+    def distance(self, angle: float) -> float:
+        # TODO: Check if this is correct
+        return math.sqrt(
+            (self.axis[0] * math.cos(angle)) ** 2
+            + (self.axis[1] * math.sin(angle)) ** 2
+        )
 
-    def discretize(self, refs: int) -> shapely.Polygon:
-        """Discretize the boundary of the hole.
-
-        Return the boundary points in counter-clockwise order.
-
-        Args:
-            refs:
-                Number of boundary points that are returned.
-        """
+    def discretize(self, refs) -> Polygon:
         return discretize_ellipse(self.midpoint, self.axis, self.angle, refs)
 
-    def get_point(self, angle, axis):
-        """Returns the corresponding boundary point."""
-        if axis == 0:
-            return self.axis[0] * np.cos(angle) + self.midpoint[0]
-        elif axis == 1:
-            return self.axis[1] * np.sin(angle) + self.midpoint[1]
-        else:
-            raise ValueError("Only axis = 0 or 1 supported")
 
-
-class Stellar(ContinuousGeometry):
+class Stellar(StarLike):
     """Stellar bubble."""
 
     def __init__(
@@ -153,15 +81,12 @@ class Stellar(ContinuousGeometry):
         """Creates a star-like geometry.
 
         Args:
-            midpoint:
-                The midpoint.
-            radius:
-                Approximately the average radius.
+            midpoint: The midpoint.
+            radius: Approximately the average radius.
             coefficient: numpy array of shape (n, 2) with n > 0.
                 Hint: for smooth stellar holes, you can çhoose k from {.1, .2}
                 and then `coeffients = np.random.uniform(-k, k, (int(1/k), 2))`
         """
-        super().__init__("stellar")
         self.midpoint = midpoint
         self.radius = radius
         if coefficient is None:
@@ -173,75 +98,27 @@ class Stellar(ContinuousGeometry):
         self.coefficient = coefficient
         self.f = trigonometric_function(self.coefficient, self.radius)
 
-    def to_dict(self):
-        """Returns the hole information in dict format."""
-        return {
-            "type": self.type,
-            "midpoint": self.midpoint,
-            "coefficient": self.coefficient.tolist(),
-            "radius": self.radius,
-        }
-
-    def discretize(self, refs: int) -> shapely.Polygon:
-        """Discretize the boundary of the hole.
-
-        Return the boundary points in counter-clockwise order.
-
-        Args:
-            refs:
-                Number of boundary points that are returned.
-        """
-        return discetize_stellar_polygon(self.midpoint, self.radius, self.coefficient, refs)
-
-    def get_point(self, angle, axis):
-        """Returns the corresponding boundary point."""
-        r = self.f(angle)
-
-        if axis == 0:
-            return r * np.cos(angle) + self.midpoint[0]
-        elif axis == 1:
-            return r * np.sin(angle) + self.midpoint[1]
-        else:
-            raise ValueError("Only axis = 0 or 1 supported")
+    def distance(self, angle: float) -> float:
+        return self.f(angle)
 
 
 class Rectangle(ContinuousGeometry):
-    """Rectangular bubble."""
+    """Rectangular geometry."""
 
     def __init__(self, midpoint: tuple[float, float], width: float, height: float):
         """Creates a rectangle.
 
         Args:
-            midpoint:
-                The midpoint.
-            width:
-                Width of the rectangle.
-            height:
-                Height of the rectangle.
+            midpoint: The midpoint.
+            width: Width of the rectangle.
+            height: Height of the rectangle.
         """
-        super().__init__("rectangular")
         self.midpoint = midpoint
         self.width = width
         self.height = height
 
-    def to_dict(self):
-        """Returns the hole information in dict format."""
-        return {
-            "type": self.type,
-            "midpoint": self.midpoint,
-            "width": self.width,
-            "height": self.height,
-        }
-
-    def discretize(self, refs: Any = None) -> shapely.Polygon:
-        """Discretize the boundary of the hole.
-
-        Return only the corner points in counter-clockwise order.
-
-        Args:
-            refs:
-                Not used.
-        """
+    def discretize(self) -> shapely.Polygon:
+        """Return the corners of the rectangle in counter-clockwise order."""
         midpoint = self.midpoint
         width = self.width
         height = self.height
@@ -259,81 +136,24 @@ def discretize_ellipse(
     """Discretize the ellipse.
 
     Args:
-        midpoint:
-            Ellipse's midpoint.
-        axis:
-            Ellipse's axis.
-        angle:
-            Rotation angle of the ellipse in radiant.
-        refs:
-            Number of discretization points.
+        midpoint: Ellipse's midpoint.
+        axis: Ellipse's axis.
+        angle: Rotation angle of the ellipse in radiant.
+        refs: Number of discretization points.
 
     Return:
-        List of boundary points in counter-clockwise order.
+        List of boundary points in ccw order.
     """
     angles = np.linspace(0, 2 * np.pi, refs, endpoint=False)
     coords = polar_to_cartesian(angles, axis[0], axis[1])
     transformed_coords = rotate_counterclockwise(coords, angle) + midpoint
 
-    return shapely.Polygon([tuple(coords) for coords in transformed_coords])  # type: ignore
-
-
-def discretize_ellipse_noisy(
-    midpoint: tuple[float, float],
-    axis: tuple[float, float],
-    angle: float,
-    refs: int,
-    var: float,
-) -> shapely.Polygon:
-    """Discretize the ellipse with additional noise.
-
-    Args:
-        midpoint:
-            Ellipse's midpoint.
-        axis:
-            Ellipse's axis.
-        angle:
-            Rotation angle of the ellipse in radiant.
-        refs:
-            Number of discretization points.
-        var:
-            Standard deviation of the Gaussian noise.
-            Hint: choose var ~ axis/10
-    Return:
-        List of boundary points in counter-clockwise order.
-    """
-    noise = np.random.normal(0, var, refs)
-
-    angles = np.linspace(0, 2 * np.pi, refs, endpoint=False)
-    coords = polar_to_cartesian(angles, axis[0] + noise, axis[1] + noise)
-    transformed_coords = rotate_counterclockwise(coords, angle) + midpoint
-
     return shapely.Polygon([tuple(coords) for coords in transformed_coords])
 
 
-def discetize_stellar_polygon(
-    midpoint: tuple[float, float], radius: float, coefficients: np.ndarray, refs: int
-) -> shapely.Polygon:
-    """Discretize the stellar polygon.
-
-    Args:
-        midpoint:
-            The midpoint.
-        radius:
-            The radius.
-        coefficients:
-            The coefficients.
-        refs:
-            Number of discretization points.
-    """
-    angles = np.linspace(0, 2 * np.pi, refs, endpoint=False)
-    f = trigonometric_function(coefficients, radius)
-    polygon = polar_to_cartesian(angles, [f(angle) for angle in angles]) + np.array(midpoint)
-
-    return shapely.Polygon([tuple(coords) for coords in polygon])  # type: ignore
-
-
-def trigonometric_function(coefficients: np.ndarray, scale: float) -> Callable[[float], float]:
+def trigonometric_function(
+    coefficients: np.ndarray, scale: float
+) -> Callable[[float], float]:
     """Returns the exponential of a trigonometric function.
 
     The trigonometric function f is defined as:
@@ -347,8 +167,7 @@ def trigonometric_function(coefficients: np.ndarray, scale: float) -> Callable[[
     Args:
         coefficients: numpy array of shape (n,2)
             Each row represents a pair (a_i, b_i).
-        scale:
-            Scaling factor.
+        scale: Scaling factor.
     """
     if len(coefficients) == 0:
         raise ValueError("Length of `coefficients` must be greater then 0.")
@@ -358,29 +177,18 @@ def trigonometric_function(coefficients: np.ndarray, scale: float) -> Callable[[
 
     else:
         i_matrix = np.array(range(1, len(coefficients)))
-        return (
-            lambda x: scale
-            * np.exp(  # type: ignore
-                coefficients[0].mean()
-                + np.dot(coefficients[1:, 0], np.cos(i_matrix * x))
-                + np.dot(coefficients[1:, 1], np.sin(i_matrix * x))
-            )
+        return lambda x: scale * np.exp(  # type: ignore
+            coefficients[0].mean()
+            + np.dot(coefficients[1:, 0], np.cos(i_matrix * x))
+            + np.dot(coefficients[1:, 1], np.sin(i_matrix * x))
         )
 
 
-def rotate_counterclockwise(p, alpha):
-    """Rotates points counter-clockwise around the origin."""
+def rotate_counterclockwise(p: np.ndarray, alpha: float) -> np.ndarray:
+    """Rotates points counter-clockwise around (0,0)."""
     p = np.array(p)
-    q = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
-    return p @ q.transpose()
-
-
-def rotate_clockwise(p, alpha):
-    """Rotates points clockwise around the origin."""
-    # TODO: Check if needed.
-    p = np.array(p)
-    q_inv = np.array([[np.cos(alpha), np.sin(alpha)], [-np.sin(alpha), np.cos(alpha)]])
-    return q_inv @ p
+    q = np.array([[np.cos(alpha), np.sin(alpha)], [-np.sin(alpha), np.cos(alpha)]])
+    return p @ q
 
 
 def polar_to_cartesian(
@@ -393,12 +201,9 @@ def polar_to_cartesian(
     x_i, y_i = cos(angle_i)*rx_i, sin(angle_i)*ry_i
 
     Args:
-        angles: array-like
-            List of angles.
-        radii_x: array-like
-            List of radii, for the x-coordinate.
-        radii_y: array-like
-            List of radii, for the y-coordinate.
+        angles: List of angles.
+        radii_x: List of radii, for the x-coordinate.
+        radii_y: List of radii, for the y-coordinate.
     """
     if radii_y is None:
         radii_y = radii_x

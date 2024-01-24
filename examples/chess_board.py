@@ -6,14 +6,12 @@ from bubbles.topology import Topology
 def generate_topo():
     """Generate a topology with a chess board pattern."""
     N = 10
-    R = Rectangle(midpoint=((N - 1) / 2, (N - 1) / 2), width=N, height=N).discretize(
-        refs=4
-    )
+    R = Rectangle(midpoint=((N - 1) / 2, (N - 1) / 2), width=N, height=N).discretize()
 
     topo = Topology(R, holes={1})
     for i in range(N):
         for j in range(N):
-            R = Rectangle(midpoint=(i, j), width=1.0, height=1.0).discretize(refs=4)
+            R = Rectangle(midpoint=(i, j), width=1.0, height=1.0).discretize()
             topo.add(polygon=R, level=(i + j) % 2 + 1)
 
     return topo

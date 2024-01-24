@@ -7,7 +7,7 @@ from bubbles.topology import Topology
 def generate_topo():
     """Generate a topology with a few edge cases."""
     # Make the domain
-    d_1 = Rectangle(midpoint=(0.0, 0), width=2, height=2).discretize(refs=4)
+    d_1 = Rectangle(midpoint=(0.0, 0), width=2, height=2).discretize()
 
     d_2 = Circle(midpoint=(1.0, 0), radius=0.5).discretize(refs=50)
 
@@ -36,11 +36,11 @@ def generate_topo():
     c_3 = Circle(midpoint=(0.75, 0), radius=0.25).discretize(refs=50)
 
     topo.add(polygon=c_3, level=1)
-
+    
     c_4 = Circle(midpoint=(1.0, 0), radius=0.25).discretize(refs=50)
 
     topo.add(polygon=c_4, level=1)
-
+    
     # this guy is intersection with the domain
     e_1 = Ellipse(
         midpoint=(-0.5, 0.75), axis=(1, 0.1), angle=0.25 * math.pi

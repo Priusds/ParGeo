@@ -1,6 +1,10 @@
+format:
+	black bubbles tests
+	isort bubbles tests
+
 lint:
-	ruff bubbles tests
-	mypy bubbles tests
+	ruff bubbles
+	mypy bubbles
 
 tests:
 	pytest tests

@@ -6,7 +6,7 @@ from bubbles.topology import Topology
 
 def generate_topo():
     """Generate a rectangular topology with many stellar inclusions."""
-    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize(refs=4)
+    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).discretize()
     topo = Topology(domain)
 
     n_stellar = 100
