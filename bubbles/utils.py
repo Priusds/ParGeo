@@ -19,9 +19,7 @@ def plot(
                 if (lvl not in holes and poly.intersects(domain.boundary))
             ]
         )
-    sorted_bubbles = sorted(
-        flattened_polygons, key=cmp_to_key(polygon_compare), reverse=False
-    )
+    sorted_bubbles = sorted(flattened_polygons, key=cmp_to_key(polygon_compare), reverse=False)
     domain_boundary_color = "black"
     domain_color = "silver"
 

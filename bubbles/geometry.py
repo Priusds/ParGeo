@@ -95,9 +95,7 @@ class Circle(ContinuousGeometry):
 class Ellipse(ContinuousGeometry):
     """Ellipse bubble."""
 
-    def __init__(
-        self, midpoint: tuple[float, float], axis: tuple[float, float], angle: float
-    ):
+    def __init__(self, midpoint: tuple[float, float], axis: tuple[float, float], angle: float):
         """Creates an ellipse.
 
         Args:
@@ -193,9 +191,7 @@ class Stellar(ContinuousGeometry):
             refs:
                 Number of boundary points that are returned.
         """
-        return discetize_stellar_polygon(
-            self.midpoint, self.radius, self.coefficient, refs
-        )
+        return discetize_stellar_polygon(self.midpoint, self.radius, self.coefficient, refs)
 
     def get_point(self, angle, axis):
         """Returns the corresponding boundary point."""
@@ -332,16 +328,12 @@ def discetize_stellar_polygon(
     """
     angles = np.linspace(0, 2 * np.pi, refs, endpoint=False)
     f = trigonometric_function(coefficients, radius)
-    polygon = polar_to_cartesian(angles, [f(angle) for angle in angles]) + np.array(
-        midpoint
-    )
+    polygon = polar_to_cartesian(angles, [f(angle) for angle in angles]) + np.array(midpoint)
 
     return shapely.Polygon([tuple(coords) for coords in polygon])  # type: ignore
 
 
-def trigonometric_function(
-    coefficients: np.ndarray, scale: float
-) -> Callable[[float], float]:
+def trigonometric_function(coefficients: np.ndarray, scale: float) -> Callable[[float], float]:
     """Returns the exponential of a trigonometric function.
 
     The trigonometric function f is defined as:
@@ -366,10 +358,13 @@ def trigonometric_function(
 
     else:
         i_matrix = np.array(range(1, len(coefficients)))
-        return lambda x: scale * np.exp(  # type: ignore
-            coefficients[0].mean()
-            + np.dot(coefficients[1:, 0], np.cos(i_matrix * x))
-            + np.dot(coefficients[1:, 1], np.sin(i_matrix * x))
+        return (
+            lambda x: scale
+            * np.exp(  # type: ignore
+                coefficients[0].mean()
+                + np.dot(coefficients[1:, 0], np.cos(i_matrix * x))
+                + np.dot(coefficients[1:, 1], np.sin(i_matrix * x))
+            )
         )
 
 

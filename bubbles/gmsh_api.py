@@ -137,14 +137,10 @@ def mesh(
     gmsh.model.add(file_name.name)
 
     for point in gmsh_entities.points:
-        gmsh.model.geo.addPoint(
-            x=point.x, y=point.y, z=point.z, meshSize=point.lc, tag=point.tag
-        )
+        gmsh.model.geo.addPoint(x=point.x, y=point.y, z=point.z, meshSize=point.lc, tag=point.tag)
 
     for line in gmsh_entities.lines:
-        gmsh.model.geo.addLine(
-            startTag=line.start_tag, endTag=line.end_tag, tag=line.tag
-        )
+        gmsh.model.geo.addLine(startTag=line.start_tag, endTag=line.end_tag, tag=line.tag)
 
     for curve_loop in gmsh_entities.curve_loops:
         gmsh.model.geo.addCurveLoop(
@@ -197,14 +193,10 @@ def write_geo(
     gmsh.model.add(file_name.name)
 
     for point in gmsh_entities.points:
-        gmsh.model.geo.addPoint(
-            x=point.x, y=point.y, z=point.z, meshSize=point.lc, tag=point.tag
-        )
+        gmsh.model.geo.addPoint(x=point.x, y=point.y, z=point.z, meshSize=point.lc, tag=point.tag)
 
     for line in gmsh_entities.lines:
-        gmsh.model.geo.addLine(
-            startTag=line.start_tag, endTag=line.end_tag, tag=line.tag
-        )
+        gmsh.model.geo.addLine(startTag=line.start_tag, endTag=line.end_tag, tag=line.tag)
 
     for curve_loop in gmsh_entities.curve_loops:
         gmsh.model.geo.addCurveLoop(
@@ -233,9 +225,7 @@ def write_geo(
     gmsh.finalize()
 
 
-def bubble_to_gmsh_entities(
-    polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag
-):
+def bubble_to_gmsh_entities(polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag):
     # assert not bubble.is_hole
     points_total = []
     lines_total = []
@@ -256,23 +246,17 @@ def bubble_to_gmsh_entities(
     # Add lines
     lines_local = []
     for i in range(len(points_local) - 1):
-        line = Line(
-            start_tag=points_local[i].tag, end_tag=points_local[i + 1].tag, tag=line_tag
-        )
+        line = Line(start_tag=points_local[i].tag, end_tag=points_local[i + 1].tag, tag=line_tag)
         lines_local.append(line)
         line_tag += 1
-    line = Line(
-        start_tag=points_local[-1].tag, end_tag=points_local[0].tag, tag=line_tag
-    )
+    line = Line(start_tag=points_local[-1].tag, end_tag=points_local[0].tag, tag=line_tag)
     lines_local.append(line)
     line_tag += 1
 
     points_total = points_total + points_local
     lines_total = lines_total + lines_local
     # Add curve loop
-    curve_loop = CurveLoop(
-        line_tags=[line.tag for line in lines_local], tag=curve_loop_tag
-    )
+    curve_loop = CurveLoop(line_tags=[line.tag for line in lines_local], tag=curve_loop_tag)
     curve_loops.append(curve_loop)
     curve_loop_tag += 1
 
@@ -296,16 +280,12 @@ def bubble_to_gmsh_entities(
             )
             lines_local.append(line)
             line_tag += 1
-        line = Line(
-            start_tag=points_local[-1].tag, end_tag=points_local[0].tag, tag=line_tag
-        )
+        line = Line(start_tag=points_local[-1].tag, end_tag=points_local[0].tag, tag=line_tag)
         lines_local.append(line)
         line_tag += 1
 
         # Add curve loop
-        curve_loop = CurveLoop(
-            line_tags=[line.tag for line in lines_local], tag=curve_loop_tag
-        )
+        curve_loop = CurveLoop(line_tags=[line.tag for line in lines_local], tag=curve_loop_tag)
         curve_loops.append(curve_loop)
         curve_loop_tag += 1
 
@@ -316,9 +296,7 @@ def bubble_to_gmsh_entities(
     # Write surface
     # ==================================================
     plane_surfaces = [
-        PlaneSurface(
-            curve_loop_tags=[loop.tag for loop in curve_loops], tag=plane_surface_tag
-        )
+        PlaneSurface(curve_loop_tags=[loop.tag for loop in curve_loops], tag=plane_surface_tag)
     ]
     physical_groups = [
         PhysicalGroup(dim=2, entity_tags=[plane_surface_tag], tag=physical_group_tag)
@@ -370,9 +348,7 @@ def topology_to_gmsh_entities(topo: Topology):
 
     for tag, physical_group in groupby(physical_groups, lambda x: x.tag):
         entity_tags = [s.entity_tags[0] for s in physical_group]
-        physical_groups_merged.append(
-            PhysicalGroup(dim=2, entity_tags=entity_tags, tag=tag)
-        )
+        physical_groups_merged.append(PhysicalGroup(dim=2, entity_tags=entity_tags, tag=tag))
 
     return GmshEntities(
         points=[i for ent in all_entities_list for i in ent.points],
