@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 from typing import Callable, Optional
 
 import numpy as np
-import shapely
 from numpy.typing import ArrayLike
 from shapely.geometry import Polygon
 
@@ -18,7 +17,7 @@ class Geometry(ABC):
     """Abstract class for geometries."""
 
     @abstractmethod
-    def to_polygon(self, *Args) -> shapely.Polygon:
+    def to_polygon(self, *Args) -> Polygon:
         """Return a shapely polygon representation of self."""
         pass
 
@@ -38,7 +37,7 @@ class Rectangle(Geometry):
         self.width = width
         self.height = height
 
-    def to_polygon(self) -> shapely.Polygon:
+    def to_polygon(self) -> Polygon:
         """Return the corners of the rectangle in counter-clockwise order."""
         midpoint = self.midpoint
         width = self.width
@@ -48,7 +47,7 @@ class Rectangle(Geometry):
         p2 = (midpoint[0] + width / 2, midpoint[1] + height / 2)
         p3 = (midpoint[0] - width / 2, midpoint[1] + height / 2)
 
-        return shapely.Polygon([p0, p1, p2, p3])
+        return Polygon([p0, p1, p2, p3])
 
 
 class StarLike(Geometry):
@@ -60,7 +59,7 @@ class StarLike(Geometry):
         """Returns the distance at a given angle to the midpoint."""
         raise NotImplementedError
 
-    def to_polygon(self, refs) -> shapely.Polygon:
+    def to_polygon(self, refs) -> Polygon:
         """Return a shapely polygon representation of self."""
         return self.discretize(refs)
 
@@ -70,7 +69,7 @@ class StarLike(Geometry):
         x_coords = np.cos(angles) * radii + self.midpoint[0]
         y_coords = np.sin(angles) * radii + self.midpoint[1]
 
-        return shapely.Polygon(zip(x_coords, y_coords))
+        return Polygon(zip(x_coords, y_coords))
 
 
 class Circle(StarLike):
@@ -136,7 +135,7 @@ class Stellar(StarLike):
 
 def discretize_ellipse(
     midpoint: tuple[float, float], axis: tuple[float, float], angle: float, refs: int
-) -> shapely.Polygon:
+) -> Polygon:
     """Discretize the ellipse.
 
     Args:
@@ -152,7 +151,7 @@ def discretize_ellipse(
     coords = polar_to_cartesian(angles, axis[0], axis[1])
     transformed_coords = rotate_counterclockwise(coords, angle) + midpoint
 
-    return shapely.Polygon([tuple(coords) for coords in transformed_coords])
+    return Polygon([tuple(coords) for coords in transformed_coords])
 
 
 def trigonometric_function(

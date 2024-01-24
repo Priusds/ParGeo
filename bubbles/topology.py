@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
-import shapely
+from shapely import GeometryCollection, MultiPolygon, Polygon
 
 from bubbles.utils import plot
 
@@ -18,7 +18,7 @@ class Topology:
 
     def __init__(
         self,
-        domain: shapely.Polygon | shapely.MultiPolygon,
+        domain: Polygon | MultiPolygon,
         holes: set[int] = set(),
         grid_size: float = DEFAULT_GRID_SIZE,
     ) -> None:
@@ -30,8 +30,8 @@ class Topology:
                 This can be changed at any time through `set_holes`.
             grid_size: The grid size.
         """
-        if isinstance(domain, shapely.Polygon):
-            domain = shapely.MultiPolygon([domain])
+        if isinstance(domain, Polygon):
+            domain = MultiPolygon([domain])
         self.__domain = domain
         self.__holes = holes  # Can be changed at any time.
         self.__grid_size = grid_size
@@ -51,7 +51,7 @@ class Topology:
         return self.__grid_size
 
     @property
-    def domain(self) -> shapely.Polygon | shapely.MultiPolygon:
+    def domain(self) -> Polygon | MultiPolygon:
         return self.__domain
 
     @property
@@ -64,16 +64,16 @@ class Topology:
 
     def add(
         self,
-        polygon: shapely.Polygon | shapely.MultiPolygon,
+        polygon: Polygon | MultiPolygon,
         level: int,
         transform: Optional[
             Callable[
-                [shapely.Polygon | shapely.MultiPolygon, int, Topology],
-                shapely.MultiPolygon,
+                [Polygon | MultiPolygon, int, Topology],
+                MultiPolygon,
             ]
         ] = None,
         constraints: Optional[
-            Callable[[shapely.Polygon | shapely.MultiPolygon, int, Topology], bool]
+            Callable[[Polygon | MultiPolygon, int, Topology], bool]
         ] = None,
         extend_domain: bool = False,
     ) -> bool:
@@ -100,20 +100,16 @@ class Topology:
 
         # Clip the transformed polygon w.r.t. the domain
         if not extend_domain:
-            polygon = shapely.intersection(
-                polygon, self.domain, grid_size=self.grid_size
-            )
+            polygon = polygon.intersection(self.domain, grid_size=self.grid_size)
         else:
-            extended_domain = shapely.union_all(
-                [self.domain, polygon], grid_size=self.grid_size
-            )
-            if isinstance(extended_domain, shapely.Polygon):
-                extended_domain = shapely.MultiPolygon([extended_domain])
+            extended_domain = self.domain.union(polygon, grid_size=self.grid_size)
+            if isinstance(extended_domain, Polygon):
+                extended_domain = MultiPolygon([extended_domain])
             self.__domain = extended_domain
 
         # Make sure polygon is a MultiPolygon with non-zero area polygons.
-        if isinstance(polygon, (shapely.GeometryCollection, shapely.MultiPolygon)):
-            polygon = shapely.MultiPolygon(
+        if isinstance(polygon, (GeometryCollection, MultiPolygon)):
+            polygon = MultiPolygon(
                 [p for p in polygon.geoms if p.area > self.grid_size]
             )
 
@@ -151,8 +147,8 @@ class Topology:
                 )
 
                 # After shapely.difference, lower_polygon can be a GeometryCollection.
-                if isinstance(lower_polygon, shapely.GeometryCollection):
-                    lower_polygon = shapely.MultiPolygon(
+                if isinstance(lower_polygon, GeometryCollection):
+                    lower_polygon = MultiPolygon(
                         [p for p in lower_polygon.geoms if p.area > self.grid_size]
                     )
 
@@ -165,14 +161,14 @@ class Topology:
 
                 # Add the intersection points, this is needed to create delauny
                 # triangulations by GMSH.
-                intersection = higher_polygon.intersection(
+                intersection_ = higher_polygon.intersection(
                     lower_polygon, grid_size=self.grid_size
                 )
 
                 # `intersection` can be a GeometryCollection, if so, iterate over the
                 # geoms and add them one by one to the higher_polygon.
-                if isinstance(intersection, shapely.GeometryCollection):
-                    for geom in intersection.geoms:
+                if isinstance(intersection_, GeometryCollection):
+                    for geom in intersection_.geoms:
                         # TODO: Check why geom can be a polygon, sometimes
                         # this happens, and the polygon has some approximate 0 area.
 
@@ -185,8 +181,8 @@ class Topology:
                             higher_polygon = higher_polygon.union(
                                 geom, grid_size=self.grid_size
                             )
-                            if isinstance(higher_polygon, shapely.GeometryCollection):
-                                higher_polygon = shapely.MultiPolygon(
+                            if isinstance(higher_polygon, GeometryCollection):
+                                higher_polygon = MultiPolygon(
                                     [
                                         poly
                                         for poly in higher_polygon.geoms
@@ -195,27 +191,27 @@ class Topology:
                                 )
                 else:
                     higher_polygon = higher_polygon.union(
-                        intersection, grid_size=self.grid_size
+                        intersection_, grid_size=self.grid_size
                     )
                 # TODO: Is it possible that the union in the upper if statement
-                # is again a shapely.Polygon? If so, then we need to convert it.
-                if isinstance(higher_polygon, shapely.Polygon):
-                    higher_polygon = shapely.MultiPolygon([higher_polygon])
+                # is again a Polygon? If so, then we need to convert it.
+                if isinstance(higher_polygon, Polygon):
+                    higher_polygon = MultiPolygon([higher_polygon])
 
                 # TODO: Is this necessary?
-                if isinstance(higher_polygon, shapely.GeometryCollection):
-                    higher_polygon = shapely.MultiPolygon(
+                if isinstance(higher_polygon, GeometryCollection):
+                    higher_polygon = MultiPolygon(
                         [p for p in higher_polygon.geoms if p.area > self.grid_size]
                     )
 
                 # Update the running level polygon and polygon.
                 if running_level < level:
-                    assert not isinstance(lower_polygon, shapely.GeometryCollection)
+                    assert not isinstance(lower_polygon, GeometryCollection)
                     new_lvl2multipoly[running_level] = lower_polygon
                     polygon = higher_polygon  # polygon gets bigger
 
                 else:  # running_level > level
-                    assert not isinstance(higher_polygon, shapely.GeometryCollection)
+                    assert not isinstance(higher_polygon, GeometryCollection)
                     new_lvl2multipoly[running_level] = higher_polygon
                     polygon = lower_polygon  # polygon gets smaller
 
@@ -227,15 +223,15 @@ class Topology:
             # The shapely.union might create a GeometryCollection.
             # Appearently, polygon.union(multipolygon) can create
             # a GeometryCollection with a multiLineString.
-            if isinstance(polygon, shapely.GeometryCollection):
-                polygon = shapely.MultiPolygon(
+            if isinstance(polygon, GeometryCollection):
+                polygon = MultiPolygon(
                     [p for p in polygon.geoms if p.area > self.grid_size]
                 )
 
-        if isinstance(polygon, shapely.Polygon):
-            polygon = shapely.MultiPolygon([polygon])
+        if isinstance(polygon, Polygon):
+            polygon = MultiPolygon([polygon])
 
-        if not isinstance(polygon, shapely.MultiPolygon):
+        if not isinstance(polygon, MultiPolygon):
             raise ValueError(f"`polygon` is not a MultiPolygon, but a {type(polygon)}.")
 
         new_lvl2multipoly[level] = polygon
@@ -252,11 +248,11 @@ class Topology:
             hole_color_mode="white",
         )
 
-    def flatten(self) -> list[tuple[shapely.Polygon, int]]:
+    def flatten(self) -> list[tuple[Polygon, int]]:
         """Return a list of polygons with their level."""
         flattened_polygons = []
         for level, running_polygon in self.__lvl2multipoly.items():
-            if isinstance(running_polygon, shapely.MultiPolygon):
+            if isinstance(running_polygon, MultiPolygon):
                 for polygon in running_polygon.geoms:
                     flattened_polygons.append((polygon, level))
             else:
