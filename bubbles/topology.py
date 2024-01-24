@@ -2,10 +2,12 @@
 Main module, use Topology to generate complex geometries.
 """
 from __future__ import annotations
-from typing import Callable, Optional
-import shapely
-from bubbles.utils import plot
 
+from typing import Callable, Optional
+
+import shapely
+
+from bubbles.utils import plot
 
 DEFAULT_GRID_SIZE = 1e-15
 INITIAL_LEVEL = 0
@@ -64,13 +66,15 @@ class Topology:
         self,
         polygon: shapely.Polygon | shapely.MultiPolygon,
         level: int,
-        transform: Optional[Callable[
-            [shapely.Polygon | shapely.MultiPolygon, int, Topology],
-            shapely.MultiPolygon,
-        ]] = None,
-        constraints: Optional[Callable[
-            [shapely.Polygon | shapely.MultiPolygon, int, Topology], bool
-        ]] = None,
+        transform: Optional[
+            Callable[
+                [shapely.Polygon | shapely.MultiPolygon, int, Topology],
+                shapely.MultiPolygon,
+            ]
+        ] = None,
+        constraints: Optional[
+            Callable[[shapely.Polygon | shapely.MultiPolygon, int, Topology], bool]
+        ] = None,
         extend_domain: bool = False,
     ) -> bool:
         """

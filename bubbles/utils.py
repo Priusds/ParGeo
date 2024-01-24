@@ -1,7 +1,8 @@
 """Utility module, containing functions for plotting."""
 from functools import cmp_to_key
-import shapely
+
 import matplotlib.pyplot as plt
+import shapely
 from matplotlib.colors import Normalize
 
 

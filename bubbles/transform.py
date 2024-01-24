@@ -1,15 +1,17 @@
-from typing import Any
-import shapely
-from shapely.affinity import translate as shapely_translate
-
 # from shapely.geometry import MultiPolygon, Polygon
 import math
+from typing import Any
+
+import shapely
+from shapely.affinity import translate as shapely_translate
 
 
 class Transform(object):
     """Base class for transforms."""
 
-    def __call__(self, polygon, level, topology) -> shapely.Polygon | shapely.MultiPolygon:
+    def __call__(
+        self, polygon, level, topology
+    ) -> shapely.Polygon | shapely.MultiPolygon:
         pass
 
 
@@ -27,8 +29,12 @@ class Periodic(Transform):
     ):
         if isinstance(levels, str):
             if not levels == "any":
-                raise ValueError(f"Levels specification as string must be 'any' but given {levels}")
-            if not isinstance(periodic_length_x, float) or not isinstance(periodic_length_y, float):
+                raise ValueError(
+                    f"Levels specification as string must be 'any' but given {levels}"
+                )
+            if not isinstance(periodic_length_x, float) or not isinstance(
+                periodic_length_y, float
+            ):
                 raise ValueError(
                     f"If given levels as 'any' periodic lengths must be given as a float"
                 )
@@ -62,7 +68,9 @@ class Periodic(Transform):
                     f"Parameter periodic_length_y has no matching dimension, needed {len(levels_list)} but got {len(periodic_length_y_list)}"
                 )
 
-            for lvl, Lx, Ly in zip(levels_list, periodic_length_x_list, periodic_length_y_list):
+            for lvl, Lx, Ly in zip(
+                levels_list, periodic_length_x_list, periodic_length_y_list
+            ):
                 if not Lx > 0 or not Ly > 0:
                     raise ValueError(
                         f"If given periodic length is supposed to be positive, but got {Lx} and {Ly}."
@@ -71,7 +79,9 @@ class Periodic(Transform):
                 self.periodic_length_x[lvl] = Lx
                 self.periodic_length_y[lvl] = Ly
 
-    def __call__(self, polygon, level, topology) -> shapely.Polygon | shapely.MultiPolygon:
+    def __call__(
+        self, polygon, level, topology
+    ) -> shapely.Polygon | shapely.MultiPolygon:
         minx, miny, maxx, maxy = topology.domain.bounds
 
         poly_minx, poly_miny, poly_maxx, poly_maxy = polygon.bounds
@@ -102,7 +112,9 @@ class Periodic(Transform):
             for ky in range(ky_min, ky_max + 1)
         ]
         # and possible union them
-        periodic_polygons = shapely.union_all(periodic_polygons, grid_size=topology.grid_size)
+        periodic_polygons = shapely.union_all(
+            periodic_polygons, grid_size=topology.grid_size
+        )
 
         # TODO: If the periodic length matches with the boundary we possible need to add intersection points
 
@@ -118,7 +130,9 @@ class Diffeomorphism(Transform):
         """
         self.__mapping = mapping
 
-    def __call__(self, polygon, level, topology) -> shapely.Polygon | shapely.MultiPolygon:
+    def __call__(
+        self, polygon, level, topology
+    ) -> shapely.Polygon | shapely.MultiPolygon:
         if isinstance(polygon, shapely.Polygon):
             return self.__map_polygon(polygon)
         elif isinstance(polygon, shapely.MultiPolygon):

@@ -1,12 +1,11 @@
 """Module for mesh creation using gmsh."""
 from enum import IntEnum
-from pathlib import Path
-from typing import Sequence, NamedTuple, NewType, TypedDict
 from itertools import groupby
+from pathlib import Path
+from typing import NamedTuple, NewType, Sequence, TypedDict
 
 import gmsh
 import shapely
-
 
 from bubbles.topology import Topology
 

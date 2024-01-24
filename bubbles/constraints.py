@@ -108,7 +108,9 @@ class DistanceConstraint(Constraints):
                 distances = [distances[0]] * len(levels)
         else:
             if not level == "any":
-                raise ValueError(f"Level as string must be 'any', but given as {level}.")
+                raise ValueError(
+                    f"Level as string must be 'any', but given as {level}."
+                )
             distances = [distance] if isinstance(distance, float) else distance
             levels = ["any"]
             if not len(distances) == 1:
@@ -214,12 +216,16 @@ class DistanceConstraint(Constraints):
 
         if level in self.geometry_distances:
             for geo, dist in self.geometry_distances[level]:
-                if not distance_constraint(polygon, geo, dist, grid_size=topology.grid_size):
+                if not distance_constraint(
+                    polygon, geo, dist, grid_size=topology.grid_size
+                ):
                     return False
 
         if "any" in self.geometry_distances:
             for geo, dist in self.geometry_distances["any"]:
-                if not distance_constraint(polygon, geo, dist, grid_size=topology.grid_size):
+                if not distance_constraint(
+                    polygon, geo, dist, grid_size=topology.grid_size
+                ):
                     return False
 
         # constraints are not violated
