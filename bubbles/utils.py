@@ -1,3 +1,4 @@
+"""Utility module, containing functions for plotting."""
 from functools import cmp_to_key
 import shapely
 import matplotlib.pyplot as plt
@@ -7,10 +8,20 @@ from matplotlib.colors import Normalize
 def plot(
     flattened_polygons: list[(shapely.Polygon, int)],
     holes: set[int],
-    levels,
-    domain,
-    hole_color_mode="white",
-):
+    levels: list[int],
+    domain: shapely.Polygon | shapely.MultiPolygon,
+    hole_color_mode: str = "white",
+) -> None:
+    """
+    Plot the topology.
+
+    Args:
+        flattened_polygons: list of tuples (polygon, level)
+        holes: set of levels that are holes
+        levels: list of levels
+        domain: The domain.
+        hole_color_mode: color of holes, either "white" or "domain"
+    """
     if len(holes) > 0:
         boundary_domain_poly = shapely.union_all(
             [
@@ -19,7 +30,9 @@ def plot(
                 if (lvl not in holes and poly.intersects(domain.boundary))
             ]
         )
-    sorted_bubbles = sorted(flattened_polygons, key=cmp_to_key(polygon_compare), reverse=False)
+    sorted_bubbles = sorted(
+        flattened_polygons, key=cmp_to_key(polygon_compare), reverse=False
+    )
     domain_boundary_color = "black"
     domain_color = "silver"
 
@@ -105,7 +118,8 @@ def plot(
     plt.show()
 
 
-def polygon_compare(poly_1, poly_2):
+def polygon_compare(poly_1: shapely.Polygon, poly_2: shapely.Polygon) -> int:
+    """Compare two polygons."""
     polygon_1, _ = poly_1
     polygon_2, _ = poly_2
 
