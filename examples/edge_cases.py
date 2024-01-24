@@ -1,5 +1,5 @@
 import math
-from bubbles.gmsh_api import write_geo, topology_to_gmsh_entities
+from bubbles.gmsh_utils import write_geo, topology_to_gmsh_entities
 from bubbles.geometry import Circle, Rectangle, Stellar, Ellipse
 from bubbles.topology import Topology
 

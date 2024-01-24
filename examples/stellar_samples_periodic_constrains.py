@@ -1,5 +1,5 @@
 import random
-from bubbles.gmsh_api import topology_to_gmsh_entities, write_geo
+from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
 from bubbles.geometry import Rectangle, Stellar, Circle
 from bubbles.topology import Topology
 from bubbles.transform import Periodic

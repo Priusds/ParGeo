@@ -9,7 +9,6 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 shapely = "^2.0.1"
-pydantic = "^1.10.9"
 matplotlib = "^3.7.1"
 gmsh = "^4.11.1"
 
