@@ -1,5 +1,6 @@
 
 import random
+from typing import Any
 
 import shapely
 from bubbles.constraint import DistanceConstraint
@@ -7,13 +8,18 @@ from bubbles.geometry import Circle, Rectangle, Stellar, Ellipse
 from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
 from bubbles.topology import Topology
 
+from bubbles.transform import Transform
+
 import math
+
+
+            
 
 
 def test():
       
 
-        v1, v2 =  1., 1.
+        v1, v2 =  1., 0.
         w1, w2 =  2., 1.
 
         v1, v2 = v1/ math.sqrt(v1**2 + v2**2), v2/math.sqrt(v1**2 + v2**2)
@@ -26,19 +32,37 @@ def test():
 
 
 
-        domain = Ellipse(midpoint=(0., 0.),axis = (0.5,1), angle = 0.3).discretize(refs=100)
-        #topology = Topology(domain)
+        #domain = Ellipse(midpoint=(0., 0.),axis = (0.5,1), angle = 0.3).discretize(refs=100)
+
+        domain = Stellar(midpoint=(0., 0.), radius = 1).discretize(refs=100)
+        topo = Topology(domain)
 
         #polygon =  Stellar(midpoint=(0,0), radius=0.025).discretize(refs=50)
-        polygon =  Ellipse(midpoint=(0,0), axis=(0.01,0.04), angle = -0.5).discretize(refs=50)
+        polygon =  Ellipse(midpoint=(0,0), axis=(0.01,0.01), angle = -0.5).discretize(refs=50)
         #Rectangle(midpoint=(0., 0.), width=0.05, height=0.05).to_polygon()
-     
-        r_dom = shapely.minimum_bounding_radius(domain)
-        r_poly = shapely.minimum_bounding_radius(polygon)
-        Kv = math.ceil(2*r_dom / Lv) 
-        Kw = math.ceil(2*r_dom / Lw)
 
-        periodic_polygons = []
+        d = domain.bounds[2] - domain.bounds[0] + domain.bounds[3] - domain.bounds[1]
+        Kv = math.ceil(d / Lv)
+        Kw = math.ceil(d / Lw)
+     
+        #r_dom = shapely.minimum_bounding_radius(domain)
+        #r_poly = shapely.minimum_bounding_radius(polygon)
+        #v = math.ceil(2*r_dom / Lv) 
+        #d = domain.bounds[2] - domain.bounds[0] + domain.bounds[3] - domain.bounds[1]
+
+        v_dirs = [(v1,v2), (-v1,-v2)]
+        w_dirs = [(w1,w2), (-w1,-w2)]
+
+        # v_dirs = [(v1,v2)]
+        # w_dirs = [(w1,w2)]
+       
+        level = 1
+        periodic_polygons = shapely.union_all(
+             [Repeat( v_dir, Lv, Kv, w_dir, Lw, Kw)(polygon, level, topo) for v_dir in v_dirs for w_dir in w_dirs])
+
+        #periodic_polygons = []
+
+        # K = max(Kv,Kw) 
 
 
         # offsets = [ (i * Lv * v1 + j * Lw * w1,
@@ -48,21 +72,25 @@ def test():
         #     poly_shifted = shapely.affinity.translate(polygon, xoff =x_off, yoff =  y_off)
         #     if poly_shifted.intersects(domain): 
         #             periodic_polygons.append(poly_shifted)
-             
+        
 
-        for kv in range(-Kv, Kv+1): 
-             for kw in range(-Kw, Kw+1):
-                # kv*Lv * (v1,v2)  + kw * Lw * (w1,w2)
-                x_off = kv * Lv * v1 + kw * Lw * w1
-                y_off = kv * Lv * v2 + kw * Lw * w2
-                #if x_off**2 + y_off**2 > (2*r_dom)**2 + r_poly**2: # TODO: is the 2r_dom necessary?
-                #     continue
-                #else: 
-                poly_shifted = shapely.affinity.translate(polygon, xoff =x_off, yoff =  y_off)
-                if poly_shifted.intersects(domain): 
-                        periodic_polygons.append(poly_shifted)
+                     
+
+        # for kv in range(-Kv, Kv+1): 
+        #      for kw in range(-Kw, Kw+1):
+        # # for kv in range(-K, K+1): 
+        # #      for kw in range(-K, K+1):
+        #         # kv*Lv * (v1,v2)  + kw * Lw * (w1,w2)
+        #         x_off = kv * Lv * v1 + kw * Lw * w1
+        #         y_off = kv * Lv * v2 + kw * Lw * w2
+        #         #if x_off**2 + y_off**2 > (2*r_dom)**2 + r_poly**2: # TODO: is the 2r_dom necessary?
+        #         #     continue
+        #         #else: 
+        #         poly_shifted = shapely.affinity.translate(polygon, xoff =x_off, yoff =  y_off)
+        #         if poly_shifted.intersects(domain): 
+        #                 periodic_polygons.append(poly_shifted)
                   
-                  
+        # periodic_polygons = shapely.union_all([ Repeat( (d1,Lv,Kv), (d2,Lw,Kw))(polygon, level, topo) for d1,d2 in directions])
 
 
         # for kv in range(0, )
@@ -120,7 +148,7 @@ def test():
         x,y = domain.exterior.xy
         plt.plot(x,y, '-k')
 
-        for poly in periodic_polygons:
+        for poly in periodic_polygons.geoms:
             x,y = poly.exterior.xy
             plt.plot(x,y, '-b')
 
