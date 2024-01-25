@@ -48,6 +48,38 @@ class Rectangle(Geometry):
         p3 = (midpoint[0] - width / 2, midpoint[1] + height / 2)
 
         return Polygon([p0, p1, p2, p3])
+    
+class NStar(Geometry):
+    def __init__(self, midpoint, radius_in, radius_out, N, alpha= 0.): 
+        if radius_in > radius_out: 
+            raise ValueError("The parameter setting radius_in > radius_out not allowed.")
+        self.__M = np.asarray(midpoint)
+        self.__rad_in = radius_in
+        self.__rad_out = radius_out
+        self.__N = N
+        self.__alpha = alpha
+
+    def to_polygon(self) -> Polygon:
+
+        angles_out = np.linspace(self.__alpha, 2 * np.pi + self.__alpha, self.__N, endpoint=False)
+        offset =  np.pi / self.__N
+        angles_in = np.linspace(self.__alpha + offset, 2 * np.pi + self.__alpha + offset, self.__N, endpoint=False)
+
+        XY_out = polar_to_cartesian(angles_out, [self.__rad_out]*len(angles_out))
+        XY_in  = polar_to_cartesian(angles_in, [self.__rad_in]*len(angles_in))
+
+        xy = []
+        for xy_out, xy_in in zip(XY_out, XY_in):
+            xy.append(xy_out + self.__M)
+            xy.append(xy_in  + self.__M)
+        
+        return Polygon(xy)
+    
+
+                       
+       
+  
+
 
 
 class StarLike(Geometry):
@@ -81,6 +113,25 @@ class Circle(StarLike):
     def radius_at(self, angle: float) -> float:
         return self.radius
 
+
+class RainDrop(StarLike): 
+    def __init__(self, midpoint, a, scale): 
+        super().__init__(midpoint)
+        if not  0.5 < a and a < 1: 
+            raise ValueError(f"Value of a must be between 0.5 and 1, but got {a}.")
+        self.__a = a
+        self.__scale = scale
+    
+    def radius_at(self, angle: float) -> float:
+        raise NotImplementedError("Not implemented here")
+    def discretize(self, refs): 
+        m1,m2 = self.midpoint
+
+        t = np.linspace(0., 2 * np.pi ,refs, endpoint=False)
+        denominator = (1-self.__a + self.__a*np.cos(t))**2 + self.__a**2 * np.sin(t)**2
+        x = self.__a * np.sin(t) - self.__a * np.sin(t) / denominator
+        y = self.__a * np.cos(t) + (1 - self.__a + self.__a*np.cos(t))/denominator
+        return Polygon([(m1 + self.__scale*xx,m2+self.__scale*yy) for xx,yy in zip(x,y)])
 
 class Ellipse(StarLike):
     def __init__(

@@ -35,7 +35,7 @@ def plot(
         flattened_polygons, key=cmp_to_key(polygon_compare), reverse=False
     )
     domain_boundary_color = "black"
-    domain_color = "silver"
+    domain_color = "black" #"silver"
 
     # Create a colormap for the levels.
     lvl2cl = dict()
@@ -48,7 +48,11 @@ def plot(
             if lvl in holes and hole_color_mode == "white":
                 lvl2cl[lvl] = "white"
             else:
-                lvl2cl[lvl] = plt.cm.cool(norm(lvl))
+                if lvl == 1: 
+                    lvl2cl[lvl] = "yellow"
+                if lvl == 2:
+                    lvl2cl[lvl] = "blue"
+                #lvl2cl[lvl] = plt.cm.cool(norm(lvl))
 
     # Make a legend for the levels.
     handles = []
