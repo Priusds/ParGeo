@@ -48,7 +48,7 @@ class Periodic(Transform):
             # any case overwrites all values ever set for fixed levels
             self.periodic_length_x = {"any": periodic_length_x}
             self.periodic_length_y = {"any": periodic_length_y}
-            self.alphas = {"any": alpha}
+            self.alpha = {"any": alpha}
 
         else:
             levels_list = levels if isinstance(levels, list) else [levels]
@@ -80,7 +80,7 @@ class Periodic(Transform):
                     f"Parameter alpha has no matching dimension, needed {len(levels_list)} but got {len(alpha_list)}"
                 )
 
-            for lvl, Lx, Ly, alph in zip(
+            for lvl, Lx, Ly, _alpha in zip(
                 levels_list, periodic_length_x_list, periodic_length_y_list, alpha_list
             ):
                 if not Lx > 0 or not Ly > 0:
@@ -90,17 +90,21 @@ class Periodic(Transform):
 
                 self.periodic_length_x[lvl] = Lx
                 self.periodic_length_y[lvl] = Ly
-                self.alphas[lvl] = alph
+                self.alpha[lvl] = _alpha
 
     def __call__(
         self, polygon, level, topology
     ) -> shapely.Polygon | shapely.MultiPolygon:
-
-        alpha = (self.alphas["any"] 
-        if "any" in self.alphas
-            else self.alphas[level]
+        
+        # if level has no rule in the transform just return the original polygon. # TODO: make more readable
+        if not level in self.alpha or not level in self.periodic_length_x or not level in self.periodic_length_y: 
+            return polygon 
+        
+        alpha = ( self.alpha["any"] 
+            if "any" in self.alpha
+            else self.alpha[level]
         )
-
+        
         v = (math.cos(alpha), math.sin(alpha))
         w = (math.sin(alpha), -math.cos(alpha))
 

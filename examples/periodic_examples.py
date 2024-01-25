@@ -7,22 +7,22 @@ import math
 
 
 def generate_topo():
-    domain = Circle(midpoint=(0., 0.), radius = 1).discretize(refs=50).difference(Circle(midpoint=(0., 0.), radius = 0.3).discretize(refs=50))
+    domain = Circle(midpoint=(0., 0.), radius = 1).discretize(refs=50)#.difference(Circle(midpoint=(0., 0.), radius = 0.3).discretize(refs=50))
     #domain =  Rectangle(midpoint=(0., 0.), width=1, height=1).to_polygon()
     topo = Topology(domain)
 
     r11 = Stellar(midpoint=(0., 0.), radius = 0.025).discretize(refs=100)
     #Rectangle(midpoint=(0., 0.), width=0.05, height=0.05).to_polygon()
-    #r12 = Rectangle(midpoint=(0.05, 0.05), width=0.05, height=0.05).to_polygon()
+    r12 = Rectangle(midpoint=(0.05, 0.05), width=0.05, height=0.05).to_polygon()
 
 
     #r21 = Rectangle(midpoint=(0.05, 0.), width=0.05, height=0.05).to_polygon()
     #r22 = Rectangle(midpoint=(0., 0.05), width=0.05, height=0.05).to_polygon()
 
     transform = Periodic()
-    transform.set_periodicty(2, 0.1, 0.2, alpha = math.pi/3)
-    topo.add(r11, level=1, transform=transform)
-    #topo.add(r12, level=1, transform=transform)
+    transform.set_periodicty(1, 0.1, 0.2, alpha = math.pi/3)
+    topo.add(r11, level=2, transform=transform)
+    topo.add(r12, level=1, transform=transform)
     #topo.add(r21, level=2, transform=transform)
     #topo.add(r22, level=2, transform=transform)
 
