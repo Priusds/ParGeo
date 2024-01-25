@@ -12,7 +12,7 @@ def debug_constraint():
     topo = Topology(domain)
 
     constraint = DistanceConstraint()
-    constraint.set_level_distance(0.1, 1, "any")
+    constraint.set_distance(0.1, 1, "any")
 
     c1 = Circle(midpoint=(0.4, 0.5), radius=0.1).discretize(refs=50)
     topo.add(c1, level=1, constraint=constraint)
@@ -31,11 +31,12 @@ def generate_topo():
 
     topo = Topology(domain)
     constraint = DistanceConstraint()
-    constraint.set_level_distance(0.02, 1, "any")
-    constraint.set_geometry_distance(P, 0.2, "any")
+    constraint.set_distance(0.05, [1], ["any"], to_boundary=True)
+    constraint.set_distance(0.2, "any", P)
+
     # constraint.set_level_distance(0.05, 1, 2)
 
-    n_stellar = 2000
+    n_stellar = 200
     # random.seed(0)
     levels = [random.choice([1, 2, 3]) for _ in range(n_stellar)]
     midpoints = [(random.random(), random.random()) for _ in range(n_stellar)]
