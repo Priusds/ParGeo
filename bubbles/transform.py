@@ -26,7 +26,10 @@ class Periodic(Transform):
         levels: int | list[int] | str = "any",
         periodic_length_x: float | list[float] = float("inf"),
         periodic_length_y: float | list[float] = float("inf"),
+        alpha : float | list[float] = 0. 
     ):
+        self.__alpha = alpha
+
         if isinstance(levels, str):
             if not levels == "any":
                 raise ValueError(
@@ -82,8 +85,11 @@ class Periodic(Transform):
     def __call__(
         self, polygon, level, topology
     ) -> shapely.Polygon | shapely.MultiPolygon:
-        minx, miny, maxx, maxy = topology.domain.bounds
+        
 
+
+
+        minx, miny, maxx, maxy = topology.domain.bounds
         poly_minx, poly_miny, poly_maxx, poly_maxy = polygon.bounds
 
         Lx = (
