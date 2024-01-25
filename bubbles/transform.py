@@ -16,8 +16,7 @@ class Transform(object):
 
 
 class Periodic(Transform):
-    def __init__(self):  # , levels: int | list[int] | str = "any"):
-        # self.set_levels(levels)
+    def __init__(self): 
         self.periodic_length_x = {}
         self.periodic_length_y = {}
         self.alpha = {}
@@ -96,10 +95,6 @@ class Periodic(Transform):
     def __call__(
         self, polygon, level, topology
     ) -> shapely.Polygon | shapely.MultiPolygon:
-        
-
-        # minx, miny, maxx, maxy = topology.domain.bounds
-        # poly_minx, poly_miny, poly_maxx, poly_maxy = polygon.bounds
 
         alpha = (self.alphas["any"] 
         if "any" in self.alphas
@@ -131,25 +126,6 @@ class Periodic(Transform):
         periodic_polygons = shapely.union_all(
              [Repeat( v_dir, Lv, Kv, w_dir, Lw, Kw)(polygon, level, topology) for v_dir in v_dirs for w_dir in w_dirs], 
              grid_size=topology.grid_size)
-
-        # # poly_minx + kx_max * Lx <= maxx <=>   (maxx - poly_minx)/Lx >= kx_max
-        # kx_max = math.floor((maxx - poly_minx) / Lx)
-        # # poly_maxx + kx_min * Lx >= minx  <=>  (minx - poly_maxx)/Lx <= kx_min
-        # kx_min = math.ceil((minx - poly_maxx) / Lx)
-        # # analog for y axis
-        # ky_max = math.floor((maxy - poly_miny) / Ly)
-        # ky_min = math.ceil((miny - poly_maxy) / Ly)
-
-        # # collect possible polygons for periodic rule
-        # periodic_polygons = [
-        #     shapely.affinity.translate(polygon, xoff=kx * Lx, yoff=ky * Ly)
-        #     for kx in range(kx_min, kx_max + 1)
-        #     for ky in range(ky_min, ky_max + 1)
-        # ]
-        # # and possible union them
-        # periodic_polygons = shapely.union_all(
-        #     periodic_polygons, grid_size=topology.grid_size
-        #)
 
         # TODO: If the periodic length matches with the boundary we possible need to add intersection points
 

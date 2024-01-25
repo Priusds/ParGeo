@@ -20,7 +20,7 @@ def generate_topo():
     #r22 = Rectangle(midpoint=(0., 0.05), width=0.05, height=0.05).to_polygon()
 
     transform = Periodic()
-    transform.set_periodicty("any", 0.1, 0.2, alpha = math.pi/3)
+    transform.set_periodicty(2, 0.1, 0.2, alpha = math.pi/3)
     topo.add(r11, level=1, transform=transform)
     #topo.add(r12, level=1, transform=transform)
     #topo.add(r21, level=2, transform=transform)
