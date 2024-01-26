@@ -15,8 +15,8 @@ def generate_topo_simple():
     rand_radius = min(0.09, random.random() * 0.5)
     S = Stellar(midpoint=rand_midpoint, radius=rand_radius).discretize(refs=50)
 
-    transform = Periodic()
-    transform.set_periodicty("any", 0.3, 0.5)
+    transform = Periodic("any", 0.3, 0.5)
+
 
     topo.add(c, level=1, transform=transform)
 
@@ -35,8 +35,8 @@ def generate_topo_variation():
     rand_radius = min(0.05, random.random() * 0.2)
     S = Stellar(midpoint=rand_midpoint, radius=rand_radius).discretize(refs=50)
 
-    transform = Periodic()
-    transform.set_periodicty([1, 4], [0.07, 0.1], [0.2, 0.15])
+    transform = Periodic([1, 4], [0.07, 0.1], [0.2, 0.15])
+
 
     topo.add(c, level=4, transform=transform)
 
@@ -62,7 +62,7 @@ def generate_topo():
     radii = [min((0.045, random.random() * 0.25)) for _ in range(n_stellar)]
 
     transform = Periodic()
-    transform.set_periodicty([1, 2, 3, 4, 5], W, H)
+    transform.__set_periodicty([1, 2, 3, 4, 5], W, H)
 
     for mid, rad, lvl in zip(midpoints, radii, levels):
         C = Stellar(midpoint=mid, radius=rad).discretize(refs=50)
