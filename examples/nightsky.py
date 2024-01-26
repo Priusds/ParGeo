@@ -22,12 +22,12 @@ def generate_topo():
     alphas = [2 * math.pi * random.random() for _ in range(n_stars)]
 
     constraint = DistanceConstraint()
-    constraint.set_level_distance(0.01, "any", "any")
+    constraint.set_distance(0.01, "any", "any")
 
     radii_in = [0.04 * random.random() + 0.005 for _ in range(n_stars)]
-    radii_out = [2 * r_in for r_in in radii_in]
+    radii_out = [3 * r_in for r_in in radii_in]
 
-    Ns = [random.choice([5, 6, 7]) for _ in range(n_stars)]
+    Ns = [random.choice([5]) for _ in range(n_stars)]
 
     for M, r_in, r_out, N, alph in zip(midpoints, radii_in, radii_out, Ns, alphas):
         star = NStar(M, r_in, r_out, N, alph).to_polygon()

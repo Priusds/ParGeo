@@ -10,8 +10,8 @@ def generate_topo():
     domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).to_polygon()
     topo = Topology(domain)
 
-    n_stellar = 100
-    random.seed(0)
+    n_stellar = 10
+    # random.seed(0)
     levels = [random.choice([1, 2, 3, 4, 5]) for _ in range(n_stellar)]
     midpoints = [(random.random(), random.random()) for _ in range(n_stellar)]
     radii = [min((0.09, random.random() * 0.5)) for _ in range(n_stellar)]

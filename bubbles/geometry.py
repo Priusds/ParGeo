@@ -1,15 +1,12 @@
 """Geometry module.
 
-TODO: Maybe Rename to `continuous_geometries.py`?
-
 Create geometries that can be added to the topology.
 """
 import math
+import random
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from typing import Callable
 
-import numpy as np
-from numpy.typing import ArrayLike
 from shapely.geometry import Polygon
 
 
@@ -17,7 +14,7 @@ class Geometry(ABC):
     """Abstract class for geometries."""
 
     @abstractmethod
-    def to_polygon(self, *Args) -> Polygon:
+    def to_polygon(self, *args, **kwargs) -> Polygon:
         """Return a shapely polygon representation of self."""
         pass
 
@@ -51,41 +48,66 @@ class Rectangle(Geometry):
 
 
 class NStar(Geometry):
-    def __init__(self, midpoint, radius_in, radius_out, N, alpha=0.0):
+    """NStar geometry."""
+
+    def __init__(
+        self,
+        midpoint: tuple[float, float],
+        radius_in: float,
+        radius_out: float,
+        n_peaks: int,
+        alpha: float = 0.0,
+    ):
+        """Make an NStar.
+
+        Args:
+            midpoint: The midpoint.
+            radius_in: The inner radius.
+            radius_out: The outer radius.
+            N: Number of points.
+            alpha: Angle offset. TODO: Explain this.
+        """
         if radius_in > radius_out:
             raise ValueError(
                 "The parameter setting radius_in > radius_out not allowed."
             )
-        self.__M = np.asarray(midpoint)
-        self.__rad_in = radius_in
-        self.__rad_out = radius_out
-        self.__N = N
+        self._midpoint = midpoint
+        self._inner_radius = radius_in
+        self._outer_radius = radius_out
+        self._n_peaks = n_peaks
         self.__alpha = alpha
 
     def to_polygon(self) -> Polygon:
-        angles_out = np.linspace(
-            self.__alpha, 2 * np.pi + self.__alpha, self.__N, endpoint=False
-        )
-        offset = np.pi / self.__N
-        angles_in = np.linspace(
-            self.__alpha + offset,
-            2 * np.pi + self.__alpha + offset,
-            self.__N,
-            endpoint=False,
-        )
+        aux_angles = [2 * math.pi * i / self._n_peaks for i in range(self._n_peaks)]
+        offset = math.pi / self._n_peaks
 
-        XY_out = polar_to_cartesian(angles_out, [self.__rad_out] * len(angles_out))
-        XY_in = polar_to_cartesian(angles_in, [self.__rad_in] * len(angles_in))
+        angles_in = [angle + self.__alpha + offset for angle in aux_angles]
+        angles_out = [angle + self.__alpha for angle in aux_angles]
 
+        coords_in = [
+            polar_to_cartesian(angle, self._inner_radius) for angle in angles_in
+        ]
+        coords_out = [
+            polar_to_cartesian(angle, self._outer_radius) for angle in angles_out
+        ]
+
+        # Translate to midpoint
+        mx, my = self._midpoint
+        coords_in = [(x + mx, y + my) for x, y in coords_in]
+        coords_out = [(x + mx, y + my) for x, y in coords_out]
+
+        # Create a shapely polygon
         xy = []
-        for xy_out, xy_in in zip(XY_out, XY_in):
-            xy.append(xy_out + self.__M)
-            xy.append(xy_in + self.__M)
+        for xy_in, xy_out in zip(coords_in, coords_out):
+            xy.append(xy_out)
+            xy.append(xy_in)
 
         return Polygon(xy)
 
 
 class StarLike(Geometry):
+    """Abstract class for star-like geometries."""
+
     def __init__(self, midpoint: tuple[float, float]) -> None:
         self.midpoint = midpoint
 
@@ -100,12 +122,13 @@ class StarLike(Geometry):
 
     def discretize(self, refs: int) -> Polygon:
         # TODO: also give angles as alternative.
-        angles = np.linspace(0, 2 * np.pi, refs, endpoint=False)
+        angles = [i * 2 * math.pi / refs for i in range(refs)]
         radii = [self.radius_at(angle) for angle in angles]
-        x_coords = np.cos(angles) * radii + self.midpoint[0]
-        y_coords = np.sin(angles) * radii + self.midpoint[1]
+        mx, my = self.midpoint
 
-        return Polygon(zip(x_coords, y_coords))
+        coords = [polar_to_cartesian(angle, rad) for angle, rad in zip(angles, radii)]
+
+        return Polygon([(x + mx, y + my) for x, y in coords])
 
 
 class Circle(StarLike):
@@ -115,31 +138,6 @@ class Circle(StarLike):
 
     def radius_at(self, angle: float) -> float:
         return self.radius
-
-
-class RainDrop(StarLike):
-    def __init__(self, midpoint, a, scale):
-        super().__init__(midpoint)
-        if not 0.5 < a and a < 1:
-            raise ValueError(f"Value of a must be between 0.5 and 1, but got {a}.")
-        self.__a = a
-        self.__scale = scale
-
-    def radius_at(self, angle: float) -> float:
-        raise NotImplementedError("Not implemented here")
-
-    def discretize(self, refs):
-        m1, m2 = self.midpoint
-
-        t = np.linspace(0.0, 2 * np.pi, refs, endpoint=False)
-        denominator = (
-            1 - self.__a + self.__a * np.cos(t)
-        ) ** 2 + self.__a**2 * np.sin(t) ** 2
-        x = self.__a * np.sin(t) - self.__a * np.sin(t) / denominator
-        y = self.__a * np.cos(t) + (1 - self.__a + self.__a * np.cos(t)) / denominator
-        return Polygon(
-            [(m1 + self.__scale * xx, m2 + self.__scale * yy) for xx, yy in zip(x, y)]
-        )
 
 
 class Ellipse(StarLike):
@@ -168,7 +166,7 @@ class Stellar(StarLike):
         self,
         midpoint: tuple[float, float],
         radius: float,
-        coefficient: Optional[np.ndarray] = None,
+        coefficient: list[tuple[float, float]] = [],
     ):
         """Creates a star-like geometry.
 
@@ -181,17 +179,64 @@ class Stellar(StarLike):
         """
         self.midpoint = midpoint
         self.radius = radius
-        if coefficient is None:
-            k = 0.2
-            j = int(1 / k)
-            coefficient = np.random.uniform(-k, k, (j, 2))
         if len(coefficient) == 0:
-            raise ValueError("`coefficient` length must be greater then zero.")
+            coefficient = self.generate_coefficients()
+
         self.coefficient = coefficient
-        self.f = trigonometric_function(self.coefficient, self.radius)
+        self.trig_fun = trigonometric_function(self.coefficient, self.radius)
 
     def radius_at(self, angle: float) -> float:
-        return self.f(angle)
+        return self.trig_fun(angle)
+
+    def generate_coefficients(self, k: float = 0.2) -> list[tuple[float, float]]:
+        """Generate coefficients for the stellar function.
+
+        Args:
+            k: Scaling factor.
+        """
+        j = int(1 / k)
+        coeffs_ = [random.uniform(-k, k) for _ in range(j * 2)]
+
+        return list(zip(coeffs_[:j], coeffs_[j:]))
+
+
+class RainDrop(StarLike):
+    """Raindrop geometry."""
+
+    def __init__(self, midpoint: tuple[float, float], a: float, scale: float):
+        super().__init__(midpoint)
+        if not 0.5 < a and a < 1:
+            raise ValueError(f"Value of a must be between 0.5 and 1, but got {a}.")
+        self._a = a
+        self._scale = scale
+
+    def radius_at(self, angle: float) -> float:
+        raise NotImplementedError("Not implemented here")
+
+    def discretize(self, refs):
+        angles = [i * 2 * math.pi / refs for i in range(refs)]
+
+        denominators = [
+            (1 - self._a + self._a * math.cos(angle)) ** 2
+            + self._a**2 * math.sin(angle) ** 2
+            for angle in angles
+        ]
+
+        x_coords = [
+            self._a * math.sin(angle) - self._a * math.sin(angle) / den
+            for den, angle in zip(denominators, angles)
+        ]
+        y_coords = [
+            self._a * math.cos(angle) + (1 - self._a + self._a * math.cos(angle)) / den
+            for den, angle in zip(denominators, angles)
+        ]
+        mx, my = self.midpoint
+        return Polygon(
+            [
+                (mx + self._scale * x, my + self._scale * y)
+                for x, y in zip(x_coords, y_coords)
+            ]
+        )
 
 
 def discretize_ellipse(
@@ -208,67 +253,66 @@ def discretize_ellipse(
     Return:
         List of boundary points in ccw order.
     """
-    angles = np.linspace(0, 2 * np.pi, refs, endpoint=False)
-    coords = polar_to_cartesian(angles, axis[0], axis[1])
-    transformed_coords = rotate_counterclockwise(coords, angle) + midpoint
+    angles = [i * 2 * math.pi / refs for i in range(refs)]
 
-    return Polygon([tuple(coords) for coords in transformed_coords])
+    transformed_coords = rotate_counterclockwise(
+        points=[polar_to_cartesian(angle, axis[0], axis[1]) for angle in angles],
+        angle=angle,
+    )
+    mx, my = midpoint
+
+    return Polygon([(x + mx, y + my) for x, y in transformed_coords])
 
 
 def trigonometric_function(
-    coefficients: np.ndarray, scale: float
+    coefficients: list[tuple[float, float]], scale: float
 ) -> Callable[[float], float]:
     """Returns the exponential of a trigonometric function.
 
+    Args:
+        coefficients: Coefficients [(a_i, b_i)_i] of the trigonometric function.
+        scale: Scaling factor.
+
     The trigonometric function f is defined as:
 
-        `f(x) = scale * exp(mean(a_0, b_0) + f_1(x) + ... + f_{n-1}(x))`
+        `f(x) = scale * exp(f_0(x) + ... + f_{n-1}(x))`
 
     where the basis functions f_i are defined as:
 
         `f_i(x) := a_i*cos(i*x) + b_i*sin(i*x)`
-
-    Args:
-        coefficients: numpy array of shape (n,2)
-            Each row represents a pair (a_i, b_i).
-        scale: Scaling factor.
     """
-    if len(coefficients) == 0:
-        raise ValueError("Length of `coefficients` must be greater then 0.")
-
-    if len(coefficients) == 1:
-        return lambda x: scale * np.exp(coefficients[0].mean())  # type: ignore
-
-    else:
-        i_matrix = np.array(range(1, len(coefficients)))
-        return lambda x: scale * np.exp(  # type: ignore
-            coefficients[0].mean()
-            + np.dot(coefficients[1:, 0], np.cos(i_matrix * x))
-            + np.dot(coefficients[1:, 1], np.sin(i_matrix * x))
+    return lambda x: scale * math.exp(
+        sum(
+            a * math.cos(i * x) + b * math.sin(i * x)
+            for i, (a, b) in enumerate(coefficients)
         )
+    )
 
 
-def rotate_counterclockwise(p: np.ndarray, alpha: float) -> np.ndarray:
+def rotate_counterclockwise(
+    points: list[tuple[float, float]], angle: float
+) -> list[tuple[float, float]]:
     """Rotates points counter-clockwise around (0,0)."""
-    p = np.array(p)
-    q = np.array([[np.cos(alpha), np.sin(alpha)], [-np.sin(alpha), np.cos(alpha)]])
-    return p @ q
+    cos_alpha = math.cos(angle)
+    sin_alpha = math.sin(angle)
+    return [
+        (cos_alpha * x - sin_alpha * y, sin_alpha * x + cos_alpha * y)
+        for x, y in points
+    ]
 
 
 def polar_to_cartesian(
-    angles: ArrayLike,
-    radii_x: ArrayLike,
-    radii_y: Optional[ArrayLike] = None,
-) -> np.ndarray:
+    angle: float,
+    rad_x: float,
+    rad_y: float | None = None,
+) -> tuple[float, float]:
     """Coordinate transform, from polar to cartesian.
-
-    x_i, y_i = cos(angle_i)*rx_i, sin(angle_i)*ry_i
 
     Args:
         angles: List of angles.
         radii_x: List of radii, for the x-coordinate.
         radii_y: List of radii, for the y-coordinate.
     """
-    if radii_y is None:
-        radii_y = radii_x
-    return np.vstack((np.cos(angles) * radii_x, np.sin(angles) * radii_y)).transpose()
+    if rad_y is None:
+        rad_y = rad_x
+    return (math.cos(angle) * rad_x, math.sin(angle) * rad_y)
