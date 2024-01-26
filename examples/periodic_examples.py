@@ -21,7 +21,7 @@ def generate_topo():
     # r21 = Rectangle(midpoint=(0.05, 0.), width=0.05, height=0.05).to_polygon()
     # r22 = Rectangle(midpoint=(0., 0.05), width=0.05, height=0.05).to_polygon()
 
-    transform = Periodic(2, alpha=math.pi / 3)
+    transform = Periodic(2, 0.1, alpha=math.pi / 3)
     topo.add(r11, level=2, transform=transform)
     topo.add(r12, level=1, transform=transform)
     # topo.add(r21, level=2, transform=transform)

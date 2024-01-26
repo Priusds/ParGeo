@@ -1,7 +1,11 @@
-"""Transform for the bubbles package."""
+"""Transform for the bubbles package.
+
+TODO: Stilly many `type: ignore` statements. Rethink "any" logic to overcome
+this.
+"""
 import math
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from typing import Callable, Literal
 
 from shapely import GeometryCollection, MultiPolygon, Polygon
 from shapely import box as shapely_box
@@ -27,7 +31,7 @@ class Periodic(Transform):
 
     def __init__(
         self,
-        levels: (int | list[int]) | str = "any",
+        levels: int | list[int] | str = "any",
         x_length: float | list[float] = float("inf"),
         y_length: float | list[float] = float("inf"),
         alpha: float | list[float] = 0,
@@ -58,8 +62,10 @@ class Periodic(Transform):
             )
 
         # Bring input in list form.
-        if isinstance(levels, (str, int)):
-            levels = [levels]
+        if isinstance(levels, (int, str)):
+            levels = [levels]  # type: ignore
+        # This is just for the correct type hinting.
+        levels: list[int] | list[Literal["any"]] = levels  # type: ignore
         if isinstance(x_length, (float, int)):
             x_length = [x_length]
         if isinstance(y_length, (float, int)):
@@ -76,7 +82,10 @@ class Periodic(Transform):
             alpha = alpha * len(levels)
 
         # Check if all lists have the same length.
-        if not len(set(map(len, [levels, x_length, y_length, alpha]))) == 1:
+        if (
+            not len(set(map(len, [levels, x_length, y_length, alpha])))  # type: ignore
+            == 1
+        ):
             raise ValueError("Input size mismatch.")
 
         # Check level uniqueness.
@@ -96,9 +105,9 @@ class Periodic(Transform):
             self.__lvl2ylength = {"any": y_length[0]}
             self.__lvl_2_alpha = {"any": alpha[0]}
         else:
-            self.__lvl2xlength = dict(zip(levels, x_length))
-            self.__lvl2ylength = dict(zip(levels, y_length))
-            self.__lvl_2_alpha = dict(zip(levels, alpha))
+            self.__lvl2xlength = dict(zip(levels, x_length))  # type: ignore
+            self.__lvl2ylength = dict(zip(levels, y_length))  # type: ignore
+            self.__lvl_2_alpha = dict(zip(levels, alpha))  # type: ignore
 
     @property
     def affected_levels(self):
@@ -127,13 +136,13 @@ class Periodic(Transform):
         self.__validate_input(level, x_length, y_length, alpha)
 
         if self.any:
-            self.__lvl2xlength = {"any": x_length[0]}
-            self.__lvl2ylength = {"any": y_length[0]}
-            self.__lvl_2_alpha = {"any": alpha[0]}
+            self.__lvl2xlength = {"any": x_length}
+            self.__lvl2ylength = {"any": y_length}
+            self.__lvl_2_alpha = {"any": alpha}
         else:
-            self.__lvl2xlength[level] = x_length
-            self.__lvl2ylength[level] = y_length
-            self.__lvl_2_alpha[level] = alpha
+            self.__lvl2xlength[level] = x_length  # type: ignore
+            self.__lvl2ylength[level] = y_length  # type: ignore
+            self.__lvl_2_alpha[level] = alpha  # type: ignore
 
     def __call__(
         self, polygon: Polygon, level: int, topology: Topology
@@ -143,11 +152,11 @@ class Periodic(Transform):
         if level not in self.affected_levels and not self.any:
             return polygon
 
-        level = "any" if self.any else level
+        level = "any" if self.any else level  # type: ignore
 
-        x_length = self.__lvl2xlength[level]
-        y_length = self.__lvl2ylength[level]
-        alpha = self.__lvl_2_alpha[level]
+        x_length = self.__lvl2xlength[level]  # type: ignore
+        y_length = self.__lvl2ylength[level]  # type: ignore
+        alpha = self.__lvl_2_alpha[level]  # type: ignore
 
         span = (
             topology.domain.bounds[2]
@@ -221,11 +230,11 @@ class Repeat(Transform):
         v_dir: tuple[float, float],
         v_scalar: float,
         v_rep: int,
-        w_dir: tuple[float, float] = None,
-        w_scalar: float = None,
-        w_rep: int = None,
+        w_dir: tuple[float, float] = (0, 0),
+        w_scalar: float = 0,
+        w_rep: int = 0,
         clip: bool = True,
-    ) -> Any:
+    ) -> None:
         """Initialize a Repeat object.
 
         Args:
@@ -327,6 +336,8 @@ class Diffeomorphism(Transform):
             return self.__map_polygon(polygon)
         elif isinstance(polygon, MultiPolygon):
             return MultiPolygon([self.__map_polygon(poly) for poly in polygon])
+        else:
+            raise ValueError(f"Unknown polygon type {type(polygon)}.")
 
     def __map_polygon(self, polygon: Polygon):
         """Transform the polygon boundary."""
