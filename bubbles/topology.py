@@ -238,14 +238,15 @@ class Topology:
         self.__lvl2multipoly = new_lvl2multipoly
         return True
 
-    def plot(self) -> None:
+    def plot(self, diff_holes: bool = False) -> None:
         """Plot the topology."""
+        polygons, polygon_levels = zip(*self.flatten())
         plot(
-            self.flatten(),
+            polygons,
+            polygon_levels,
             self.holes,
-            self.levels,
             self.domain,
-            hole_color_mode="white",
+            diff_holes=diff_holes,
         )
 
     def flatten(self) -> list[tuple[Polygon, int]]:
