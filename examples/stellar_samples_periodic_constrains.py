@@ -1,7 +1,7 @@
 import random
 
 from bubbles.geometry import Circle, Rectangle, Stellar
-from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
+from bubbles.gmsh_utils import write_geo
 from bubbles.topology import Topology
 from bubbles.transform import Periodic
 
@@ -78,9 +78,9 @@ if __name__ == "__main__":
     topo = generate_topo_variation()  # generate_topo_simple() #generate_topo()
     topo.set_holes({2})
     topo.plot()
-    gmsh_entities = topology_to_gmsh_entities(topo)
+
     write_geo(
-        gmsh_entities=gmsh_entities,
+        topology=topo,
         file_name="stellar_samples_periodic_constrains",
         correct_curve_loops=True,
     )

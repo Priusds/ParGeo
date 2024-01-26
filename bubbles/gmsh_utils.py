@@ -2,14 +2,12 @@
 from enum import IntEnum
 from itertools import groupby
 from pathlib import Path
-from typing import NamedTuple, NewType, Sequence, TypedDict
+from typing import NamedTuple, Sequence, TypedDict
 
 import gmsh
-import shapely
+from shapely import Polygon
 
 from bubbles.topology import Topology
-
-PositiveInt = NewType("PositiveInt", int)
 
 
 class PhysicalDimension(IntEnum):
@@ -26,51 +24,51 @@ class Point(NamedTuple):
     y: float
     z: float
     lc: float
-    tag: PositiveInt
+    tag: int
 
 
 class Line(NamedTuple):
     """Line between two points."""
 
-    start_tag: PositiveInt
-    end_tag: PositiveInt
-    tag: PositiveInt
+    start_tag: int
+    end_tag: int
+    tag: int
 
 
 class CurveLoop(NamedTuple):
     """Closed loop of lines."""
 
-    line_tags: Sequence[PositiveInt]
-    tag: PositiveInt
+    line_tags: Sequence[int]
+    tag: int
 
 
 class PlaneSurface(NamedTuple):
     """Surface, delimited by curve loops."""
 
-    curve_loop_tags: Sequence[PositiveInt]
-    tag: PositiveInt
+    curve_loop_tags: Sequence[int]
+    tag: int
 
 
 class PhysicalGroup(NamedTuple):
     """Group of entities belonging to the same physical group."""
 
     dim: PhysicalDimension
-    entity_tags: Sequence[PositiveInt]
-    tag: PositiveInt
+    entity_tags: Sequence[int]
+    tag: int
 
 
 class SurfaceLoop(NamedTuple):
     """Closed loop of surfaces."""
 
-    surface_tags: Sequence[PositiveInt]
-    tag: PositiveInt
+    surface_tags: Sequence[int]
+    tag: int
 
 
 class Volume(NamedTuple):
     """Volume, delimited by surface loops."""
 
-    surface_loop_tags: Sequence[PositiveInt]
-    tag: PositiveInt
+    surface_loop_tags: Sequence[int]
+    tag: int
 
 
 class GmshEntities(TypedDict):
@@ -85,31 +83,25 @@ class GmshEntities(TypedDict):
     volumes: Sequence[Volume]
 
 
-def mesh(
+def __mesh(
     gmsh_entities: GmshEntities,
     file_name: Path | str,
-    dim: PhysicalDimension = 2,
+    dim: PhysicalDimension = PhysicalDimension.two,
     write_geo: bool = True,
     correct_curve_loops: bool = False,
     save_all: bool = False,
 ) -> None:
     """
-    Create a mesh using gmsh.
+    Write a mesh .MSH file using GMSH.
 
     Args:
-        gmsh_entities:
-            Entities that represent the geometry.
-        file_name:
-            Path of the saved mesh.
-        dim:
-            Dimension of the mesh. Allowed values are 2 or 3.
-        write_geo:
-            Whether or not the .GEO file is saved too.
-        correct_line_loops:
-            Apparently gmsh offeres the possibility to correct
+        gmsh_entities: Entities that represent the geometry.
+        file_name: Path of the saved mesh, the extension is added automatically.
+        dim: Dimension of the mesh. Allowed values are 2 or 3.
+        write_geo: Whether or not the .GEO file is saved too.
+        correct_line_loops: Apparently gmsh offeres the possibility to correct
             line loops. TODO: Check if it is useful.
-        save_all:
-            If False only mesh elements are saved that belong to some
+        save_all: If False only mesh elements are saved that belong to some
             physical group, as long there is at least one physical group.
     """
     assert dim in {2, 3}
@@ -167,12 +159,22 @@ def mesh(
     gmsh.finalize()
 
 
-def write_geo(
+def __write_geo(
     file_name: Path | str,
     gmsh_entities: GmshEntities,
     correct_curve_loops: bool = False,
 ):
-    """Create a .GEO file."""
+    """Write a file readable by GMSH.
+
+    The geo file can be used in gmsh.
+
+    Args:
+        file_name: Name of the file. The extension ".geo_unrolled" is added
+            automatically.
+        gmsh_entities: Entities that represent the geometry.
+        correct_curve_loops: Apparently gmsh offeres the possibility to correct
+            line loops. TODO: Check if it is useful.
+    """
     gmsh.initialize()
     file_name = Path(file_name)
     gmsh.model.add(file_name.name)
@@ -214,21 +216,36 @@ def write_geo(
     gmsh.finalize()
 
 
-def bubble_to_gmsh_entities(
-    polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag
+def __bubble_to_entities(
+    polygon: Polygon,
+    level: int,
+    point_tag: int,
+    line_tag: int,
+    curve_loop_tag: int,
+    plane_surface_tag: int,
 ):
+    """Convert a shapely polygon to gmsh entities.
+
+    Args:
+        polygon: Shapely polygon.
+        level: Physical group of the surface.
+        point_tag: Lower bound for free point tags.
+        line_tag: Lower bound for free line tags.
+        curve_loop_tag: Lower bound for free curve_loop tags.
+        plane_surface_tag: Lower bound for free surface tags.
+    """
     # assert not bubble.is_hole
-    points_total = []
-    lines_total = []
-    curve_loops = []
+    points_total: list[Point] = []
+    lines_total: list[Line] = []
+    curve_loops: list[CurveLoop] = []
 
     physical_group_tag = level + 1  # +1 because physical group tags start at 1
     # ==================================================
     # Write exterior loop
     # ==================================================
-    assert isinstance(polygon, shapely.Polygon)
+    assert isinstance(polygon, Polygon)
     # Add points
-    points_local = []
+    points_local: list[Point] = []
     for x, y in polygon.exterior.coords[:-1]:
         point = Point(x=x, y=y, z=0.0, lc=0.1, tag=point_tag)
         points_local.append(point)
@@ -248,7 +265,7 @@ def bubble_to_gmsh_entities(
     lines_local.append(line)
     line_tag += 1
 
-    points_total = points_total + points_local
+    points_total.extend(points_local)
     lines_total = lines_total + lines_local
     # Add curve loop
     curve_loop = CurveLoop(
@@ -302,7 +319,11 @@ def bubble_to_gmsh_entities(
         )
     ]
     physical_groups = [
-        PhysicalGroup(dim=2, entity_tags=[plane_surface_tag], tag=physical_group_tag)
+        PhysicalGroup(
+            dim=PhysicalDimension.two,
+            entity_tags=[plane_surface_tag],
+            tag=physical_group_tag,
+        )
     ]
     plane_surface_tag += 1
 
@@ -312,6 +333,8 @@ def bubble_to_gmsh_entities(
         "curve_loops": curve_loops,
         "plane_surfaces": plane_surfaces,
         "physical_groups": physical_groups,
+        "surface_loops": [],
+        "volumes": [],
     }
     return (
         entities,
@@ -322,10 +345,11 @@ def bubble_to_gmsh_entities(
     )
 
 
-def topology_to_gmsh_entities(topo: Topology):
+def __topology_to_entities(topology: Topology) -> GmshEntities:
+    """Convert a topology to gmsh entities."""
     all_entities_list = []
 
-    bubbles = topo.flatten()
+    bubbles = topology.flatten()
 
     point_tag = 1
     line_tag = 1
@@ -333,14 +357,14 @@ def topology_to_gmsh_entities(topo: Topology):
     plane_surface_tag = 1
 
     for polygon, level in bubbles:
-        if level not in topo.holes:
+        if level not in topology.holes:
             (
                 gmsh_entities,
                 point_tag,
                 line_tag,
                 curve_loop_tag,
                 plane_surface_tag,
-            ) = bubble_to_gmsh_entities(
+            ) = __bubble_to_entities(
                 polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag
             )
             all_entities_list.append(gmsh_entities)
@@ -353,10 +377,10 @@ def topology_to_gmsh_entities(topo: Topology):
     for tag, physical_group in groupby(physical_groups, lambda x: x.tag):
         entity_tags = [s.entity_tags[0] for s in physical_group]
         physical_groups_merged.append(
-            PhysicalGroup(dim=2, entity_tags=entity_tags, tag=tag)
+            PhysicalGroup(dim=PhysicalDimension.two, entity_tags=entity_tags, tag=tag)
         )
 
-    entities: GmshEntities = {
+    gmsh_entities_all: GmshEntities = {
         "points": [i for ent in all_entities_list for i in ent["points"]],
         "lines": [i for ent in all_entities_list for i in ent["lines"]],
         "curve_loops": [i for ent in all_entities_list for i in ent["curve_loops"]],
@@ -364,5 +388,37 @@ def topology_to_gmsh_entities(topo: Topology):
             i for ent in all_entities_list for i in ent["plane_surfaces"]
         ],
         "physical_groups": physical_groups_merged,
+        "surface_loops": [],
+        "volumes": [],
     }
-    return entities
+    return gmsh_entities_all
+
+
+def write_geo(
+    topology: Topology,
+    file_name: Path | str,
+    correct_curve_loops: bool = False,
+) -> None:
+    """Convert a topology to GmshEntities."""
+    gmsh_entities = __topology_to_entities(topology)
+    __write_geo(file_name, gmsh_entities, correct_curve_loops)
+
+
+def mesh(
+    topology: Topology,
+    file_name: Path | str,
+    dim: PhysicalDimension = PhysicalDimension.two,
+    write_geo: bool = True,
+    correct_curve_loops: bool = False,
+    save_all: bool = False,
+) -> None:
+    """Mesh the topology using gmsh."""
+    gmsh_entities = __topology_to_entities(topology)
+    __mesh(
+        gmsh_entities,
+        file_name,
+        dim,
+        write_geo,
+        correct_curve_loops,
+        save_all,
+    )

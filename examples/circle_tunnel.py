@@ -1,5 +1,5 @@
 from bubbles.geometry import Circle
-from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
+from bubbles.gmsh_utils import write_geo
 from bubbles.topology import Topology
 
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     topo = generate_topo()
     topo.plot()
 
-    gmsh_entities = topology_to_gmsh_entities(topo)
+    gmsh_entities = write_geo(topo)
     write_geo(
         gmsh_entities=gmsh_entities, file_name="circle_tunnel", correct_curve_loops=True
     )

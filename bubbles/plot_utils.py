@@ -2,15 +2,15 @@
 from functools import cmp_to_key
 
 import matplotlib.pyplot as plt
-import shapely
 from matplotlib.colors import Normalize
+from shapely import LineString, MultiLineString, MultiPolygon, Polygon
 
 
 def plot(
-    polygons: list[shapely.Polygon],
+    polygons: list[Polygon],
     polygon_levels: list[int],
     holes: set[int],
-    domain: shapely.Polygon | shapely.MultiPolygon,
+    domain: Polygon | MultiPolygon,
     diff_holes: bool = False,
 ) -> None:
     """
@@ -90,13 +90,13 @@ def plot(
             for sub_domain in domain.geoms:
                 if polygon.intersects(sub_domain.exterior):
                     boundary_line = polygon.intersection(sub_domain.exterior)
-                    if isinstance(boundary_line, shapely.MultiLineString):
+                    if isinstance(boundary_line, MultiLineString):
                         for line in boundary_line.geoms:
                             x, y = line.xy
                             plt.plot(
                                 x, y, "-", linewidth=2, color=inter_hole_bound_color
                             )
-                    elif isinstance(boundary_line, shapely.LineString):
+                    elif isinstance(boundary_line, LineString):
                         x, y = boundary_line.xy
                         plt.plot(x, y, "-", linewidth=2, color=inter_hole_bound_color)
 
@@ -107,7 +107,7 @@ def plot(
     plt.show()
 
 
-def polygon_compare(poly_1: shapely.Polygon, poly_2: shapely.Polygon) -> int:
+def polygon_compare(poly_1: Polygon, poly_2: Polygon) -> int:
     """Compare two polygons."""
     polygon_1, _ = poly_1
     polygon_2, _ = poly_2
@@ -120,11 +120,11 @@ def polygon_compare(poly_1: shapely.Polygon, poly_2: shapely.Polygon) -> int:
 
     if len(polygon_1.interiors) > 0:
         for pp in polygon_1.interiors:
-            if shapely.Polygon(pp).contains(polygon_2):
+            if Polygon(pp).contains(polygon_2):
                 return -1
     if len(polygon_2.interiors) > 0:
         for pp in polygon_2.interiors:
-            if shapely.Polygon(pp).contains(polygon_1):
+            if Polygon(pp).contains(polygon_1):
                 return 1
 
     return 0

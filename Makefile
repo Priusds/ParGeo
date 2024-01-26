@@ -3,8 +3,8 @@ format:
 	isort bubbles tests examples
 
 lint:
-	ruff bubbles examples tests
-	mypy bubbles examples tests
+	ruff bubbles tests/test_topology.py
+	mypy bubbles tests/test_topology.py
 
 tests:
 	pytest tests

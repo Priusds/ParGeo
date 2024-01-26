@@ -1,5 +1,5 @@
 from bubbles.geometry import Circle, Rectangle
-from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
+from bubbles.gmsh_utils import write_geo
 from bubbles.topology import Topology
 
 
@@ -31,7 +31,4 @@ if __name__ == "__main__":
     topo = generate_topo()
     topo.plot()
 
-    gmsh_entities = topology_to_gmsh_entities(topo)
-    write_geo(
-        gmsh_entities=gmsh_entities, file_name="edge_cases", correct_curve_loops=True
-    )
+    write_geo(topology=topo, file_name="edge_cases", correct_curve_loops=True)
