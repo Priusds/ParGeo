@@ -1,10 +1,10 @@
 format:
-	black bubbles tests
-	isort bubbles tests
+	black bubbles tests examples
+	isort bubbles tests examples
 
 lint:
-	ruff bubbles
-	mypy bubbles
+	ruff bubbles examples tests
+	mypy bubbles examples tests
 
 tests:
 	pytest tests

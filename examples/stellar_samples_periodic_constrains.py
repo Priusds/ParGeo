@@ -1,6 +1,7 @@
 import random
+
+from bubbles.geometry import Circle, Rectangle, Stellar
 from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
-from bubbles.geometry import Rectangle, Stellar, Circle
 from bubbles.topology import Topology
 from bubbles.transform import Periodic
 
@@ -16,7 +17,6 @@ def generate_topo_simple():
     S = Stellar(midpoint=rand_midpoint, radius=rand_radius).discretize(refs=50)
 
     transform = Periodic("any", 0.3, 0.5)
-
 
     topo.add(c, level=1, transform=transform)
 
@@ -36,7 +36,6 @@ def generate_topo_variation():
     S = Stellar(midpoint=rand_midpoint, radius=rand_radius).discretize(refs=50)
 
     transform = Periodic([1, 4], [0.07, 0.1], [0.2, 0.15])
-
 
     topo.add(c, level=4, transform=transform)
 

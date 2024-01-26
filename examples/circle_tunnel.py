@@ -1,5 +1,5 @@
-from bubbles.gmsh_utils import write_geo, topology_to_gmsh_entities
 from bubbles.geometry import Circle
+from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
 from bubbles.topology import Topology
 
 

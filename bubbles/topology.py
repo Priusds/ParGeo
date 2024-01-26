@@ -7,7 +7,7 @@ from typing import Callable, Optional
 
 from shapely import GeometryCollection, MultiPolygon, Polygon
 
-from bubbles.utils import plot
+from bubbles.plot_utils import plot
 
 DEFAULT_GRID_SIZE = 1e-15
 INITIAL_LEVEL = 0

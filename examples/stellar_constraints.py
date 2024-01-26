@@ -1,6 +1,7 @@
 import random
 
 import shapely
+
 from bubbles.constraint import DistanceConstraint
 from bubbles.geometry import Circle, Rectangle, Stellar
 from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo

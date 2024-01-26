@@ -1,6 +1,7 @@
 import random
-from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
+
 from bubbles.geometry import Rectangle, Stellar
+from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
 from bubbles.topology import Topology
 
 

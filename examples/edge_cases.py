@@ -1,6 +1,7 @@
 import math
-from bubbles.gmsh_utils import write_geo, topology_to_gmsh_entities
-from bubbles.geometry import Circle, Rectangle, Stellar, Ellipse
+
+from bubbles.geometry import Circle, Ellipse, Rectangle, Stellar
+from bubbles.gmsh_utils import topology_to_gmsh_entities, write_geo
 from bubbles.topology import Topology
 
 
@@ -36,11 +37,11 @@ def generate_topo():
     c_3 = Circle(midpoint=(0.75, 0), radius=0.25).discretize(refs=50)
 
     topo.add(polygon=c_3, level=1)
-    
+
     c_4 = Circle(midpoint=(1.0, 0), radius=0.25).discretize(refs=50)
 
     topo.add(polygon=c_4, level=1)
-    
+
     # this guy is intersection with the domain
     e_1 = Ellipse(
         midpoint=(-0.5, 0.75), axis=(1, 0.1), angle=0.25 * math.pi

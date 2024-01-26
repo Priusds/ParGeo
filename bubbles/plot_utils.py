@@ -23,19 +23,11 @@ def plot(
         domain: The domain.
         hole_color_mode: color of holes, either "white" or "domain"
     """
-    if len(holes) > 0:
-        boundary_domain_poly = shapely.union_all(
-            [
-                poly
-                for poly, lvl in flattened_polygons
-                if (lvl not in holes and poly.intersects(domain.boundary))
-            ]
-        )
     sorted_bubbles = sorted(
         flattened_polygons, key=cmp_to_key(polygon_compare), reverse=False
     )
     domain_boundary_color = "black"
-    domain_color = "black" #"silver"
+    domain_color = "silver"
 
     # Create a colormap for the levels.
     lvl2cl = dict()
@@ -48,11 +40,7 @@ def plot(
             if lvl in holes and hole_color_mode == "white":
                 lvl2cl[lvl] = "white"
             else:
-                if lvl == 1: 
-                    lvl2cl[lvl] = "yellow"
-                if lvl == 2:
-                    lvl2cl[lvl] = "blue"
-                #lvl2cl[lvl] = plt.cm.cool(norm(lvl))
+                lvl2cl[lvl] = plt.cm.cool(norm(lvl))
 
     # Make a legend for the levels.
     handles = []
@@ -97,25 +85,6 @@ def plot(
                         x, y = boundary_line.xy
                         plt.plot(x, y, "-", linewidth=2, color="white")
 
-                    # TODO: p can be Geometrycollection, bugfix this
-                    # p = boundary_domain_poly.intersection(
-                    #     boundary_line, grid_size=1e-15
-                    # )
-                    # p = (
-                    #     p
-                    #     if isinstance(p, shapely.MultiPoint)
-                    #     else shapely.MultiPoint([p])   # TODO: p can be Geometrycollection
-                    # )
-                    # for pp in p.geoms:
-                    #     x, y = pp.xy
-                    #     plt.plot(
-                    #         x,
-                    #         y,
-                    #         "s",
-                    #         linewidth=2,
-                    #         color=domain_boundary_color,
-                    #         markersize=1,
-                    #     )
             for interior in polygon.interiors:
                 x, y = interior.xy
                 plt.plot(x, y, "-", linewidth=2, color=domain_boundary_color)
