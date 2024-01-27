@@ -6,7 +6,7 @@
 Welcome to Bubbles's documentation!
 ===================================
 
-Generate complex two-dimensional geometries, e.g. for the simulation of
+Generate complex two-dimensional geometries, e.g. for the simulation of
 composite materials.
 
 Basic Usage
