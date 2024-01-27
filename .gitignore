@@ -13,8 +13,7 @@ poetry.lock
 **/__pycache__/
 
 # Documentation
-docs/build/
-docs/make.bat
+docs/_build/
 
 # Other
 .DS_Store
