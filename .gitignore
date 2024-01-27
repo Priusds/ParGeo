@@ -11,3 +11,10 @@ poetry.lock
 # Python virtual environment
 .venv
 **/__pycache__/
+
+# Documentation
+docs/build/
+docs/make.bat
+
+# Other
+.DS_Store
