@@ -1,11 +1,7 @@
-"""Transform for the bubbles package.
-
-TODO: Stilly many `type: ignore` statements. Rethink "any" logic to overcome
-this.
-"""
+"""Transform for the bubbles package."""
 import math
 from abc import ABC, abstractmethod
-from typing import Callable, Literal
+from typing import Callable
 
 from shapely import GeometryCollection, MultiPolygon, Polygon
 from shapely import box as shapely_box
@@ -38,6 +34,9 @@ class Periodic(Transform):
     ):
         """Define the Periodic transform.
 
+        Each level can have its own periodicity. If levels is "any" then all levels
+        are treaded equally and the periodicity is applied to all levels.
+
         Args:
             levels: Levels to apply the periodicity. If "any" then the periodicity
                 is applied to all levels. If a list of levels is given then the
@@ -55,59 +54,61 @@ class Periodic(Transform):
                 NOTE: The polygons itself are not rotated, only the periodicity
                 direction.
         """
+        levels_ = levels if isinstance(levels, list) else []
+        x_length = x_length if isinstance(x_length, list) else [x_length]
+        y_length = y_length if isinstance(y_length, list) else [y_length]
+        alpha = alpha if isinstance(alpha, list) else [alpha]
+        self.any = False
+        self.any_xlength = 0.0
+        self.any_ylength = 0.0
+        self.any_alpha = 0.0
+
+        self.__lvl2xlength = {}
+        self.__lvl2ylength = {}
+        self.__lvl_2_alpha = {}
+
         # Validate input
-        if isinstance(levels, str) and not levels == "any":
-            raise ValueError(
-                f"Levels specification as string must be 'any' but given {levels}."
-            )
+        n_levels = 0
+        if isinstance(levels, str):
+            if levels == "any":
+                if not (len(x_length) == 1 and len(y_length) == 1 and len(alpha) == 1):
+                    raise ValueError(
+                        "If levels is 'any' then x_length, y_length and alpha must be"
+                        "floats."
+                    )
+                self.any = True
+                n_levels = 1
+                self.any_xlength = x_length[0]
+                self.any_ylength = y_length[0]
+                self.any_alpha = alpha[0]
+            else:
+                raise ValueError(
+                    f"Levels specification as string must be 'any' but given {levels}."
+                )
+        elif isinstance(levels, int):
+            levels_.append(levels)
+            if not (len(x_length) == 1 and len(y_length) == 1 and len(alpha) == 1):
+                raise ValueError(
+                    "If levels is 'any' then x_length, y_length and alpha must be"
+                    "floats."
+                )
+            self.any = False
+            n_levels = 1
+        elif isinstance(levels, list):
+            n_levels = len(levels)
 
-        # Bring input in list form.
-        if isinstance(levels, (int, str)):
-            levels = [levels]  # type: ignore
-        # This is just for the correct type hinting.
-        levels: list[int] | list[Literal["any"]] = levels  # type: ignore
-        if isinstance(x_length, (float, int)):
-            x_length = [x_length]
-        if isinstance(y_length, (float, int)):
-            y_length = [y_length]
-        if isinstance(alpha, (float, int)):
-            alpha = [alpha]
-
-        # Adjust lists
-        if len(x_length) == 1:
-            x_length = x_length * len(levels)
-        if len(y_length) == 1:
-            y_length = y_length * len(levels)
-        if len(alpha) == 1:
-            alpha = alpha * len(levels)
-
-        # Check if all lists have the same length.
-        if (
-            not len(set(map(len, [levels, x_length, y_length, alpha])))  # type: ignore
-            == 1
-        ):
-            raise ValueError("Input size mismatch.")
-
-        # Check level uniqueness.
-        if not len(set(levels)) == len(levels):
-            raise ValueError("levels must not contain duplicates.")
-        if "any" in levels and not len(levels) == 1:
-            raise ValueError("If 'any' is given, no other levels can be given.")
-
-        # Validate input types.
-        for _input in zip(levels, x_length, y_length, alpha):
-            self.__validate_input(*_input)
-
-        self.any = "any" in levels
-
-        if self.any:
-            self.__lvl2xlength = {"any": x_length[0]}
-            self.__lvl2ylength = {"any": y_length[0]}
-            self.__lvl_2_alpha = {"any": alpha[0]}
+            x_length = x_length * n_levels if len(x_length) == 1 else x_length
+            y_length = y_length * n_levels if len(y_length) == 1 else y_length
+            alpha = alpha * n_levels if len(alpha) == 1 else alpha
+            self.any = False
         else:
-            self.__lvl2xlength = dict(zip(levels, x_length))  # type: ignore
-            self.__lvl2ylength = dict(zip(levels, y_length))  # type: ignore
-            self.__lvl_2_alpha = dict(zip(levels, alpha))  # type: ignore
+            raise ValueError(
+                f"levels must be int, list[int] or 'any' but given {levels}."
+            )
+        if not self.any:
+            self.__lvl2xlength = dict(zip(levels_, x_length))
+            self.__lvl2ylength = dict(zip(levels_, y_length))
+            self.__lvl_2_alpha = dict(zip(levels_, alpha))
 
     @property
     def affected_levels(self):
@@ -127,22 +128,16 @@ class Periodic(Transform):
         if not isinstance(alpha, (float, int)):
             raise ValueError(f"alpha must be float but given {alpha}.")
 
-    def update(self, level: int | str, x_length: float, y_length: float, alpha: float):
+    def update(self, level: int, x_length: float, y_length: float, alpha: float):
         """Update the periodic behavior of the transform.
 
         Note: If level is "any" then the periodicity is applied to all levels, meaning
         all levels are overwritten.
         """
         self.__validate_input(level, x_length, y_length, alpha)
-
-        if self.any:
-            self.__lvl2xlength = {"any": x_length}
-            self.__lvl2ylength = {"any": y_length}
-            self.__lvl_2_alpha = {"any": alpha}
-        else:
-            self.__lvl2xlength[level] = x_length  # type: ignore
-            self.__lvl2ylength[level] = y_length  # type: ignore
-            self.__lvl_2_alpha[level] = alpha  # type: ignore
+        self.__lvl2xlength[level] = x_length
+        self.__lvl2ylength[level] = y_length
+        self.__lvl_2_alpha[level] = alpha
 
     def __call__(
         self, polygon: Polygon, level: int, topology: Topology
@@ -152,11 +147,9 @@ class Periodic(Transform):
         if level not in self.affected_levels and not self.any:
             return polygon
 
-        level = "any" if self.any else level  # type: ignore
-
-        x_length = self.__lvl2xlength[level]  # type: ignore
-        y_length = self.__lvl2ylength[level]  # type: ignore
-        alpha = self.__lvl_2_alpha[level]  # type: ignore
+        x_length = self.__lvl2xlength[level] if not self.any else self.any_xlength
+        y_length = self.__lvl2ylength[level] if not self.any else self.any_ylength
+        alpha = self.__lvl_2_alpha[level] if not self.any else self.any_alpha
 
         span = (
             topology.domain.bounds[2]

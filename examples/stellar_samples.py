@@ -1,7 +1,7 @@
 import random
 
 from bubbles.geometry import Rectangle, Stellar
-from bubbles.gmsh_utils import write_geo, mesh
+from bubbles.gmsh_utils import mesh, write_geo
 from bubbles.topology import Topology
 
 
@@ -13,7 +13,13 @@ def generate_topo():
     n_stellar = 800
     # random.seed(0)
     levels = [random.choice([1, 2, 3, 4, 5]) for _ in range(n_stellar)]
-    midpoints = [(2*random.random()*random.choice([1,-1]), random.random(),) for _ in range(n_stellar)]
+    midpoints = [
+        (
+            2 * random.random() * random.choice([1, -1]),
+            random.random(),
+        )
+        for _ in range(n_stellar)
+    ]
 
     radii = [min((0.09, random.random() * 0.5)) for _ in range(n_stellar)]
 
