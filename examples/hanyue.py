@@ -1,9 +1,10 @@
+import random
+
+from bubbles.constraint import DistanceConstraint
 from bubbles.geometry import Circle, Rectangle, Stellar
 from bubbles.gmsh_utils import write_geo
 from bubbles.topology import Topology
 from bubbles.transform import Periodic
-from bubbles.constraint import DistanceConstraint
-import random
 
 
 def generate_topo():
@@ -16,7 +17,7 @@ def generate_topo():
 
     # Periodic repeat of geometries of any level with periodic length 1 in both directions
     # here x,y axis direction since alpha = 0.
-    transform = Periodic("any", 1., 1., alpha = 0.)
+    transform = Periodic("any", 1.0, 1.0, alpha=0.0)
 
     # f( x) = f( x + L )
 
@@ -30,14 +31,14 @@ def generate_topo():
         topo.add(
             polygon=C,
             level=1,
-            transform=transform, 
+            transform=transform,
             constraint=constraint,
         )
 
     return topo
 
 
-def subdomain(): 
+def subdomain():
     domain = Rectangle(midpoint=(0.25, 0.25), width=0.5, height=0.5).to_polygon()
     topo = Topology(domain)
 
@@ -49,17 +50,16 @@ def subdomain():
     topo.add(lvl2polygon[level], level)
 
     import matplotlib.pyplot as plt
-    plt.subplot(1,2,1)
+
+    plt.subplot(1, 2, 1)
     topo_whole.plot()
 
-    plt.plot([0.5,0.5], [0,1], '-k', linewidth = 2)
-    plt.plot([0,1], [0.5,0.5], '-k', linewidth = 2)
+    plt.plot([0.5, 0.5], [0, 1], "-k", linewidth=2)
+    plt.plot([0, 1], [0.5, 0.5], "-k", linewidth=2)
 
-    plt.subplot(1,2,2)
+    plt.subplot(1, 2, 2)
     topo.plot()
     plt.show()
-    
-
 
 
 if __name__ == "__main__":
