@@ -1,10 +1,23 @@
 [tool.poetry]
 name = "bubbles"
 version = "0.1.0"
-description = "Create complex domains."
-authors = ["TillS <tillschaefer96@hotmail.it>"]
+description = "Generate complex two-dimensional geometries, e.g. for the simulation of composite materials."
+authors = [
+    "Till Schäfer <tillschaefer96@hotmail.it>", 
+    "Robert <robby@bobby.xxl>"
+]
+maintainers = [
+    "Till Schäfer <tillschaefer96@hotmail.it>", 
+    "Robert <robby@bobby.xxl>"
+]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/Priusds/Bubbles"
+documentation = "https://docs.readthedocs.io/en/stable/config-file/v2.html"
+keywords = ["geometry", "mesh", "gmsh", "composite", "material", "FEM", "Finite Element Method"]
+classifiers = [
+    "Topic :: Scientific Computing :: FEM",
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -15,16 +28,19 @@ gmsh = "^4.11.1"
 [tool.poetry.group.dev.dependencies]
 isort = "^5.13.2"
 black = "^23.12.1"
-ruff = "^0.0.269"
+ruff = "^0.1.14"
 mypy = "^1.3.0"
 pytest = "^7.4.4"
+
+[tool.poetry.group.docs.dependencies]
 sphinx = "^7.2.6"
 sphinx-rtd-theme = "^2.0.0"
 sphinxcontrib-napoleon = "0.7"
 
-[tool.poetry.extras]
-docs = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-napoleon"]
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.extend-per-file-ignores]
+# Also ignore `E402` in all `__init__.py` files.
+"__init__.py" = ["F401"]

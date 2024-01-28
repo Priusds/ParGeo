@@ -242,8 +242,8 @@ class Topology:
         """Plot the topology."""
         polygons, polygon_levels = zip(*self.flatten())
         plot(
-            polygons, # type: ignore
-            polygon_levels, # type: ignore
+            polygons,  # type: ignore
+            polygon_levels,  # type: ignore
             self.holes,
             self.domain,
             diff_holes=diff_holes,
