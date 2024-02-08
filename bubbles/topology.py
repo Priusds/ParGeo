@@ -5,12 +5,11 @@ Main module, use Topology to generate complex geometries.
 from __future__ import annotations
 
 from collections import UserDict
-from typing import Callable, Optional
+from typing import Callable, Optional, Sequence
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 from shapely import GeometryCollection, MultiPolygon, Polygon
-
-from bubbles.plot_utils import DefaultColors, make_legend
 
 DEFAULT_GRID_SIZE = 1e-15
 INITIAL_LEVEL = 0
@@ -58,7 +57,8 @@ class Topology:
         return self.__domain
 
     @property
-    def levels(self):
+    def levels(self) -> list[int]:
+        """List of sorted levels, without duplicates."""
         return sorted(self.__lvl2multipoly.keys())
 
     @property
@@ -389,3 +389,51 @@ class Node(UserDict):
 
     def __repr__(self) -> str:
         return f"Node(level={self['level']}, depth={self.depth}), n_children={len(self['children'])}"
+
+
+class DefaultColors:
+    """Default colors for plotting."""
+
+    boundary = "black"
+    domain_boundary = "black"
+    domain = "silver"
+    hole = "white"
+    interior_filling = "white"
+    inter_hole_bound = "white"
+
+    @staticmethod
+    def get_color_map(
+        levels: Sequence[int], holes: set[int], color_holes=False
+    ) -> dict[int, str]:
+        """Get a color map for the levels."""
+        lvl2cl = dict()
+        level_set = set(levels)
+        if 0 in level_set:
+            lvl2cl[0] = DefaultColors.domain
+            level_set.remove(0)
+        if len(level_set) > 0:
+            norm = Normalize(vmin=min(level_set), vmax=max(level_set))
+            for lvl in level_set:
+                if lvl in holes and not color_holes:
+                    lvl2cl[lvl] = DefaultColors.hole
+                else:
+                    lvl2cl[lvl] = plt.cm.cool(norm(lvl))
+        return lvl2cl
+
+
+def make_legend(holes: Sequence[int], colormap):
+    """Make a legend."""
+    handles = []
+    descriptions = []
+    for lvl, color in colormap.items():
+        handles.append(plt.Rectangle((0, 0), 1, 1, fc=color, edgecolor="black"))
+        if lvl in holes:
+            descriptions.append(f"{lvl}. level (hole)")
+        else:
+            descriptions.append(f"{lvl}. level")
+    plt.legend(
+        handles,
+        descriptions,
+        loc="upper left",
+        bbox_to_anchor=(0.95, 1),
+    ).set_draggable(True)
