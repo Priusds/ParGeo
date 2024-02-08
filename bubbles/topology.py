@@ -421,7 +421,7 @@ class DefaultColors:
         return lvl2cl
 
 
-def make_legend(holes: Sequence[int], colormap):
+def make_legend(holes: Sequence[int], colormap):s
     """Make a legend."""
     handles = []
     descriptions = []
