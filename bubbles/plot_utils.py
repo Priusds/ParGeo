@@ -6,12 +6,57 @@ from matplotlib.colors import Normalize
 from shapely import LineString, MultiLineString, MultiPolygon, Polygon
 
 
-def plot(
+class DefaultColors:
+    """Default colors for plotting."""
+
+    boundary = "black"
+    domain_boundary = "black"
+    domain = "silver"
+    hole = "white"
+    interior_filling = "white"
+    inter_hole_bound = "white"
+
+    @staticmethod
+    def get_color_map(levels, holes, color_holes=False):
+        """Get a color map for the levels."""
+        lvl2cl = dict()
+        if 0 in levels:
+            lvl2cl[0] = DefaultColors.domain
+            levels.remove(0)
+        if len(levels) > 0:
+            norm = Normalize(vmin=min(levels), vmax=max(levels))
+            for lvl in levels:
+                if lvl in holes and not color_holes:
+                    lvl2cl[lvl] = DefaultColors.hole
+                else:
+                    lvl2cl[lvl] = plt.cm.cool(norm(lvl))
+        return lvl2cl
+
+
+def make_legend(holes, colormap):
+    """Make a legend."""
+    handles = []
+    descriptions = []
+    for lvl, color in colormap.items():
+        handles.append(plt.Rectangle((0, 0), 1, 1, fc=color, edgecolor="black"))
+        if lvl in holes:
+            descriptions.append(f"{lvl}. level (hole)")
+        else:
+            descriptions.append(f"{lvl}. level")
+    plt.legend(
+        handles,
+        descriptions,
+        loc="upper left",
+        bbox_to_anchor=(0.95, 1),
+    ).set_draggable(True)
+
+
+def plot_deprecated(
     polygons: list[Polygon],
     polygon_levels: list[int],
     holes: set[int],
     domain: Polygon | MultiPolygon,
-    diff_holes: bool = False,
+    color_holes: bool = False,
 ) -> None:
     """
     Plot the topology.
@@ -21,47 +66,22 @@ def plot(
         polygon_levels: list of levels for each polygon
         holes: set of levels that are holes
         domain: the domain
-        diff_holes: If `True`, treat domain holes and holes with a level
-            differently. If `False`, treat them the same, both filled white.
+        color_holes: If `True` color added holes according to the level. Domain holes
+            are colored white. If `False` color all holes white.
+            TODO: Check if added polygons with holes are colored correctly.
     """
     # Set of different levels.
     levels = set(polygon_levels)
 
-    # Define all relevant colors.
-    domain_boundary_color = "black"
-    domain_color = "silver"
-    hole_color = "white"
-    interior_filling_color = "white"
-    inter_hole_bound_color = "white"
-    # Create a colormap for the levels.
-    lvl2cl = dict()
-    if 0 in levels:
-        lvl2cl[0] = domain_color
-        levels.remove(0)
-    if len(levels) > 0:
-        norm = Normalize(vmin=min(levels), vmax=max(levels))
-        for lvl in levels:
-            if lvl in holes and not diff_holes:
-                lvl2cl[lvl] = hole_color
-            else:
-                lvl2cl[lvl] = plt.cm.cool(norm(lvl))
+    color_map = DefaultColors.get_color_map(levels, holes, color_holes)
 
-    # Make a legend.
-    handles = []
-    for lvl, color in lvl2cl.items():
-        handles.append(plt.Rectangle((0, 0), 1, 1, fc=color))
-    plt.legend(
-        handles,
-        [f"Level {lvl}" for lvl in lvl2cl.keys()],
-        loc="upper left",
-        bbox_to_anchor=(0.95, 1),
-    )
+    make_legend(holes, color_map)
 
     # Sort the polygons by inclusion.
-    polygons, polygon_levels = zip(
+    polygons, polygon_levels = zip(  # type: ignore
         *sorted(
             zip(polygons, polygon_levels),
-            key=cmp_to_key(polygon_compare),
+            key=cmp_to_key(__polygon_compare),
             reverse=False,
         )
     )
@@ -70,23 +90,23 @@ def plot(
     # TODO: Plot also the interior of holes
     for geo in domain.geoms:
         x, y = geo.exterior.xy
-        plt.plot(x, y, "-", linewidth=2, color=domain_boundary_color)
+        plt.plot(x, y, "-", linewidth=2, color=DefaultColors.domain_boundary)
         for pp in geo.interiors:
             x, y = pp.xy
-            plt.plot(x, y, "-", linewidth=2, color=domain_boundary_color)
-            plt.fill(x, y, color=interior_filling_color)
+            plt.plot(x, y, "-", linewidth=2, color=DefaultColors.domain_boundary)
+            plt.fill(x, y, color=DefaultColors.interior_filling)
 
     for polygon, level in zip(polygons, polygon_levels):
         x, y = polygon.exterior.xy
-        plt.fill(x, y, color=lvl2cl[level])
+        plt.fill(x, y, color=color_map[level])
         if len(polygon.interiors) > 0:
             for pp in polygon.interiors:
                 x, y = pp.xy
-                plt.fill(x, y, color=interior_filling_color)
+                plt.fill(x, y, color=DefaultColors.interior_filling)
 
         if level in holes:
             x, y = polygon.exterior.xy
-            plt.plot(x, y, "-", linewidth=2, color=domain_boundary_color)
+            plt.plot(x, y, "-", linewidth=2, color=DefaultColors.domain_boundary)
             for sub_domain in domain.geoms:
                 if polygon.intersects(sub_domain.exterior):
                     boundary_line = polygon.intersection(sub_domain.exterior)
@@ -94,20 +114,26 @@ def plot(
                         for line in boundary_line.geoms:
                             x, y = line.xy
                             plt.plot(
-                                x, y, "-", linewidth=2, color=inter_hole_bound_color
+                                x,
+                                y,
+                                "-",
+                                linewidth=2,
+                                color=DefaultColors.inter_hole_bound,
                             )
                     elif isinstance(boundary_line, LineString):
                         x, y = boundary_line.xy
-                        plt.plot(x, y, "-", linewidth=2, color=inter_hole_bound_color)
+                        plt.plot(
+                            x, y, "-", linewidth=2, color=DefaultColors.inter_hole_bound
+                        )
 
             for interior in polygon.interiors:
                 x, y = interior.xy
-                plt.plot(x, y, "-", linewidth=2, color=domain_boundary_color)
+                plt.plot(x, y, "-", linewidth=2, color=DefaultColors.domain_boundary)
 
     plt.show()
 
 
-def polygon_compare(poly_1: Polygon, poly_2: Polygon) -> int:
+def __polygon_compare(poly_1: Polygon, poly_2: Polygon) -> int:
     """Compare two polygons."""
     polygon_1, _ = poly_1
     polygon_2, _ = poly_2

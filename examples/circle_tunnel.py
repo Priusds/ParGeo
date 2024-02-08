@@ -21,9 +21,7 @@ def generate_topo():
 
 if __name__ == "__main__":
     topo = generate_topo()
+
     topo.plot()
 
-    gmsh_entities = write_geo(topo)
-    write_geo(
-        gmsh_entities=gmsh_entities, file_name="circle_tunnel", correct_curve_loops=True
-    )
+    write_geo(topo, file_name="circle_tunnel", correct_curve_loops=True)

@@ -5,7 +5,7 @@ from bubbles.topology import Topology
 
 def generate_topo():
     """Generate a topology with a chess board pattern."""
-    N = 10
+    N = 3
     R = Rectangle(midpoint=((N - 1) / 2, (N - 1) / 2), width=N, height=N).to_polygon()
 
     topo = Topology(R, holes={1})
@@ -19,6 +19,7 @@ def generate_topo():
 
 if __name__ == "__main__":
     topo = generate_topo()
+
     topo.plot()
 
     write_geo(topology=topo, file_name="chess_board", correct_curve_loops=True)

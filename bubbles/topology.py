@@ -1,13 +1,16 @@
 """
 Main module, use Topology to generate complex geometries.
 """
+
 from __future__ import annotations
 
+from collections import UserDict
 from typing import Callable, Optional
 
+import matplotlib.pyplot as plt
 from shapely import GeometryCollection, MultiPolygon, Polygon
 
-from bubbles.plot_utils import plot
+from bubbles.plot_utils import DefaultColors, make_legend
 
 DEFAULT_GRID_SIZE = 1e-15
 INITIAL_LEVEL = 0
@@ -238,19 +241,37 @@ class Topology:
         self.__lvl2multipoly = new_lvl2multipoly
         return True
 
-    def plot(self, diff_holes: bool = False) -> None:
+    def plot(self, color_holes: bool = False, color_hole_boundaries=True) -> None:
         """Plot the topology."""
-        polygons, polygon_levels = zip(*self.flatten())
-        plot(
-            polygons,  # type: ignore
-            polygon_levels,  # type: ignore
-            self.holes,
-            self.domain,
-            diff_holes=diff_holes,
-        )
+        colormap = DefaultColors.get_color_map(self.levels, self.holes, color_holes)
+
+        def plot_tree_rec(node: Node) -> None:
+            if not node.is_root:
+                # plot node
+                x, y = node["polygon"].exterior.xy
+                plt.fill(x, y, color=colormap[node["level"]])
+
+                if node["level"] not in self.holes:
+                    plt.plot(x, y, "-", linewidth=1, color=DefaultColors.boundary)
+                if color_hole_boundaries and node["level"] in self.holes:
+                    plt.plot(x, y, "--", linewidth=0.5, color=DefaultColors.boundary)
+
+                # plot interiors in white
+                for interior in node["polygon"].interiors:
+                    x, y = interior.xy
+                    plt.fill(x, y, color="white")
+                    plt.plot(x, y, "-", linewidth=1, color="black")
+
+            for child in node["children"]:
+                plot_tree_rec(child)
+
+        make_legend(self.holes, colormap)
+
+        plot_tree_rec(self.get_inclusion_tree().root)
+        plt.show()
 
     def flatten(self) -> list[tuple[Polygon, int]]:
-        """Return a list of polygons with their level."""
+        """Return a list of polygons and their levels."""
         flattened_polygons = []
         for level, running_polygon in self.__lvl2multipoly.items():
             if isinstance(running_polygon, MultiPolygon):
@@ -259,3 +280,112 @@ class Topology:
             else:
                 flattened_polygons.append((running_polygon, level))
         return flattened_polygons
+
+    def get_inclusion_tree(self) -> InclusionTree:
+        """Return the topology as a tree."""
+        root_node = Node(level=INITIAL_LEVEL - 1, polygon=Polygon(), children=[])
+        tree = InclusionTree(root=root_node)
+
+        for polygon, level in self.flatten():
+            tree.add(polygon, level)
+        return tree
+
+
+class InclusionTree:
+    """Represent the flattened topology as a tree.
+
+    The tree is used to plot the topology.
+
+    The tree is a directed acyclic graph, where the root is just an auxiliary
+    node. Each (non-root) node represents a polygon, with a level. All polygons
+    represented by the nodes are disjoint. The nodes represent the polygons in
+    the flattened topology.
+
+    This tree encodes the semi-ordering of the polygons, that is given by the
+    inclusion relation. This means, a directed edge from node A to node B exists
+    if and only if the polygon represented by node A includes the polygon of node B.
+    Note: The polygon of the exterior of the polygon (spoken in terms of shapely) is
+    taken into account for the inclusion.
+    """
+
+    def __init__(self, root: Node) -> None:
+        root.is_root = True
+        self.__root = root
+
+    @property
+    def root(self) -> Node:
+        return self.__root
+
+    def add(self, polygon: Polygon, level: int) -> None:
+        """
+        Recursively add a node to the tree.
+
+        This function adds a node to the tree by finding its correct position in relation to the parent node.
+        The node is added as a child of the parent node if the parent node includes the node.
+        If the node includes a child of the parent node, the child is removed from the parent node's children
+        and added to the node's children. The depth of the node and any affected children is updated accordingly.
+
+        Args:
+            parent: The parent node.
+            node: The node to be added.
+
+        Returns:
+            None
+        """
+
+        def add_node_rec(parent: Node, node: Node) -> None:
+            for child in parent["children"]:
+                if child.includes(node):
+                    node.depth = child.depth + 1
+                    add_node_rec(child, node)
+                    return
+
+                elif node.includes(child):
+                    node.depth = child.depth
+                    child.depth = node.depth + 1
+                    node["children"].append(child)
+                    parent["children"].remove(child)
+                    add_node_rec(parent, node)
+                    return
+                else:
+                    continue
+            node.depth = parent.depth + 1
+            parent["children"].append(node)
+
+        node = Node(level=level, polygon=polygon)
+        add_node_rec(self.__root, node)
+
+    def show(self) -> None:
+        """Print the tree recursively."""
+
+        def show_rec(node: Node, depth: int) -> None:
+            if not node.is_root:
+                print("    " * (depth - 1), node)
+            for child in node["children"]:
+                show_rec(child, depth + 1)
+
+        show_rec(self.__root, 0)
+
+
+class Node(UserDict):
+    """Node of the inclusion tree, representing a polygon.
+
+    Nodes are semi-ordered by the inclusion relation.
+    """
+
+    def __init__(self, level: int, polygon: Polygon, children=None):
+        super().__init__()
+        self.data = {
+            "level": level,
+            "polygon": polygon,
+            "children": children if children is not None else [],
+        }
+        self.is_root = False
+        self.depth = 0
+
+    def includes(self, node: Node) -> bool:
+        """Check if this node includes the incoming node."""
+        return Polygon(self["polygon"].exterior).contains(node["polygon"])
+
+    def __repr__(self) -> str:
+        return f"Node(level={self['level']}, depth={self.depth}), n_children={len(self['children'])}"
