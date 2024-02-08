@@ -5,7 +5,7 @@ Main module, use Topology to generate complex geometries.
 from __future__ import annotations
 
 from collections import UserDict
-from typing import Callable, Optional, Sequence
+from typing import Callable, Mapping, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
@@ -391,6 +391,9 @@ class Node(UserDict):
         return f"Node(level={self['level']}, depth={self.depth}), n_children={len(self['children'])}"
 
 
+Color = Union[str, tuple[int, int, int], tuple[int, int, int, int]]
+
+
 class DefaultColors:
     """Default colors for plotting."""
 
@@ -404,7 +407,7 @@ class DefaultColors:
     @staticmethod
     def get_color_map(
         levels: Sequence[int], holes: set[int], color_holes=False
-    ) -> dict[int, str]:
+    ) -> Mapping[int, Color]:
         """Get a color map for the levels."""
         lvl2cl = dict()
         level_set = set(levels)
@@ -417,11 +420,11 @@ class DefaultColors:
                 if lvl in holes and not color_holes:
                     lvl2cl[lvl] = DefaultColors.hole
                 else:
-                    lvl2cl[lvl] = plt.cm.cool(norm(lvl)) # type: ignore
+                    lvl2cl[lvl] = plt.cm.cool(norm(lvl))  # type: ignore
         return lvl2cl
 
 
-def make_legend(holes: Sequence[int], colormap):
+def make_legend(holes: Sequence[int], colormap: Mapping[int, Color]):
     """Make a legend."""
     handles = []
     descriptions = []
