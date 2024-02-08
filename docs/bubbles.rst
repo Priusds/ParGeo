@@ -28,14 +28,6 @@ bubbles.gmsh\_utils module
    :undoc-members:
    :show-inheritance:
 
-bubbles.plot\_utils module
---------------------------
-
-.. automodule:: bubbles.plot_utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 bubbles.topology module
 -----------------------
 

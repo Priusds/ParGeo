@@ -36,6 +36,6 @@ tests:
 
 # Build documentation
 docs:
-	cd docs && make html
+	sphinx-apidoc -o docs bubbles && cd docs && make html
 
 .PHONY: format lint tests docs

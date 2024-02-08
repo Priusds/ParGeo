@@ -1,12 +1,12 @@
 .. Bubbles documentation master file, created by
-   sphinx-quickstart on Sat Jan 27 09:36:47 2024.
+   sphinx-quickstart on Thu Feb  8 15:48:23 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 Welcome to Bubbles's documentation!
 ===================================
 
-Generate complex two-dimensional geometries, e.g. for the simulation of
+With Bubbles you can generate complex two-dimensional geometries, e.g. for the simulation of
 composite materials.
 
 Basic Usage
@@ -32,10 +32,17 @@ To install in development mode, clone the repository and:
 
    pip install -e .
 
+Contribute
+----------
+
+Cite
+----
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+   modules
 
 
 
@@ -44,4 +51,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`

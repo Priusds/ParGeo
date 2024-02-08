@@ -417,7 +417,7 @@ class DefaultColors:
                 if lvl in holes and not color_holes:
                     lvl2cl[lvl] = DefaultColors.hole
                 else:
-                    lvl2cl[lvl] = plt.cm.cool(norm(lvl))
+                    lvl2cl[lvl] = plt.cm.cool(norm(lvl)) # type: ignore
         return lvl2cl
 
 
