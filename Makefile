@@ -18,7 +18,7 @@ pip_install:
 
 # Update requirements.txt
 update_requirements:
-	poetry export -f requirements.txt --output requirements.txt --with dev --without-hashes
+	poetry export -f requirements.txt --output requirements.txt --with dev --with docs --without-hashes
 
 # Run code formatter
 format:
