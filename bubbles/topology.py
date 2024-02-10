@@ -1,5 +1,19 @@
 """
-Main module, use Topology to generate complex geometries.
+This is the main module of `bubbles`.
+
+The module provides the `Topology` class, which can be used to generate complex
+two-dimensional geometries, also called domains. 
+
+The `Topology` class simplifies the process of sequentially modifing the domain
+by adding geometries, in form of shapely polygons, to some initial domain.
+
+The polygons that are added to the domain are equipped with a level, which is used 
+to introduce a hierarchy between them. The higher the level of the polygon is,
+the more visible it is, i.e. it covers the polygons with a lower level.
+
+Additionally, holes can be defined, holes are levels, and polygons whose level
+is in holes are not visible, basically they are holes in the domain.
+
 """
 
 from __future__ import annotations
