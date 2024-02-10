@@ -14,6 +14,16 @@ the more visible it is, i.e. it covers the polygons with a lower level.
 Additionally, holes can be defined, holes are levels, and polygons whose level
 is in holes are not visible, basically they are holes in the domain.
 
+Example:
+
+>>> from bubbles.topology import Topology
+>>> from shapely.geometry import Polygon
+<BLANKLINE>
+>>> domain = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+>>> topo = Topology(domain, holes={1})
+>>> poly1 = Polygon(...) # Some shapely polygon
+>>> topo.add(poly1, level=1)
+
 """
 
 from __future__ import annotations

@@ -1,6 +1,20 @@
 """Geometry module.
 
-Create geometries that can be added to the topology.
+Utility module for creating geometries. The module provides a set of classes
+for creating geometries such as rectangles, circles, ellipses, and star-like
+geometries. These geometries can be discretized using the `to_polygon` method,
+and used in the `Topolgy` class.
+
+Example:
+
+    >>> from bubbles.topology import Topology
+    >>> from bubbles.geometry import Rectangle, Circle
+    <BLANKLINE>
+    >>> domain = Rectangle(midpoint=(0, 0), width=1, height=1).to_polygon()
+    >>> topo = Topology(domain, holes={1})
+    >>> hole = Circle(midpoint=(.5, .5), radius=.1).to_polygon()
+    >>> topo.add(polygon=hole, level=1)
+
 """
 import math
 import random
