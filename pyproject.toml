@@ -13,7 +13,7 @@ maintainers = [
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/Priusds/ParGeo"
-documentation = "https://docs.readthedocs.io/en/stable/config-file/v2.html"
+documentation = "https://pargeo.readthedocs.io/en/latest/"
 keywords = ["geometry", "mesh", "gmsh", "composite", "material", "FEM", "Finite Element Method"]
 classifiers = [
     "Topic :: Scientific Computing :: FEM",
