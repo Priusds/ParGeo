@@ -7,7 +7,7 @@ from typing import NamedTuple, Sequence, TypedDict
 import gmsh
 from shapely import Polygon
 
-from bubbles.topology import Topology
+from pargeo.topology import Topology
 
 
 class PhysicalDimension(IntEnum):
@@ -349,14 +349,15 @@ def __topology_to_entities(topology: Topology) -> GmshEntities:
     """Convert a topology to gmsh entities."""
     all_entities_list = []
 
-    bubbles = topology.flatten()
+    # TODO: Rename this to something more meaningful
+    pargeo = topology.flatten()
 
     point_tag = 1
     line_tag = 1
     curve_loop_tag = 1
     plane_surface_tag = 1
 
-    for polygon, level in bubbles:
+    for polygon, level in pargeo:
         if level not in topology.holes:
             (
                 gmsh_entities,

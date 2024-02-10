@@ -1,4 +1,4 @@
-# Bubbles
+# ParGeo
 
 Generate complex two-dimensional geometries, e.g. for the simulation of composite materials.
 
@@ -8,7 +8,7 @@ Generate complex two-dimensional geometries, e.g. for the simulation of composit
 
 ## Installation and Requirements
 
-`Bubbles 0.1.0.` requires:
+`pargeo 0.1.0.` requires:
 
 - `Python >= 3.11`
 - `Gmsh >= 4.11.1` [Optional, for mesh generation in .MSH format]
@@ -16,7 +16,7 @@ Generate complex two-dimensional geometries, e.g. for the simulation of composit
 Install from PyPI:
 
 ```bash
-pip install bubbles
+pip install pargeo
 ``` 
 
 To install in development mode, clone the repository and:

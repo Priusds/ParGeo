@@ -7,11 +7,11 @@ ifndef VIRTUAL_ENV
 $(error "This Makefile needs to be run inside a Python virtual environment.")
 endif
 
-# Install bubbles using poetry
+# Install pargeo using poetry
 install:
 	poetry install
 
-# Install bubbles using pip
+# Install pargeo using pip
 pip_install:
 	pip install -r requirements.txt
 	pip install -e .
@@ -22,13 +22,13 @@ update_requirements:
 
 # Run code formatter
 format:
-	black bubbles tests examples
-	isort bubbles tests examples
+	black pargeo tests examples
+	isort pargeo tests examples
 
 #Run linter and type checker
 lint:
-	ruff bubbles tests/test_topology.py
-	mypy bubbles tests/test_topology.py
+	ruff pargeo tests/test_topology.py
+	mypy pargeo tests/test_topology.py
 
 # Run tests
 tests:
@@ -36,6 +36,6 @@ tests:
 
 # Build documentation
 docs:
-	sphinx-apidoc -o docs bubbles && cd docs && make html
+	sphinx-apidoc -o docs pargeo && cd docs && make html
 
 .PHONY: format lint tests docs

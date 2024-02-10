@@ -1,6 +1,6 @@
 """Unit tests for the topology module."""
-from bubbles.geometry import Circle, Rectangle
-from bubbles.topology import Topology
+from pargeo.geometry import Circle, Rectangle
+from pargeo.topology import Topology
 
 
 def test_simple():

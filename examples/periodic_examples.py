@@ -1,10 +1,10 @@
 import math
 import random
 
-from bubbles.geometry import Circle, Rectangle, Stellar
-from bubbles.gmsh_utils import write_geo
-from bubbles.topology import Topology
-from bubbles.transform import Periodic
+from pargeo.geometry import Circle, Rectangle, Stellar
+from pargeo.gmsh_utils import write_geo
+from pargeo.topology import Topology
+from pargeo.transform import Periodic
 
 
 def generate_topo():

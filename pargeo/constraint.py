@@ -1,4 +1,4 @@
-"""Constraint module for bubbles."""
+"""Constraint module for pargeo."""
 from abc import ABC, abstractmethod
 from itertools import product
 from typing import Any, Dict

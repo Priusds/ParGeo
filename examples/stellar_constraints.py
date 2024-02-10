@@ -2,10 +2,10 @@ import random
 
 import shapely
 
-from bubbles.constraint import DistanceConstraint
-from bubbles.geometry import Circle, Rectangle, Stellar
-from bubbles.gmsh_utils import write_geo
-from bubbles.topology import Topology
+from pargeo.constraint import DistanceConstraint
+from pargeo.geometry import Circle, Rectangle, Stellar
+from pargeo.gmsh_utils import write_geo
+from pargeo.topology import Topology
 
 
 def debug_constraint():

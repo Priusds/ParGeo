@@ -1,9 +1,9 @@
 """Simulate hererogeneus compound by randomly sampling stellars."""
 import random
 
-from bubbles.geometry import Rectangle, Stellar
-from bubbles.gmsh_utils import mesh, write_geo
-from bubbles.topology import Topology
+from pargeo.geometry import Rectangle, Stellar
+from pargeo.gmsh_utils import mesh, write_geo
+from pargeo.topology import Topology
 
 # Define the domain and create a topology
 domain = Rectangle(midpoint=(0, 0), width=1, height=1).to_polygon()

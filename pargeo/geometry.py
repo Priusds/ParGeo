@@ -7,8 +7,8 @@ and used in the `Topolgy` class.
 
 Example:
 
-    >>> from bubbles.topology import Topology
-    >>> from bubbles.geometry import Rectangle, Circle
+    >>> from pargeo.topology import Topology
+    >>> from pargeo.geometry import Rectangle, Circle
     <BLANKLINE>
     >>> domain = Rectangle(midpoint=(0, 0), width=1, height=1).to_polygon()
     >>> topo = Topology(domain, holes={1})

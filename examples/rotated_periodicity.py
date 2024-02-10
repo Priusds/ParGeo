@@ -3,10 +3,10 @@ import random
 
 import shapely
 
-from bubbles.constraint import DistanceConstraint
-from bubbles.geometry import Circle, Ellipse, Rectangle, Stellar
-from bubbles.gmsh_utils import write_geo
-from bubbles.topology import Topology
+from pargeo.constraint import DistanceConstraint
+from pargeo.geometry import Circle, Ellipse, Rectangle, Stellar
+from pargeo.gmsh_utils import write_geo
+from pargeo.topology import Topology
 
 
 def test():
@@ -129,11 +129,11 @@ from typing import Any
 
 import shapely
 
-from bubbles.constraint import DistanceConstraint
-from bubbles.geometry import Circle, Ellipse, Rectangle, Stellar
-from bubbles.gmsh_utils import write_geo
-from bubbles.topology import Topology
-from bubbles.transform import Transform
+from pargeo.constraint import DistanceConstraint
+from pargeo.geometry import Circle, Ellipse, Rectangle, Stellar
+from pargeo.gmsh_utils import write_geo
+from pargeo.topology import Topology
+from pargeo.transform import Transform
 
 
 def test():

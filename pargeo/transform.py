@@ -1,4 +1,4 @@
-"""Transform for the bubbles package."""
+"""Transform for the pargeo package."""
 import math
 from abc import ABC, abstractmethod
 from typing import Callable

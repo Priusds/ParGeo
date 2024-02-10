@@ -1,8 +1,8 @@
 import math
 
-from bubbles.geometry import Circle, Ellipse, Rectangle, Stellar
-from bubbles.gmsh_utils import mesh, write_geo
-from bubbles.topology import Topology
+from pargeo.geometry import Circle, Ellipse, Rectangle, Stellar
+from pargeo.gmsh_utils import mesh, write_geo
+from pargeo.topology import Topology
 
 
 def generate_topo():

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "bubbles"
+name = "pargeo"
 version = "0.1.0"
 description = "Generate complex two-dimensional geometries, e.g. for the simulation of composite materials."
 authors = [
@@ -12,7 +12,7 @@ maintainers = [
 ]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/Priusds/Bubbles"
+repository = "https://github.com/Priusds/ParGeo"
 documentation = "https://docs.readthedocs.io/en/stable/config-file/v2.html"
 keywords = ["geometry", "mesh", "gmsh", "composite", "material", "FEM", "Finite Element Method"]
 classifiers = [

@@ -1,6 +1,6 @@
-from bubbles.geometry import Circle
-from bubbles.gmsh_utils import write_geo
-from bubbles.topology import Topology
+from pargeo.geometry import Circle
+from pargeo.gmsh_utils import write_geo
+from pargeo.topology import Topology
 
 
 def generate_topo():

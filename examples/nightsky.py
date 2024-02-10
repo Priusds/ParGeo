@@ -1,11 +1,11 @@
 import math
 import random
 
-from bubbles.constraint import DistanceConstraint
-from bubbles.geometry import Circle, NStar, RainDrop, Rectangle, Stellar
-from bubbles.gmsh_utils import write_geo
-from bubbles.topology import Topology
-from bubbles.transform import Periodic
+from pargeo.constraint import DistanceConstraint
+from pargeo.geometry import Circle, NStar, RainDrop, Rectangle, Stellar
+from pargeo.gmsh_utils import write_geo
+from pargeo.topology import Topology
+from pargeo.transform import Periodic
 
 
 def generate_topo():

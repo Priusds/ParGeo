@@ -1,5 +1,5 @@
 """
-This is the main module of `bubbles`.
+This is the main module of `pargeo`.
 
 The module provides the `Topology` class, which can be used to generate complex
 two-dimensional geometries, also called domains. 
@@ -16,7 +16,7 @@ is in holes are not visible, basically they are holes in the domain.
 
 Example:
 
->>> from bubbles.topology import Topology
+>>> from pargeo.topology import Topology
 >>> from shapely.geometry import Polygon
 <BLANKLINE>
 >>> domain = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
