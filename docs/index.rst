@@ -1,12 +1,12 @@
-.. Bubbles documentation master file, created by
-   sphinx-quickstart on Thu Feb  8 15:48:23 2024.
+.. ParGeo documentation master file, created by
+   sphinx-quickstart on Sat Feb 10 23:28:58 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Bubbles's documentation!
-===================================
+ParGeo
+======
 
-With Bubbles you can generate complex two-dimensional geometries, e.g. for the simulation of
+Generate complex two-dimensional geometries, e.g. for the simulation of
 composite materials.
 
 Basic Usage
@@ -15,7 +15,7 @@ Basic Usage
 Installation and Requirements
 -----------------------------
 
-``Bubbles 0.1.0.`` requires:
+``pargeo 0.1.0.`` requires:
 
 -  ``Python >= 3.11``
 -  ``Gmsh >= 4.11.1`` [Optional, for mesh generation in .MSH format]
@@ -24,7 +24,7 @@ Install from PyPI:
 
 .. code:: bash
 
-   pip install bubbles
+   pip install pargeo
 
 To install in development mode, clone the repository and:
 
@@ -51,3 +51,4 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
+* :ref:`search`

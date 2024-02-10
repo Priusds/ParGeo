@@ -1,7 +1,7 @@
-bubbles
-=======
+pargeo
+======
 
 .. toctree::
    :maxdepth: 4
 
-   bubbles
+   pargeo
