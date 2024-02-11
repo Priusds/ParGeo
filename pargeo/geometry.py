@@ -18,6 +18,7 @@ Example:
 """
 import math
 import random
+import numpy as np
 from abc import ABC, abstractmethod
 from typing import Callable
 
