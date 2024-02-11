@@ -21,6 +21,11 @@ jobs:
       run: poetry install
     - name: Build package
       run: poetry build
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-package-distributions
+        path: dist/
 
   publish-to-pypi:
     name: >-
