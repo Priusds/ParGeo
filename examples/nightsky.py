@@ -2,10 +2,9 @@ import math
 import random
 
 from pargeo.constraint import DistanceConstraint
-from pargeo.geometry import Circle, NStar, RainDrop, Rectangle, Stellar
+from pargeo.geometry import NStar, RainDrop, Rectangle
 from pargeo.gmsh_utils import write_geo
 from pargeo.topology import Topology
-from pargeo.transform import Periodic
 
 
 def generate_topo():

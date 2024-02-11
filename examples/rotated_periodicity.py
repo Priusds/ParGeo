@@ -1,18 +1,15 @@
 import math
-import random
 
 import shapely
 
-from pargeo.constraint import DistanceConstraint
-from pargeo.geometry import Circle, Ellipse, Rectangle, Stellar
-from pargeo.gmsh_utils import write_geo
+from pargeo.geometry import Ellipse, Stellar
 from pargeo.topology import Topology
 
 
 def test():
     __alpha = math.pi / 6
     domain = Ellipse(midpoint=(0.0, 0.0), axis=(0.5, 1), angle=0.3).discretize(refs=50)
-    topology = Topology(domain)
+
 
     # polygon =  Stellar(midpoint=(0,0), radius=0.025).discretize(refs=50)
     polygon = Ellipse(midpoint=(0, 0), axis=(0.01, 0.04), angle=0).discretize(refs=50)
@@ -124,16 +121,11 @@ if __name__ == "__main__":
     # )
 
 import math
-import random
-from typing import Any
 
 import shapely
 
-from pargeo.constraint import DistanceConstraint
-from pargeo.geometry import Circle, Ellipse, Rectangle, Stellar
-from pargeo.gmsh_utils import write_geo
+from pargeo.geometry import Ellipse, Stellar
 from pargeo.topology import Topology
-from pargeo.transform import Transform
 
 
 def test():
