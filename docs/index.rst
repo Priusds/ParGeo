@@ -6,8 +6,7 @@
 ParGeo
 ======
 
-Generate complex two-dimensional geometries, e.g. for the simulation of
-composite materials.
+Generate complex two-dimensional geometries for Finite Element Simulations.
 
 Basic Usage
 -----------

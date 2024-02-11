@@ -1,14 +1,14 @@
 [tool.poetry]
 name = "pargeo"
 version = "0.1.0"
-description = "Generate complex two-dimensional geometries, e.g. for the simulation of composite materials."
+description = "Generate complex two-dimensional geometries for Finite Element Simulations."
 authors = [
     "Till Schäfer <tillschaefer96@hotmail.it>", 
-    "Robert <robby@bobby.xxl>"
+    "Robert Gruhlke <r.gruhlke@fu-berlin.de>"
 ]
 maintainers = [
     "Till Schäfer <tillschaefer96@hotmail.it>", 
-    "Robert <robby@bobby.xxl>"
+    "Robert Gruhlke <r.gruhlke@fu-berlin.de>"
 ]
 license = "MIT"
 readme = "README.md"
