@@ -1,5 +1,4 @@
 import math
-import random
 
 from pargeo.geometry import Circle, Rectangle, Stellar
 from pargeo.gmsh_utils import write_geo

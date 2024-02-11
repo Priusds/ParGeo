@@ -1,7 +1,7 @@
 import math
 
 from pargeo.geometry import Circle, Ellipse, Rectangle, Stellar
-from pargeo.gmsh_utils import mesh, write_geo
+from pargeo.gmsh_utils import write_geo
 from pargeo.topology import Topology
 
 

@@ -1,7 +1,7 @@
 import random
 
 from pargeo.constraint import DistanceConstraint
-from pargeo.geometry import Circle, Rectangle, Stellar
+from pargeo.geometry import Rectangle, Stellar
 from pargeo.gmsh_utils import write_geo
 from pargeo.topology import Topology
 from pargeo.transform import Periodic
