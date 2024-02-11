@@ -4,11 +4,11 @@ version = "0.1.0"
 description = "Generate complex two-dimensional geometries, e.g. for the simulation of composite materials."
 authors = [
     "Till Schäfer <tillschaefer96@hotmail.it>", 
-    "Robert <robby@bobby.xxl>"
+    "Robert <r.gruhlke@fu-berlin.de>"
 ]
 maintainers = [
     "Till Schäfer <tillschaefer96@hotmail.it>", 
-    "Robert <robby@bobby.xxl>"
+    "Robert <r.gruhlke@fu-berlin.de>"
 ]
 license = "MIT"
 readme = "README.md"
