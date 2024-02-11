@@ -36,7 +36,7 @@ class Geometry(ABC):
 class Rectangle(Geometry):
     """Rectangular geometry."""
 
-    def __init__(self, midpoint: tuple[float, float], width: float, height: None):
+    def __init__(self, midpoint: tuple[float, float], width: float, height: float):
         """Creates a rectangle.
 
         Args:
