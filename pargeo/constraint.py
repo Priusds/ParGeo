@@ -1,4 +1,18 @@
-"""Constraint module for pargeo."""
+"""
+This module defines constraints for geometric objects in the pargeo library.
+
+It includes an abstract base class `Constraint` that defines the interface for all constraints,
+and two concrete constraint classes `ConvexityConstraint` and `DistanceConstraint`.
+
+`DistanceConstraint` allows setting distance constraints between different geometric objects.
+These objects can be topology multipolygons, addressed by their level or shapely Geometry objects. 
+The distances can be set between any two objects, or to the boundary of an object. 
+The constraints are stored in three dictionaries, one for distances between topology multipolygons, one for distances to
+the boundaries of topology multipolygons, and one for distances to shapely Geometry objects.
+
+`ConvexityConstraint` is currently without implementation.
+
+"""
 from abc import ABC, abstractmethod
 from itertools import product
 from typing import Any, Dict
@@ -17,12 +31,6 @@ class Constraint(ABC):
     ) -> bool:
         """Check if constraint is violated by the polygon."""
         raise NotImplementedError
-
-
-class ConvexityConstraint(Constraint):
-    """Convexity constraint."""
-
-    pass
 
 
 class DistanceConstraint(Constraint):
@@ -171,11 +179,14 @@ class DistanceConstraint(Constraint):
         ]
         for lvl, dist in lvls_dists:
             # Check collision level with lvl.
-            if lvl in topology.lvl2multipoly and not check_distance_req(
-                polygon,
-                topology.lvl2multipoly[lvl],
-                dist,
-                grid_size=topology.grid_size,
+            if (
+                lvl in topology.lvl2multipoly
+                and not DistanceConstraint.check_distance(
+                    polygon,
+                    topology.lvl2multipoly[lvl],
+                    dist,
+                    grid_size=topology.grid_size,
+                )
             ):
                 return False
 
@@ -189,11 +200,14 @@ class DistanceConstraint(Constraint):
             if lvl1 == level
         ]
         for lvl, dist in lvls_dists:
-            if lvl in topology.lvl2multipoly and not check_distance_req(
-                polygon,
-                topology.lvl2multipoly[lvl].boundary,
-                dist,
-                grid_size=topology.grid_size,
+            if (
+                lvl in topology.lvl2multipoly
+                and not DistanceConstraint.check_distance(
+                    polygon,
+                    topology.lvl2multipoly[lvl].boundary,
+                    dist,
+                    grid_size=topology.grid_size,
+                )
             ):
                 return False
 
@@ -203,7 +217,7 @@ class DistanceConstraint(Constraint):
             (geom, dist) for (lvl1, geom), dist in dist_geoms.items() if lvl1 == level
         ]
         for geom, dist in geoms_dists:
-            if not check_distance_req(
+            if not DistanceConstraint.check_distance(
                 polygon,
                 geom,
                 dist,
@@ -258,16 +272,22 @@ class DistanceConstraint(Constraint):
 
         return reduced_distance_dict
 
+    @staticmethod
+    def check_distance(
+        poly: Polygon | MultiPolygon,
+        geometry: Geometry,
+        distance: float,
+        grid_size: float = 1e-15,
+    ) -> bool:
+        """Check distance requirements between poly and geometry.
 
-def check_distance_req(
-    poly: Polygon | MultiPolygon,
-    geometry: Geometry,
-    distance: float,
-    grid_size: float = 1e-15,
-) -> bool:
-    """Check distance requirements between poly and geometry.
+        Returns:
+            `False` if `poly` and `geometry` are too close.
+        """
+        return poly.distance(geometry) > distance + grid_size
 
-    Returns:
-        `False` if `poly` and `geometry` are too close.
-    """
-    return poly.distance(geometry) > distance + grid_size
+
+class ConvexityConstraint(Constraint):
+    """Convexity constraint."""
+
+    pass

@@ -6,36 +6,32 @@
 ParGeo
 ======
 
-Generate complex two-dimensional geometries for simulations based on mesh discretizations.
+Generate complex two-dimensional geometries for simulations based on
+mesh discretizations.
 
-Basic Usage
------------
+Installation
+------------
 
-Installation and Requirements
------------------------------
+ParGeo requires:
 
-``pargeo 0.1.0.`` requires:
+-  Python (version 3.11 or higher)
+-  Gmsh (version 4.11.1 or higher)
 
--  ``Python >= 3.11``
--  ``Gmsh >= 4.11.1`` [Optional, for mesh generation in .MSH format]
-
-Install from PyPI:
+You can install ParGeo from PyPI using pip:
 
 .. code:: bash
 
    pip install pargeo
 
-To install in development mode, clone the repository and:
-
-.. code:: bash
-
-   pip install -e .
+Usage
+-----
 
 Contribute
 ----------
 
 Cite
 ----
+
 
 .. toctree::
    :maxdepth: 2
