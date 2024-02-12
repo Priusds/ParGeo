@@ -12,6 +12,14 @@ pargeo.constraint module
    :undoc-members:
    :show-inheritance:
 
+pargeo.domain module
+--------------------
+
+.. automodule:: pargeo.domain
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pargeo.geometry module
 ----------------------
 
@@ -24,14 +32,6 @@ pargeo.gmsh\_utils module
 -------------------------
 
 .. automodule:: pargeo.gmsh_utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-pargeo.topology module
-----------------------
-
-.. automodule:: pargeo.topology
    :members:
    :undoc-members:
    :show-inheritance:

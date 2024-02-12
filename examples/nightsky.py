@@ -2,14 +2,14 @@ import math
 import random
 
 from pargeo.constraint import DistanceConstraint
+from pargeo.domain import Domain
 from pargeo.geometry import NStar, RainDrop, Rectangle
 from pargeo.gmsh_utils import write_geo
-from pargeo.topology import Topology
 
 
-def generate_topo():
+def generate_domain():
     domain = Rectangle(midpoint=(0.0, 0.0), width=2, height=1).to_polygon()
-    topo = Topology(domain)
+    domain = Domain(domain)
 
     random.random()
 
@@ -30,7 +30,7 @@ def generate_topo():
 
     for M, r_in, r_out, N, alph in zip(midpoints, radii_in, radii_out, Ns, alphas):
         star = NStar(M, r_in, r_out, N, alph).to_polygon()
-        topo.add(star, level=1, constraint=constraint)
+        domain.add(star, level=1, constraint=constraint)
 
     n_rain = 200
     midpoints = [
@@ -40,17 +40,17 @@ def generate_topo():
     S = [0.001 * random.random() + 0.005 for _ in range(n_rain)]
     for M, a, scale in zip(midpoints, A, S):
         raindrop = RainDrop(M, a, scale).discretize(128)
-        topo.add(raindrop, level=2, constraint=constraint)
+        domain.add(raindrop, level=2, constraint=constraint)
 
-    return topo
+    return domain
 
 
 if __name__ == "__main__":
-    topo = generate_topo()
-    topo.plot()
+    domain = generate_domain()
+    domain.plot("Night Sky")
 
     write_geo(
-        topology=topo,
+        domain=domain,
         file_name="stellar_samples_periodic_constrains",
         correct_curve_loops=True,
     )

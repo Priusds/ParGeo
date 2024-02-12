@@ -2,7 +2,8 @@
 
 [**Overview**](#overview)
 | [**Installation**](#installation)
-| [**Getting Started**](#getting-started)
+| [**Basic Usage**](#basic-usage)
+| [**Cite**](#cite)
 | [**Documentation**](https://pargeo.readthedocs.io/en/latest/)
 
 Generate complex two-dimensional geometries for simulations based on mesh discretizations.
@@ -64,4 +65,15 @@ Here's a quick example of how to use ParGeo.
 
 ## Cite
 
-If you use ParGeo in your research, please cite it.
+If you use ParGeo in your research, please cite it. You can use the following BibTeX entry:
+
+```bibtex
+@software{Schafer_ParGeo_2024,
+author = {Schäfer, Till and Gruhlke, Robert},
+month = feb,
+title = {{ParGeo}},
+url = {https://github.com/Priusds/ParGeo},
+version = {0.1.0},
+year = {2024}
+}
+```

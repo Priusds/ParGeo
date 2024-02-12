@@ -1,25 +1,25 @@
+from pargeo.domain import Domain
 from pargeo.geometry import Rectangle
 from pargeo.gmsh_utils import write_geo
-from pargeo.topology import Topology
 
 
-def generate_topo():
-    """Generate a topology with a chess board pattern."""
+def generate_domain():
+    """Generate a domain with a chess board pattern."""
     N = 3
     R = Rectangle(midpoint=((N - 1) / 2, (N - 1) / 2), width=N, height=N).to_polygon()
 
-    topo = Topology(R, holes={1})
+    domain = Domain(R, holes={1})
     for i in range(N):
         for j in range(N):
             R = Rectangle(midpoint=(i, j), width=1.0, height=1.0).to_polygon()
-            topo.add(polygon=R, level=(i + j) % 2 + 1)
+            domain.add(subdomain=R, level=(i + j) % 2 + 1)
 
-    return topo
+    return domain
 
 
 if __name__ == "__main__":
-    topo = generate_topo()
+    domain = generate_domain()
 
-    topo.plot()
+    domain.plot("Chess Board")
 
-    write_geo(topology=topo, file_name="chess_board", correct_curve_loops=True)
+    write_geo(domain=domain, file_name="chess_board", correct_curve_loops=True)

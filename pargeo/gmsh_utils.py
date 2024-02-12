@@ -7,7 +7,7 @@ from typing import NamedTuple, Sequence, TypedDict
 import gmsh
 from shapely import Polygon
 
-from pargeo.topology import Topology
+from pargeo.domain import Domain
 
 
 class PhysicalDimension(IntEnum):
@@ -345,12 +345,12 @@ def __bubble_to_entities(
     )
 
 
-def __topology_to_entities(topology: Topology) -> GmshEntities:
-    """Convert a topology to gmsh entities."""
+def __domain_to_entities(domain: Domain) -> GmshEntities:
+    """Convert a domain to gmsh entities."""
     all_entities_list = []
 
     # TODO: Rename this to something more meaningful
-    pargeo = topology.flatten()
+    pargeo = domain.as_list()
 
     point_tag = 1
     line_tag = 1
@@ -358,7 +358,7 @@ def __topology_to_entities(topology: Topology) -> GmshEntities:
     plane_surface_tag = 1
 
     for polygon, level in pargeo:
-        if level not in topology.holes:
+        if level not in domain.holes:
             (
                 gmsh_entities,
                 point_tag,
@@ -396,25 +396,25 @@ def __topology_to_entities(topology: Topology) -> GmshEntities:
 
 
 def write_geo(
-    topology: Topology,
+    domain: Domain,
     file_name: Path | str,
     correct_curve_loops: bool = False,
 ) -> None:
-    """Convert a topology to GmshEntities."""
-    gmsh_entities = __topology_to_entities(topology)
+    """Convert a domain to GmshEntities."""
+    gmsh_entities = __domain_to_entities(domain)
     __write_geo(file_name, gmsh_entities, correct_curve_loops)
 
 
 def mesh(
-    topology: Topology,
+    domain: Domain,
     file_name: Path | str,
     dim: PhysicalDimension = PhysicalDimension.two,
     write_geo: bool = True,
     correct_curve_loops: bool = False,
     save_all: bool = False,
 ) -> None:
-    """Mesh the topology using gmsh."""
-    gmsh_entities = __topology_to_entities(topology)
+    """Mesh the domain using gmsh."""
+    gmsh_entities = __domain_to_entities(domain)
     __mesh(
         gmsh_entities,
         file_name,

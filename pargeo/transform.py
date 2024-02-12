@@ -8,7 +8,7 @@ from shapely import box as shapely_box
 from shapely import union_all
 from shapely.affinity import translate as shapely_translate
 
-from .topology import Topology
+from .domain import Domain
 
 
 class Transform(ABC):
@@ -16,7 +16,7 @@ class Transform(ABC):
 
     @abstractmethod
     def __call__(
-        self, polygon: Polygon, level: int, topology: Topology
+        self, polygon: Polygon, level: int, domain: Domain
     ) -> Polygon | MultiPolygon:
         """Apply the transform to the polygon."""
         raise NotImplementedError
@@ -140,7 +140,7 @@ class Periodic(Transform):
         self.__lvl_2_alpha[level] = alpha
 
     def __call__(
-        self, polygon: Polygon, level: int, topology: Topology
+        self, polygon: Polygon, level: int, domain: Domain
     ) -> Polygon | MultiPolygon:
         """Apply the periodicity to the polygon."""
         # Check if the polygon is affected by the periodicity.
@@ -152,10 +152,10 @@ class Periodic(Transform):
         alpha = self.__lvl_2_alpha[level] if not self.any else self.any_alpha
 
         span = (
-            topology.domain.bounds[2]
-            - topology.domain.bounds[0]
-            + topology.domain.bounds[3]
-            - topology.domain.bounds[1]
+            domain.profile.bounds[2]
+            - domain.profile.bounds[0]
+            + domain.profile.bounds[3]
+            - domain.profile.bounds[1]
         )
         x_reps = math.ceil(span / x_length)
         y_reps = math.ceil(span / y_length)
@@ -182,32 +182,28 @@ class Periodic(Transform):
             periodic_polygons = union_all(
                 [
                     Repeat(v_dir, x_length, x_reps, w_dir, y_length, y_reps)(
-                        polygon, level, topology
+                        polygon, level, domain
                     )
                     for v_dir in x_dir
                     for w_dir in y_dir
                 ],
-                grid_size=topology.grid_size,
+                grid_size=domain.grid_size,
             )
         elif x_reps > 0:
             periodic_polygons = union_all(
                 [
-                    Repeat(v_dir, x_length, x_reps, clip=False)(
-                        polygon, level, topology
-                    )
+                    Repeat(v_dir, x_length, x_reps, clip=False)(polygon, level, domain)
                     for v_dir in x_dir
                 ],
-                grid_size=topology.grid_size,
+                grid_size=domain.grid_size,
             )
         elif y_reps > 0:
             periodic_polygons = union_all(
                 [
-                    Repeat(w_dir, y_length, y_reps, clip=False)(
-                        polygon, level, topology
-                    )
+                    Repeat(w_dir, y_length, y_reps, clip=False)(polygon, level, domain)
                     for w_dir in y_dir
                 ],
-                grid_size=topology.grid_size,
+                grid_size=domain.grid_size,
             )
         else:
             return polygon
@@ -257,7 +253,7 @@ class Repeat(Transform):
 
         self.clip = clip
 
-    def __call__(self, polygon: Polygon, level: int, topo: Topology):
+    def __call__(self, polygon: Polygon, level: int, domain: Domain):
         """Repeated the polygon in the defined directions.
 
         If `self.clip = True` then the repeated polygons will be clipped to the domain.
@@ -283,7 +279,7 @@ class Repeat(Transform):
                         bounds[3] + y_off,
                     )
                     # fast sufficient check if the shifted polygon is outside domain
-                    if not shapely_box(*bounds_shifted).intersects(topo.domain):
+                    if not shapely_box(*bounds_shifted).intersects(domain.profile):
                         continue
 
                 shifted_polygons.append(
@@ -296,11 +292,11 @@ class Repeat(Transform):
         # Clip to domain.
         if self.clip:
             repeated_polygon = repeated_polygon.intersection(
-                topo.domain, grid_size=topo.grid_size
+                domain.profile, grid_size=domain.grid_size
             )
             if isinstance(repeated_polygon, GeometryCollection):
                 repeated_polygon = MultiPolygon(
-                    [poly for poly in repeated_polygon if poly.area > topo.grid_size]
+                    [poly for poly in repeated_polygon if poly.area > domain.grid_size]
                 )
 
         return repeated_polygon
@@ -322,7 +318,7 @@ class Diffeomorphism(Transform):
         self.__mapping = mapping
 
     def __call__(
-        self, polygon: Polygon | MultiPolygon, level: int, topology: Topology
+        self, polygon: Polygon | MultiPolygon, level: int, domain: Domain
     ) -> Polygon | MultiPolygon:
         """Apply the diffeomorphism to the polygon."""
         if isinstance(polygon, Polygon):

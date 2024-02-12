@@ -5,31 +5,29 @@ It includes an abstract base class `Constraint` that defines the interface for a
 and two concrete constraint classes `ConvexityConstraint` and `DistanceConstraint`.
 
 `DistanceConstraint` allows setting distance constraints between different geometric objects.
-These objects can be topology multipolygons, addressed by their level or shapely Geometry objects. 
+These objects can be domain multipolygons, addressed by their level or shapely Geometry objects. 
 The distances can be set between any two objects, or to the boundary of an object. 
-The constraints are stored in three dictionaries, one for distances between topology multipolygons, one for distances to
-the boundaries of topology multipolygons, and one for distances to shapely Geometry objects.
+The constraints are stored in three dictionaries, one for distances between domain multipolygons, one for distances to
+the boundaries of domain multipolygons, and one for distances to shapely Geometry objects.
 
 `ConvexityConstraint` is currently without implementation.
 
 """
 from abc import ABC, abstractmethod
 from itertools import product
-from typing import Any, Dict
+from typing import Any, Dict, Literal
 
 from shapely import Geometry, MultiPolygon, Polygon
 
-from .topology import INITIAL_LEVEL, Topology
+from .domain import BACKGROUND_LEVEL, Domain, Level, SubDomain
 
 
 class Constraint(ABC):
     """Abstract constraint class."""
 
     @abstractmethod
-    def __call__(
-        self, polygon: Polygon | MultiPolygon, level: int, topology: Topology
-    ) -> bool:
-        """Check if constraint is violated by the polygon."""
+    def __call__(self, subdomain: SubDomain, level: Level, domain: Domain) -> bool:
+        """Check if constraint is violated by the subdomain."""
         raise NotImplementedError
 
 
@@ -44,26 +42,30 @@ class DistanceConstraint(Constraint):
         """Initialize the distance constraint.
 
         The distance constraint are stored in three dictionaries:
-        - `__topo`: Distance constraints between topology multipolygons.
-        - `__topo_bound`: Distance constraints between topology
-            multipolygons boundaries.
-        - `__geoms`: Distance constraints to shapely Geometry objects.
+        - `__polygon_constraints`: Distance constraints between the domain's subdomains.
+        - `__boundary_constraints`: Distance constraints between domains' subdomain' boundaries.
+        - `__geoms_constraints`: Distance constraints to arbitrary shapely Geometry objects.
         """
-        self.__topo: Dict[tuple[int | str, int | str], float] = dict()
-        self.__topo_bound: Dict[tuple[int, int], float] = dict()
-        self.__geoms: Dict[tuple[int, Geometry], float] = dict()
+        self.__polygon_constraints: Dict[
+            tuple[Level | Literal["any"], Level | Literal["any"]], float
+        ] = dict()
+        self.__boundary_constraints: Dict[tuple[Level, Level], float] = dict()
+        self.__geoms_constraints: Dict[tuple[Level, Geometry], float] = dict()
 
     def set_distance(
         self,
         distance: float | list[float],
-        obj_1: int | str | list[int | str] = "any",
-        obj_2: int | str | Geometry | list[int | str | Geometry] = "any",
+        obj_1: Level | Literal["any"] | list[Level | Literal["any"]],
+        obj_2: Level
+        | Literal["any"]
+        | Geometry
+        | list[Level | Literal["any"] | Geometry],
         to_boundary=False,
     ):
         """Set variusous distance constraints.
 
-        Distance constraints can be set between topology multipolygons with each
-        other and between topology multipolygons and geometry objects. A geometry object
+        Distance constraints can be set between domain multipolygons with each
+        other and between domain multipolygons and geometry objects. A geometry object
         is a shapely geometry object, e.g. shapely.Point, shapely.LineString, ect.
 
         Args:
@@ -72,12 +74,12 @@ class DistanceConstraint(Constraint):
                 either match the length of `obj_1` or `obj_2` or be single-valued.
 
             obj_1: The first object. Allowed values are:
-                - int: The level of the topology multipolygon.
+                - int: The level of the domain multipolygon.
                 - str: The string "any" to indicate any level.
-                - list[int | str]: A list of the above values.
+                - list[int | "any"]: A list of the above values.
 
             obj_2: The second object. Allowed values are:
-                - int: The level of the topology multipolygon.
+                - int: The level of the domain multipolygon.
                 - str: The string "any" to indicate any level.
                 - Geometry: A shapely Geometry object.
                 - list[int | str | Geometry]: A list of the above values.
@@ -86,19 +88,14 @@ class DistanceConstraint(Constraint):
                 This is useful if inclusions are allowed.
         """
         # Make sure level_1 and level_2 are lists.
-        if isinstance(obj_1, (int, str)):
+        if isinstance(obj_1, (Level, str)):
             obj_1 = [obj_1]
-        if isinstance(obj_2, (int, str, Geometry)):
+        if isinstance(obj_2, (Level, str, Geometry)):
             obj_2 = [obj_2]
 
         # Make sure distance is a list of distances.
         if isinstance(distance, float):
             distance = [distance]
-
-        # Clarify types.
-        obj_1: list[int | str] = obj_1  # type: ignore
-        obj_2: list[int | str | Geometry] = obj_2  # type: ignore
-        distance: list[float] = distance  # type: ignore
 
         # Verify input sizes.
         length_1 = len(obj_1)
@@ -127,19 +124,19 @@ class DistanceConstraint(Constraint):
         """Print the distance constraints."""
         print("Distance constraints:")
         print("  Polygons:")
-        for (lvl1, lvl2), dist in self.__topo.items():
+        for (lvl1, lvl2), dist in self.__polygon_constraints.items():
             print(f"    {lvl1} - {lvl2}: {dist}")
         print("  Boundaries:")
-        for (lvl1, lvl2), dist in self.__topo_bound.items():
+        for (lvl1, lvl2), dist in self.__boundary_constraints.items():
             print(f"    {lvl1} - {lvl2}: {dist}")
         print("  Geometries:")
-        for (lvl1, geom), dist in self.__geoms.items():
+        for (lvl1, geom), dist in self.__geoms_constraints.items():
             print(f"    {lvl1} - {geom}: {dist}")
 
     def _set_distance(
         self,
-        lvl1: int | str,
-        lvl2: int | str | Geometry,
+        lvl1: Level | Literal["any"],
+        lvl2: Level | Literal["any"] | Geometry,
         dist: float,
         to_boundary: bool,
     ):
@@ -150,28 +147,30 @@ class DistanceConstraint(Constraint):
         matrix would be sufficient.
         """
         if isinstance(lvl2, Geometry):
-            self.__geoms[(lvl1, lvl2)] = dist  # type: ignore
+            self.__geoms_constraints[(lvl1, lvl2)] = dist  # type: ignore
             return
         if not to_boundary:
-            self.__topo[(lvl1, lvl2)] = dist  # type: ignore
+            self.__polygon_constraints[(lvl1, lvl2)] = dist  # type: ignore
             if lvl1 != lvl2:
-                self.__topo[(lvl2, lvl1)] = dist  # type: ignore
+                self.__polygon_constraints[(lvl2, lvl1)] = dist  # type: ignore
         else:
-            self.__topo_bound[(lvl1, lvl2)] = dist  # type: ignore
+            self.__boundary_constraints[(lvl1, lvl2)] = dist  # type: ignore
             if lvl1 != lvl2:
-                self.__topo_bound[(lvl2, lvl1)] = dist  # type: ignore
+                self.__boundary_constraints[(lvl2, lvl1)] = dist  # type: ignore
 
     def __call__(
-        self, polygon: Polygon | MultiPolygon, level: int, topology: Topology
+        self, polygon: Polygon | MultiPolygon, level: Level, domain: Domain
     ) -> bool:
         """Compute the distance constraint."""
         # Get all encountered levels.
-        topo_levels = topology.levels
-        if level not in topo_levels:
-            topo_levels.append(level)
+        levels = domain.levels
+        if level not in levels:
+            levels.append(level)
 
-        # MultiPolygon collision check, ignore `INITIAL_LEVEL`.
-        dist_dict_poly = self.__reduce_distances(self.__topo, topo_levels, True)
+        # MultiPolygon collision check, ignore `BACKGROUND_LEVEL`.
+        dist_dict_poly = self.__reduce_distances(
+            self.__polygon_constraints, levels, True
+        )
         lvls_dists = [
             (lvl2, dist)
             for (lvl1, lvl2), dist in dist_dict_poly.items()
@@ -180,19 +179,19 @@ class DistanceConstraint(Constraint):
         for lvl, dist in lvls_dists:
             # Check collision level with lvl.
             if (
-                lvl in topology.lvl2multipoly
+                lvl in domain.level_to_subdomain
                 and not DistanceConstraint.check_distance(
                     polygon,
-                    topology.lvl2multipoly[lvl],
+                    domain.level_to_subdomain[lvl],
                     dist,
-                    grid_size=topology.grid_size,
+                    grid_size=domain.grid_size,
                 )
             ):
                 return False
 
         # MultiPolygon boundary collision check, do not ignore `INITIAL_LEVEL`.
         dist_dict_boundary = self.__reduce_distances(
-            self.__topo_bound, topo_levels, False
+            self.__boundary_constraints, levels, False
         )
         lvls_dists = [
             (lvl2, dist)
@@ -201,18 +200,18 @@ class DistanceConstraint(Constraint):
         ]
         for lvl, dist in lvls_dists:
             if (
-                lvl in topology.lvl2multipoly
+                lvl in domain.level_to_subdomain
                 and not DistanceConstraint.check_distance(
                     polygon,
-                    topology.lvl2multipoly[lvl].boundary,
+                    domain.level_to_subdomain[lvl].boundary,
                     dist,
-                    grid_size=topology.grid_size,
+                    grid_size=domain.grid_size,
                 )
             ):
                 return False
 
         # Geometry collision check, ignore `INITIAL_LEVEL`.
-        dist_geoms = self.__reduce_distances(self.__geoms, topo_levels, True)
+        dist_geoms = self.__reduce_distances(self.__geoms_constraints, levels, True)
         geoms_dists = [
             (geom, dist) for (lvl1, geom), dist in dist_geoms.items() if lvl1 == level
         ]
@@ -221,7 +220,7 @@ class DistanceConstraint(Constraint):
                 polygon,
                 geom,
                 dist,
-                grid_size=topology.grid_size,
+                grid_size=domain.grid_size,
             ):
                 return False
 
@@ -231,15 +230,15 @@ class DistanceConstraint(Constraint):
     @staticmethod
     def __reduce_distances(
         distance_dict: Dict[tuple[Any, Any], float],
-        final_levels: list[int],
+        final_levels: list[Level],
         ignore_initial_level: bool,
     ):
         """Resolve the `any` levels in the distance dictionary."""
-        reduced_distance_dict: Dict[tuple[int, Any], float] = dict()
+        reduced_distance_dict: Dict[tuple[Level, Any], float] = dict()
         if ignore_initial_level:
 
             def do_update(lvl_pair, d):
-                return INITIAL_LEVEL not in lvl_pair and (
+                return BACKGROUND_LEVEL not in lvl_pair and (
                     lvl_pair not in reduced_distance_dict
                     or reduced_distance_dict[lvl_pair] < d
                 )

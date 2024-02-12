@@ -1,15 +1,15 @@
 import math
 import random
 
+from pargeo.domain import Domain
 from pargeo.geometry import Circle, Rectangle, Stellar
 from pargeo.gmsh_utils import write_geo
-from pargeo.topology import Topology
 from pargeo.transform import Periodic
 
 
-def generate_topo_simple():
+def generate_simple_domain():
     domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).to_polygon()
-    topo = Topology(domain)
+    domain = Domain(domain)
 
     c = Circle(midpoint=(0, 0), radius=0.1).discretize(refs=50)
 
@@ -19,16 +19,16 @@ def generate_topo_simple():
 
     transform = Periodic("any", 0.3, 0.5)
 
-    topo.add(c, level=1, transform=transform)
+    domain.add(c, level=1, transform=transform)
 
-    topo.add(S, level=2, transform=transform)
+    domain.add(S, level=2, transform=transform)
 
-    return topo
+    return domain
 
 
-def generate_topo_variation():
+def generate_variation_domain():
     domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).to_polygon()
-    topo = Topology(domain)
+    domain = Domain(domain)
 
     c = Circle(midpoint=(0, 0), radius=0.02).discretize(refs=50)
 
@@ -38,22 +38,22 @@ def generate_topo_variation():
 
     transform = Periodic([1, 4], [0.07, 0.1], [0.2, 0.15], alpha=math.pi / 4)
 
-    topo.add(c, level=4, transform=transform)
+    domain.add(c, level=4, transform=transform)
 
-    topo.add(S, level=1, transform=transform)
+    domain.add(S, level=1, transform=transform)
 
-    return topo
+    return domain
 
 
-def generate_topo():
-    """Generate a rectangular topology with many stellar inclusions."""
+def generate_domain():
+    """Generate a rectangular domain with many stellar inclusions."""
 
     W = 1.0
     H = 1.0
 
     domain = Rectangle(midpoint=(0.5, 0.5), width=W, height=H).to_polygon()
 
-    topo = Topology(domain)
+    domain = Domain(domain)
 
     n_stellar = 100
     # random.seed(0)
@@ -66,22 +66,22 @@ def generate_topo():
 
     for mid, rad, lvl in zip(midpoints, radii, levels):
         C = Stellar(midpoint=mid, radius=rad).discretize(refs=50)
-        topo.add(
-            polygon=C,
+        domain.add(
+            subdomain=C,
             level=lvl,
             transform=transform,
         )
 
-    return topo
+    return domain
 
 
 if __name__ == "__main__":
-    topo = generate_topo_variation()  # generate_topo_simple() #generate_topo()
-    topo.set_holes({2})
-    topo.plot()
+    domain = generate_variation_domain()  # generate_simple_domain() #generate_domain()
+    domain.set_holes({2})
+    domain.plot()
 
     write_geo(
-        topology=topo,
+        domain=domain,
         file_name="stellar_samples_periodic_constrains",
         correct_curve_loops=True,
     )

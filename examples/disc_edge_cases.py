@@ -1,9 +1,9 @@
+from pargeo.domain import Domain
 from pargeo.geometry import Circle, Rectangle
 from pargeo.gmsh_utils import write_geo
-from pargeo.topology import Topology
 
 
-def generate_topo():
+def generate_domain():
     d_1 = Rectangle(midpoint=(0.0, 0), width=2, height=2).to_polygon()
 
     dh_1 = Circle(midpoint=(0.0, 0.0), radius=0.5).discretize(refs=50)
@@ -15,20 +15,20 @@ def generate_topo():
     cutout = Circle(midpoint=(0.0, 0.0), radius=0.25).discretize(refs=50)
 
     domain = d_1
-    topo = Topology(domain)
+    domain = Domain(domain)
 
     disc_1 = dh_1.difference(cutout)
 
     disc_2 = dh_2.difference(dh_3)
 
-    topo.add(polygon=disc_2, level=1)
-    topo.add(polygon=disc_1, level=2)
+    domain.add(subdomain=disc_2, level=1)
+    domain.add(subdomain=disc_1, level=2)
 
-    return topo
+    return domain
 
 
 if __name__ == "__main__":
-    topo = generate_topo()
-    topo.plot()
+    domain = generate_domain()
+    domain.plot("Disc Edge Case")
 
-    write_geo(topology=topo, file_name="edge_cases", correct_curve_loops=True)
+    write_geo(domain=domain, file_name="edge_cases", correct_curve_loops=True)
