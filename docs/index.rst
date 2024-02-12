@@ -6,7 +6,7 @@
 ParGeo
 ======
 
-Generate complex two-dimensional geometries for Finite Element Simulations.
+Generate complex two-dimensional geometries for simulations based on mesh discretizations.
 
 Basic Usage
 -----------
