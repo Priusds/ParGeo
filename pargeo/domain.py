@@ -328,7 +328,7 @@ class Domain:
         plt.show()
 
     def as_list(self) -> list[tuple[Polygon, Level]]:
-        """Return a lists of (Polygon, Level) tuples."""
+        """Return a lists of (Polygon, Level) tuples, representig all subdomains."""
         polyongs_levels = []
         for level, running_polygon in self.__level_to_subdomain.items():
             if isinstance(running_polygon, MultiPolygon):
