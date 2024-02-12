@@ -1,15 +1,15 @@
 import random
 
 from pargeo.constraint import DistanceConstraint
+from pargeo.domain import Domain
 from pargeo.geometry import Rectangle, Stellar
 from pargeo.gmsh_utils import write_geo
-from pargeo.topology import Topology
 from pargeo.transform import Periodic
 
 
-def generate_topo():
+def generate_domain():
     domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).to_polygon()
-    topo = Topology(domain)
+    domain = Domain(domain)
 
     constraint = DistanceConstraint()
     delta = 0.05
@@ -28,49 +28,49 @@ def generate_topo():
 
     for mid, rad in zip(midpoints, radii):
         C = Stellar(midpoint=mid, radius=rad).discretize(refs=50)
-        topo.add(
-            polygon=C,
+        domain.add(
+            subdomain=C,
             level=1,
             transform=transform,
             constraint=constraint,
         )
 
-    return topo
+    return domain
 
 
 def subdomain():
     domain = Rectangle(midpoint=(0.25, 0.25), width=0.5, height=0.5).to_polygon()
-    topo = Topology(domain)
+    domain = Domain(domain)
 
-    topo_whole = generate_topo()
+    domain_whole = generate_domain()
 
-    lvl2polygon = topo_whole.lvl2multipoly
+    lvl2polygon = domain_whole.level_to_subdomain
 
     level = 1
-    topo.add(lvl2polygon[level], level)
+    domain.add(lvl2polygon[level], level)
 
     import matplotlib.pyplot as plt
 
     plt.subplot(1, 2, 1)
-    topo_whole.plot()
+    domain_whole.plot()
 
     plt.plot([0.5, 0.5], [0, 1], "-k", linewidth=2)
     plt.plot([0, 1], [0.5, 0.5], "-k", linewidth=2)
 
     plt.subplot(1, 2, 2)
-    topo.plot()
+    domain.plot()
     plt.show()
 
 
 if __name__ == "__main__":
     # subdomain()
     # exit()
-    topo = generate_topo()
+    domain = generate_domain()
 
-    topo.plot()
+    domain.plot()
 
     write_geo(
-        topology=topo,
+        domain=domain,
         file_name="hanyue",
         correct_curve_loops=True,
     )
