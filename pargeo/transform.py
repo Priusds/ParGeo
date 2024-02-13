@@ -1,25 +1,13 @@
 """Transform for the pargeo package."""
 import math
-from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Any, Callable
 
 from shapely import GeometryCollection, MultiPolygon, Polygon
 from shapely import box as shapely_box
 from shapely import union_all
 from shapely.affinity import translate as shapely_translate
 
-from .domain import Domain
-
-
-class Transform(ABC):
-    """Abstract class for transforms."""
-
-    @abstractmethod
-    def __call__(
-        self, polygon: Polygon, level: int, domain: Domain
-    ) -> Polygon | MultiPolygon:
-        """Apply the transform to the polygon."""
-        raise NotImplementedError
+from .domain import Domain, SubDomain, Transform
 
 
 class Periodic(Transform):
@@ -27,7 +15,7 @@ class Periodic(Transform):
 
     def __init__(
         self,
-        levels: int | list[int] | str = "any",
+        levels: int | list[int] | str = "any", # TODO: Remove
         x_length: float | list[float] = float("inf"),
         y_length: float | list[float] = float("inf"),
         alpha: float | list[float] = 0,
@@ -140,12 +128,12 @@ class Periodic(Transform):
         self.__lvl_2_alpha[level] = alpha
 
     def __call__(
-        self, polygon: Polygon, level: int, domain: Domain
-    ) -> Polygon | MultiPolygon:
+        self, subdomain: SubDomain, level: int, domain: Domain, **kwargs: Any
+    ) -> SubDomain:
         """Apply the periodicity to the polygon."""
         # Check if the polygon is affected by the periodicity.
         if level not in self.affected_levels and not self.any:
-            return polygon
+            return subdomain
 
         x_length = self.__lvl2xlength[level] if not self.any else self.any_xlength
         y_length = self.__lvl2ylength[level] if not self.any else self.any_ylength
@@ -182,7 +170,7 @@ class Periodic(Transform):
             periodic_polygons = union_all(
                 [
                     Repeat(v_dir, x_length, x_reps, w_dir, y_length, y_reps)(
-                        polygon, level, domain
+                        subdomain, level, domain
                     )
                     for v_dir in x_dir
                     for w_dir in y_dir
@@ -192,7 +180,9 @@ class Periodic(Transform):
         elif x_reps > 0:
             periodic_polygons = union_all(
                 [
-                    Repeat(v_dir, x_length, x_reps, clip=False)(polygon, level, domain)
+                    Repeat(v_dir, x_length, x_reps)(
+                        subdomain, level, domain, clip=False
+                    )
                     for v_dir in x_dir
                 ],
                 grid_size=domain.grid_size,
@@ -200,13 +190,15 @@ class Periodic(Transform):
         elif y_reps > 0:
             periodic_polygons = union_all(
                 [
-                    Repeat(w_dir, y_length, y_reps, clip=False)(polygon, level, domain)
+                    Repeat(w_dir, y_length, y_reps)(
+                        subdomain, level, domain, clip=False
+                    )
                     for w_dir in y_dir
                 ],
                 grid_size=domain.grid_size,
             )
         else:
-            return polygon
+            return subdomain
 
         return periodic_polygons
 
@@ -222,7 +214,6 @@ class Repeat(Transform):
         w_dir: tuple[float, float] = (0, 0),
         w_scalar: float = 0,
         w_rep: int = 0,
-        clip: bool = True,
     ) -> None:
         """Initialize a Repeat object.
 
@@ -251,16 +242,26 @@ class Repeat(Transform):
         self.v_data = (v_dir, v_scalar, v_rep)
         self.w_data = (w_dir, w_scalar, w_rep) if w_dir is not None else None
 
-        self.clip = clip
+    def __call__(self, subdomain: SubDomain, level: int, domain: Domain, **kwargs: Any):
+        """Apply the repeat transform to the SubDomain.
+        
+        Args:
+        subdomain: The SubDomain to transform.
+        level: The Level of the transformation.
+        domain: The Domain of the transformation.
+        **kwargs: Additional keyword arguments for the transformation. 
+            clip (bool): If True, clips the repeated elements to the domain. Default is False.
 
-    def __call__(self, polygon: Polygon, level: int, domain: Domain):
-        """Repeated the polygon in the defined directions.
-
-        If `self.clip = True` then the repeated polygons will be clipped to the domain.
+        Returns:
+            SubDomain: The transformed SubDomain.
         """
+        if "clip" in kwargs:
+            clip = kwargs["clip"]
+        else:
+            clip = True
         shifted_polygons = []
 
-        bounds = polygon.bounds
+        bounds = subdomain.bounds
 
         for i in range(self.v_rep + 1):
             for j in range(self.w_rep + 1):
@@ -271,7 +272,7 @@ class Repeat(Transform):
 
                 # If clip is set to True skip if the shifted polygon is
                 # outside the domain.
-                if self.clip:
+                if clip:
                     bounds_shifted = (
                         bounds[0] + x_off,
                         bounds[1] + y_off,
@@ -283,14 +284,14 @@ class Repeat(Transform):
                         continue
 
                 shifted_polygons.append(
-                    shapely_translate(polygon, xoff=x_off, yoff=y_off)
+                    shapely_translate(subdomain, xoff=x_off, yoff=y_off)
                 )
 
         # Merge all shifted polygons.
         repeated_polygon = union_all(shifted_polygons)
 
         # Clip to domain.
-        if self.clip:
+        if clip:
             repeated_polygon = repeated_polygon.intersection(
                 domain.profile, grid_size=domain.grid_size
             )
@@ -318,15 +319,15 @@ class Diffeomorphism(Transform):
         self.__mapping = mapping
 
     def __call__(
-        self, polygon: Polygon | MultiPolygon, level: int, domain: Domain
-    ) -> Polygon | MultiPolygon:
+        self, subdomain: SubDomain, level: int, domain: Domain, **kwargs: Any
+    ) -> SubDomain:
         """Apply the diffeomorphism to the polygon."""
-        if isinstance(polygon, Polygon):
-            return self.__map_polygon(polygon)
-        elif isinstance(polygon, MultiPolygon):
-            return MultiPolygon([self.__map_polygon(poly) for poly in polygon])
+        if isinstance(subdomain, Polygon):
+            return self.__map_polygon(subdomain)
+        elif isinstance(subdomain, MultiPolygon):
+            return MultiPolygon([self.__map_polygon(poly) for poly in subdomain])
         else:
-            raise ValueError(f"Unknown polygon type {type(polygon)}.")
+            raise ValueError(f"Unknown polygon type {type(subdomain)}.")
 
     def __map_polygon(self, polygon: Polygon):
         """Transform the polygon boundary."""

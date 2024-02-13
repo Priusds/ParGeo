@@ -29,7 +29,7 @@ Example:
 from __future__ import annotations
 
 from collections import UserDict
-from typing import Callable, Mapping, Optional, Sequence, Union
+from typing import Any, Mapping, Protocol, Sequence, Union
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
@@ -40,6 +40,58 @@ BACKGROUND_LEVEL = 0
 
 SubDomain = Union[Polygon, MultiPolygon]
 Level = int
+
+
+class Transform(Protocol):
+    """
+    The Transform protocol represents a callable that takes a SubDomain, a Level,
+    a Domain, and any number of additional keyword arguments, and returns a SubDomain.
+
+    This is used to define the interface for transformations that can be applied to a SubDomain.
+    """
+
+    def __call__(
+        self, subdomain: SubDomain, level: Level, domain: Domain, **kwargs
+    ) -> SubDomain:
+        """
+        Apply the transformation to the given SubDomain.
+
+        Args:
+            subdomain: The SubDomain to transform.
+            level: The Level of the subdomain.
+            domain: The underlying domain.
+            **kwargs: Additional keyword arguments for the transformation.
+
+        Returns:
+            SubDomain: The transformed SubDomain.
+        """
+        ...
+
+
+class Constraint(Protocol):
+    """
+    The Constraint protocol represents a callable that takes a SubDomain, a Level,
+    a Domain, and any number of additional keyword arguments, and returns a boolean.
+
+    This is used to define the interface for constraints that can be applied to a SubDomain.
+    """
+
+    def __call__(
+        self, subdomain: SubDomain, level: Level, domain: Domain, **kwargs
+    ) -> bool:
+        """
+        Apply the constraint to the given SubDomain.
+
+        Args:
+            subdomain: The SubDomain to apply the constraint to.
+            level: The Level of the SubDomain.
+            domain: The underlying domain.
+            **kwargs: Additional keyword arguments for the constraint.
+
+        Returns:
+            bool: True if the SubDomain satisfies the constraint, False otherwise.
+        """
+        ...
 
 
 class Domain:
@@ -75,6 +127,12 @@ class Domain:
             grid_size: The `grid_size` value that is passed to shapely when
                 performing geometrical operations.
         """
+        # Make sure background is a SubDomain
+        if not isinstance(background, (Polygon, MultiPolygon)):
+            raise ValueError(
+                f"`background` must be a shapely Polygon or MultiPolygon, but is {type(background)}."
+            )
+        # Internally only work with MultiPolygons
         if isinstance(background, Polygon):
             background = MultiPolygon([background])
         self.__profile = background
@@ -119,14 +177,10 @@ class Domain:
         self,
         subdomain: SubDomain,
         level: Level,
-        transform: Optional[
-            Callable[
-                [SubDomain, Level, Domain],
-                SubDomain,
-            ]
-        ] = None,
-        constraint: Optional[Callable[[SubDomain, Level, Domain], bool]] = None,
+        transform: Transform | None = None,
+        constraint: Constraint | None = None,
         clip: bool = True,
+        **kwargs: Any,
     ) -> bool:
         """
         Add subdomain to the domain.
@@ -159,7 +213,9 @@ class Domain:
 
         # Apply transform if given
         if transform is not None:
-            subdomain = transform(subdomain, level, self)
+            transform_kwargs = self._extract_kwargs(kwargs, "transform_")
+            transform_kwargs["clip"] = clip
+            subdomain = transform(subdomain, level, self, **transform_kwargs)
 
         # Clip the transformed subdomain to the background
         if clip:
@@ -182,9 +238,10 @@ class Domain:
 
         # TODO: Apply segmentize strategy
 
-        # Check if the subdomain satisfies the given constraints
+        # Check constraints if given
         if constraint is not None:
-            if not constraint(subdomain, level, self):
+            constraint_kwargs = self._extract_kwargs(kwargs, "constraint_")
+            if not constraint(subdomain, level, self, **constraint_kwargs):
                 return False
 
         # Update `self.__level_to_subdomain`
@@ -323,7 +380,7 @@ class Domain:
                 plot_tree_rec(child)
 
         plt.title(title)
-        make_legend(self.holes, colormap)
+        plot_legend(self.holes, colormap)
         plot_tree_rec(self.as_tree().root)
         plt.show()
 
@@ -351,6 +408,12 @@ class Domain:
         for polygon, level in self.as_list():
             tree.add(polygon, level)
         return tree
+
+    def _extract_kwargs(self, kwargs: dict[str, Any], prefix: str) -> dict[str, Any]:
+        """Extract the kwargs that start with `prefix`."""
+        _kwargs_id = prefix
+        _n = len(_kwargs_id)
+        return {k[_n]: v for k, v in kwargs.items() if k.startswith(_kwargs_id)}
 
 
 class InclusionTree:
@@ -462,21 +525,18 @@ class Node(UserDict):
         show: bool = False,
     ):
         """Plot the node."""
-        x, y = self.data["polygon"].exterior.xy
-        plt.fill(x, y, color=colormap[self.data["level"]])
+        is_hole = self.data["level"] in holes
+        color = colormap[self.data["level"]]
+        polygon = self.data["polygon"]
+        boundary_color = DefaultColors.boundary
 
-        if self.data["level"] not in holes:
-            plt.plot(x, y, "-", linewidth=1, color=DefaultColors.boundary)
-        if color_hole_boundaries and self.data["level"] in holes:
-            plt.plot(x, y, "--", linewidth=0.5, color=DefaultColors.boundary)
-
-        # plot interiors in white
-        for interior in self.data["polygon"].interiors:
-            x, y = interior.xy
-            plt.fill(x, y, color="white")
-            plt.plot(x, y, "-", linewidth=1, color="black")
-        if show:
-            plt.show()
+        if not is_hole:
+            plot_polygon(polygon, color, boundary_color, "-", 1.0, show)
+        else:
+            if color_hole_boundaries:
+                plot_polygon(polygon, color, boundary_color, "--", 0.5, show)
+            else:
+                plot_polygon(polygon, color, "none", "-", 1.0, show)
 
 
 Color = Union[str, tuple[int, int, int], tuple[int, int, int, int]]
@@ -512,7 +572,7 @@ class DefaultColors:
         return lvl2cl
 
 
-def make_legend(holes: set[int], colormap: Mapping[Level, Color]):
+def plot_legend(holes: set[int], colormap: Mapping[Level, Color]):
     """Make a legend."""
     handles = []
     descriptions = []
@@ -531,3 +591,42 @@ def make_legend(holes: set[int], colormap: Mapping[Level, Color]):
         loc="upper left",
         bbox_to_anchor=(0.95, 1),
     ).set_draggable(True)
+
+
+def plot_polygon(
+    polygon: Polygon,
+    color: Color,
+    boundary_color: Color,
+    boundary_style: str,
+    linewidth: float,
+    show: bool = False,
+):
+    """Plot a polygon."""
+    x, y = polygon.exterior.xy
+    plt.fill(x, y, color=color)
+
+    # plot the exterior boundary
+    if not boundary_color == "none":
+        plt.plot(x, y, boundary_style, linewidth=linewidth, color=boundary_color)
+
+    # plot interiors in white
+    for interior in polygon.interiors:
+        x, y = interior.xy
+        plt.fill(x, y, color="white")
+        plt.plot(x, y, "-", linewidth=1, color="black")
+    if show:
+        plt.show()
+
+def plot_subdomain(subdomain: SubDomain):
+    color = "blue"
+    boundary_color = "black"
+    boundary_style = "-"
+    linewidth = 1.0
+    show = True
+    if isinstance(subdomain, MultiPolygon):
+        for polygon in subdomain.geoms:
+            plot_polygon(polygon, color, boundary_color, boundary_style, linewidth)
+    else:
+        plot_polygon(subdomain, color, boundary_color, boundary_style, linewidth)
+    if show:
+        plt.show()
