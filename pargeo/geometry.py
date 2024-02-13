@@ -19,9 +19,11 @@ Example:
 import math
 import random
 from abc import ABC, abstractmethod
-from typing import Callable
 
-from shapely.geometry import Polygon
+from pargeo.utils.geometry_utils import (discretize_ellipse,
+                                         polar_to_cartesian,
+                                         trigonometric_function)
+from pargeo.utils.typing import Polygon
 
 
 class Geometry(ABC):
@@ -251,82 +253,3 @@ class RainDrop(StarLike):
                 for x, y in zip(x_coords, y_coords)
             ]
         )
-
-
-def discretize_ellipse(
-    midpoint: tuple[float, float], axis: tuple[float, float], angle: float, refs: int
-) -> Polygon:
-    """Discretize the ellipse.
-
-    Args:
-        midpoint: Ellipse's midpoint.
-        axis: Ellipse's axis.
-        angle: Rotation angle of the ellipse in radiant.
-        refs: Number of discretization points.
-
-    Return:
-        List of boundary points in ccw order.
-    """
-    angles = [i * 2 * math.pi / refs for i in range(refs)]
-
-    transformed_coords = rotate_counterclockwise(
-        points=[polar_to_cartesian(angle, axis[0], axis[1]) for angle in angles],
-        angle=angle,
-    )
-    mx, my = midpoint
-
-    return Polygon([(x + mx, y + my) for x, y in transformed_coords])
-
-
-def trigonometric_function(
-    coefficients: list[tuple[float, float]], scale: float
-) -> Callable[[float], float]:
-    """Returns the exponential of a trigonometric function.
-
-    Args:
-        coefficients: Coefficients [(a_i, b_i)_i] of the trigonometric function.
-        scale: Scaling factor.
-
-    The trigonometric function f is defined as:
-
-        `f(x) = scale * exp(f_0(x) + ... + f_{n-1}(x))`
-
-    where the basis functions f_i are defined as:
-
-        `f_i(x) := a_i*cos(i*x) + b_i*sin(i*x)`
-    """
-    return lambda x: scale * math.exp(
-        sum(
-            a * math.cos(i * x) + b * math.sin(i * x)
-            for i, (a, b) in enumerate(coefficients)
-        )
-    )
-
-
-def rotate_counterclockwise(
-    points: list[tuple[float, float]], angle: float
-) -> list[tuple[float, float]]:
-    """Rotates points counter-clockwise around (0,0)."""
-    cos_alpha = math.cos(angle)
-    sin_alpha = math.sin(angle)
-    return [
-        (cos_alpha * x - sin_alpha * y, sin_alpha * x + cos_alpha * y)
-        for x, y in points
-    ]
-
-
-def polar_to_cartesian(
-    angle: float,
-    rad_x: float,
-    rad_y: float | None = None,
-) -> tuple[float, float]:
-    """Coordinate transform, from polar to cartesian.
-
-    Args:
-        angles: List of angles.
-        radii_x: List of radii, for the x-coordinate.
-        radii_y: List of radii, for the y-coordinate.
-    """
-    if rad_y is None:
-        rad_y = rad_x
-    return (math.cos(angle) * rad_x, math.sin(angle) * rad_y)

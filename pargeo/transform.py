@@ -2,12 +2,9 @@
 import math
 from typing import Any, Callable
 
-from shapely import GeometryCollection, MultiPolygon, Polygon
-from shapely import box as shapely_box
-from shapely import union_all
-from shapely.affinity import translate as shapely_translate
-
-from .domain import Domain, SubDomain, Transform
+from pargeo.domain import Domain, Transform
+from pargeo.utils.geometry_utils import repeat
+from pargeo.utils.typing import Level, MultiPolygon, Polygon, SubDomain, Vector
 
 
 class Periodic(Transform):
@@ -15,7 +12,7 @@ class Periodic(Transform):
 
     def __init__(
         self,
-        levels: int | list[int] | str = "any", # TODO: Remove
+        levels: int | list[int] | str = "any",
         x_length: float | list[float] = float("inf"),
         y_length: float | list[float] = float("inf"),
         alpha: float | list[float] = 0,
@@ -139,68 +136,22 @@ class Periodic(Transform):
         y_length = self.__lvl2ylength[level] if not self.any else self.any_ylength
         alpha = self.__lvl_2_alpha[level] if not self.any else self.any_alpha
 
-        span = (
+        span: float = (
             domain.profile.bounds[2]
             - domain.profile.bounds[0]
             + domain.profile.bounds[3]
             - domain.profile.bounds[1]
         )
-        x_reps = math.ceil(span / x_length)
-        y_reps = math.ceil(span / y_length)
+        n_reps_x = math.ceil(span / x_length)
+        n_reps_y = math.ceil(span / y_length)
 
-        x_dir = (
-            [
-                (math.cos(alpha), math.sin(alpha)),
-                (-math.cos(alpha), -math.sin(alpha)),
-            ]
-            if x_reps > 0
-            else []
+        return repeat(
+            subdomain,
+            ((math.cos(alpha), math.sin(alpha)), x_length, n_reps_x, True),
+            ((math.sin(alpha), -math.cos(alpha)), y_length, n_reps_y, True),
+            clipping_plane=domain.profile,
+            grid_size=domain.grid_size,
         )
-        y_dir = (
-            [
-                (math.sin(alpha), -math.cos(alpha)),
-                (-math.sin(alpha), math.cos(alpha)),
-            ]
-            if y_reps > 0
-            else []
-        )
-
-        # Pass the periodicity to the Repeat transform. As it is a special case of it.
-        if x_reps > 0 and y_reps > 0:
-            periodic_polygons = union_all(
-                [
-                    Repeat(v_dir, x_length, x_reps, w_dir, y_length, y_reps)(
-                        subdomain, level, domain
-                    )
-                    for v_dir in x_dir
-                    for w_dir in y_dir
-                ],
-                grid_size=domain.grid_size,
-            )
-        elif x_reps > 0:
-            periodic_polygons = union_all(
-                [
-                    Repeat(v_dir, x_length, x_reps)(
-                        subdomain, level, domain, clip=False
-                    )
-                    for v_dir in x_dir
-                ],
-                grid_size=domain.grid_size,
-            )
-        elif y_reps > 0:
-            periodic_polygons = union_all(
-                [
-                    Repeat(w_dir, y_length, y_reps)(
-                        subdomain, level, domain, clip=False
-                    )
-                    for w_dir in y_dir
-                ],
-                grid_size=domain.grid_size,
-            )
-        else:
-            return subdomain
-
-        return periodic_polygons
 
 
 class Repeat(Transform):
@@ -208,12 +159,9 @@ class Repeat(Transform):
 
     def __init__(
         self,
-        v_dir: tuple[float, float],
-        v_scalar: float,
-        v_rep: int,
-        w_dir: tuple[float, float] = (0, 0),
-        w_scalar: float = 0,
-        w_rep: int = 0,
+        repeat_info: tuple[Vector, float, int, bool],
+        repeat_info_2: tuple[Vector, float, int, bool] | None = None,
+        excluded_levels: list[Level] = [],
     ) -> None:
         """Initialize a Repeat object.
 
@@ -227,80 +175,38 @@ class Repeat(Transform):
             w_scalar: Repeat distance.
             w_rep: list[int]
         """
-        if any((w_dir is None, w_scalar is None, w_rep is None)):
-            if not all((w_dir is None, w_scalar is None, w_rep is None)):
-                raise ValueError("Only")
+        if repeat_info_2 is None:
+            repeat_info_2 = ((0, 0), 0, 0, False)
 
-        self.v_dir = v_dir
-        self.v_scalar = v_scalar
-        self.v_rep = v_rep
-
-        self.w_dir = w_dir if w_dir is not None else (0, 0)
-        self.w_scalar = w_scalar if w_scalar is not None else 0
-        self.w_rep = w_rep if w_rep is not None else 0
-
-        self.v_data = (v_dir, v_scalar, v_rep)
-        self.w_data = (w_dir, w_scalar, w_rep) if w_dir is not None else None
+        self.repeat_info = repeat_info
+        self.repeat_info_2 = repeat_info_2
+        self.excluded_levels = excluded_levels
 
     def __call__(self, subdomain: SubDomain, level: int, domain: Domain, **kwargs: Any):
         """Apply the repeat transform to the SubDomain.
-        
+
         Args:
         subdomain: The SubDomain to transform.
         level: The Level of the transformation.
         domain: The Domain of the transformation.
-        **kwargs: Additional keyword arguments for the transformation. 
+        **kwargs: Additional keyword arguments for the transformation.
             clip (bool): If True, clips the repeated elements to the domain. Default is False.
 
         Returns:
             SubDomain: The transformed SubDomain.
         """
-        if "clip" in kwargs:
-            clip = kwargs["clip"]
-        else:
-            clip = True
-        shifted_polygons = []
+        if level in self.excluded_levels:
+            return subdomain
+        clip = kwargs.get("clip", True)
+        clipping_plane = domain.profile if clip else None
 
-        bounds = subdomain.bounds
-
-        for i in range(self.v_rep + 1):
-            for j in range(self.w_rep + 1):
-                x_off = i * self.v_scalar * self.v_dir[0]
-                y_off = i * self.v_scalar * self.v_dir[1]
-                x_off += j * self.w_scalar * self.w_dir[0]
-                y_off += j * self.w_scalar * self.w_dir[1]
-
-                # If clip is set to True skip if the shifted polygon is
-                # outside the domain.
-                if clip:
-                    bounds_shifted = (
-                        bounds[0] + x_off,
-                        bounds[1] + y_off,
-                        bounds[2] + x_off,
-                        bounds[3] + y_off,
-                    )
-                    # fast sufficient check if the shifted polygon is outside domain
-                    if not shapely_box(*bounds_shifted).intersects(domain.profile):
-                        continue
-
-                shifted_polygons.append(
-                    shapely_translate(subdomain, xoff=x_off, yoff=y_off)
-                )
-
-        # Merge all shifted polygons.
-        repeated_polygon = union_all(shifted_polygons)
-
-        # Clip to domain.
-        if clip:
-            repeated_polygon = repeated_polygon.intersection(
-                domain.profile, grid_size=domain.grid_size
-            )
-            if isinstance(repeated_polygon, GeometryCollection):
-                repeated_polygon = MultiPolygon(
-                    [poly for poly in repeated_polygon if poly.area > domain.grid_size]
-                )
-
-        return repeated_polygon
+        return repeat(
+            subdomain,
+            self.repeat_info,
+            self.repeat_info_2,
+            clipping_plane,
+            domain.grid_size,
+        )
 
 
 class Diffeomorphism(Transform):

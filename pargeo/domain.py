@@ -29,17 +29,15 @@ Example:
 from __future__ import annotations
 
 from collections import UserDict
-from typing import Any, Mapping, Protocol, Sequence, Union
+from typing import Any, Mapping, Protocol, Sequence
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
-from shapely import GeometryCollection, MultiPolygon, Polygon
+from shapely import GeometryCollection
 
-DEFAULT_GRID_SIZE = 1e-15
-BACKGROUND_LEVEL = 0
-
-SubDomain = Union[Polygon, MultiPolygon]
-Level = int
+from pargeo.utils.constants import BACKGROUND_LEVEL, DEFAULT_GRID_SIZE
+from pargeo.utils.plot import plot_legend, plot_polygon
+from pargeo.utils.typing import Color, Level, MultiPolygon, Polygon, SubDomain
 
 
 class Transform(Protocol):
@@ -95,7 +93,7 @@ class Constraint(Protocol):
 
 
 class Domain:
-    """Main class for the creation of complex two-dimensional domains.
+    """Class for the creation of complex two-dimensional domains.
 
     A domain is a two-dimensional geometry, which can be modified by adding
     subdomains to it. The subdomains are shapely polygons, or multipolygons,
@@ -104,10 +102,13 @@ class Domain:
 
     Subdomains with a higher level will be cut out from those with a lower level.
     Visually speaking the higher level subdomains are more visible and cover the
-    lower level subdomains. The lowest level is the `BACKGROUND_LEVEL`.
+    lower level subdomains. The lowest level is the `Domain.background_level`.
 
     Subdomains with the same level are merged together.
     """
+
+    # Level of the background.
+    background_level = BACKGROUND_LEVEL
 
     def __init__(
         self,
@@ -119,7 +120,7 @@ class Domain:
 
         Args:
             background: This subdomain is the background of the domain
-                and is associated with the level `BACKGROUND_LEVEL`.
+                and is associated with the level `Domain.background_level`.
 
             holes: Set of levels that are considered as holes.
                 This can be changed at any time through `set_holes`.
@@ -138,7 +139,7 @@ class Domain:
         self.__profile = background
         self.__holes = holes  # Can be changed at any time.
         self.__grid_size = grid_size
-        self.__level_to_subdomain = {BACKGROUND_LEVEL: background}
+        self.__level_to_subdomain = {Domain.background_level: background}
 
     @property
     def level_to_subdomain(self) -> dict[Level, SubDomain]:
@@ -205,11 +206,13 @@ class Domain:
 
             clip: If `True` clip the subdomain to the background.
 
-        Note: If `level == BACKGROUND_LEVEL` and `clip == True` then the
+        Note: If `level == Domain.background_level` and `clip == True` then the
             background might be modified.
         """
-        if level < BACKGROUND_LEVEL:
-            raise ValueError(f"`level` must be greater-equal to {BACKGROUND_LEVEL}.")
+        if level < Domain.background_level:
+            raise ValueError(
+                f"`level` must be greater-equal to {Domain.background_level}."
+            )
 
         # Apply transform if given
         if transform is not None:
@@ -380,7 +383,7 @@ class Domain:
                 plot_tree_rec(child)
 
         plt.title(title)
-        plot_legend(self.holes, colormap)
+        plot_legend(self.holes, colormap, Domain.background_level)
         plot_tree_rec(self.as_tree().root)
         plt.show()
 
@@ -402,7 +405,9 @@ class Domain:
         is a parent of node B, then the subdomain of node A includes the subdomain
         of node B.
         """
-        root_node = Node(level=BACKGROUND_LEVEL - 1, polygon=Polygon(), children=[])
+        root_node = Node(
+            level=Domain.background_level - 1, polygon=Polygon(), children=[]
+        )
         tree = InclusionTree(root=root_node)
 
         for polygon, level in self.as_list():
@@ -539,9 +544,6 @@ class Node(UserDict):
                 plot_polygon(polygon, color, "none", "-", 1.0, show)
 
 
-Color = Union[str, tuple[int, int, int], tuple[int, int, int, int]]
-
-
 class DefaultColors:
     """Default colors for plotting."""
 
@@ -559,9 +561,9 @@ class DefaultColors:
         """Get a color map for the levels."""
         lvl2cl = dict()
         level_set = set(levels)
-        if BACKGROUND_LEVEL in level_set:
-            lvl2cl[BACKGROUND_LEVEL] = DefaultColors.domain
-            level_set.remove(BACKGROUND_LEVEL)
+        if Domain.background_level in level_set:
+            lvl2cl[Domain.background_level] = DefaultColors.domain
+            level_set.remove(Domain.background_level)
         if len(level_set) > 0:
             norm = Normalize(vmin=min(level_set), vmax=max(level_set))
             for lvl in level_set:
@@ -570,63 +572,3 @@ class DefaultColors:
                 else:
                     lvl2cl[lvl] = plt.cm.cool(norm(lvl))  # type: ignore
         return lvl2cl
-
-
-def plot_legend(holes: set[int], colormap: Mapping[Level, Color]):
-    """Make a legend."""
-    handles = []
-    descriptions = []
-    for lvl, color in colormap.items():
-        handles.append(plt.Rectangle((0, 0), 1, 1, fc=color, edgecolor="black"))
-        if lvl in holes:
-            descriptions.append(f"{lvl}. level (hole)")
-        else:
-            if lvl == BACKGROUND_LEVEL:
-                descriptions.append(f"Background (level = {BACKGROUND_LEVEL})")
-            else:
-                descriptions.append(f"{lvl}. level")
-    plt.legend(
-        handles,
-        descriptions,
-        loc="upper left",
-        bbox_to_anchor=(0.95, 1),
-    ).set_draggable(True)
-
-
-def plot_polygon(
-    polygon: Polygon,
-    color: Color,
-    boundary_color: Color,
-    boundary_style: str,
-    linewidth: float,
-    show: bool = False,
-):
-    """Plot a polygon."""
-    x, y = polygon.exterior.xy
-    plt.fill(x, y, color=color)
-
-    # plot the exterior boundary
-    if not boundary_color == "none":
-        plt.plot(x, y, boundary_style, linewidth=linewidth, color=boundary_color)
-
-    # plot interiors in white
-    for interior in polygon.interiors:
-        x, y = interior.xy
-        plt.fill(x, y, color="white")
-        plt.plot(x, y, "-", linewidth=1, color="black")
-    if show:
-        plt.show()
-
-def plot_subdomain(subdomain: SubDomain):
-    color = "blue"
-    boundary_color = "black"
-    boundary_style = "-"
-    linewidth = 1.0
-    show = True
-    if isinstance(subdomain, MultiPolygon):
-        for polygon in subdomain.geoms:
-            plot_polygon(polygon, color, boundary_color, boundary_style, linewidth)
-    else:
-        plot_polygon(subdomain, color, boundary_color, boundary_style, linewidth)
-    if show:
-        plt.show()

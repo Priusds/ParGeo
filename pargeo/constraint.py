@@ -18,7 +18,9 @@ from typing import Any, Dict, Literal
 
 from shapely import Geometry, MultiPolygon, Polygon
 
-from .domain import BACKGROUND_LEVEL, Constraint, Domain, Level, SubDomain
+from pargeo.domain import Constraint, Domain
+from pargeo.utils.constants import BACKGROUND_LEVEL, DEFAULT_GRID_SIZE
+from pargeo.utils.typing import Level, SubDomain
 
 
 class DistanceConstraint(Constraint):
@@ -266,7 +268,7 @@ class DistanceConstraint(Constraint):
         poly: Polygon | MultiPolygon,
         geometry: Geometry,
         distance: float,
-        grid_size: float = 1e-15,
+        grid_size: float = DEFAULT_GRID_SIZE,
     ) -> bool:
         """Check distance requirements between poly and geometry.
 
