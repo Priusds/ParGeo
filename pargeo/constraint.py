@@ -13,22 +13,12 @@ the boundaries of domain multipolygons, and one for distances to shapely Geometr
 `ConvexityConstraint` is currently without implementation.
 
 """
-from abc import ABC, abstractmethod
 from itertools import product
 from typing import Any, Dict, Literal
 
 from shapely import Geometry, MultiPolygon, Polygon
 
-from .domain import BACKGROUND_LEVEL, Domain, Level, SubDomain
-
-
-class Constraint(ABC):
-    """Abstract constraint class."""
-
-    @abstractmethod
-    def __call__(self, subdomain: SubDomain, level: Level, domain: Domain) -> bool:
-        """Check if constraint is violated by the subdomain."""
-        raise NotImplementedError
+from .domain import BACKGROUND_LEVEL, Constraint, Domain, Level, SubDomain
 
 
 class DistanceConstraint(Constraint):
@@ -159,7 +149,7 @@ class DistanceConstraint(Constraint):
                 self.__boundary_constraints[(lvl2, lvl1)] = dist  # type: ignore
 
     def __call__(
-        self, polygon: Polygon | MultiPolygon, level: Level, domain: Domain
+        self, subdomain: SubDomain, level: Level, domain: Domain, **kwargs: Any
     ) -> bool:
         """Compute the distance constraint."""
         # Get all encountered levels.
@@ -181,7 +171,7 @@ class DistanceConstraint(Constraint):
             if (
                 lvl in domain.level_to_subdomain
                 and not DistanceConstraint.check_distance(
-                    polygon,
+                    subdomain,
                     domain.level_to_subdomain[lvl],
                     dist,
                     grid_size=domain.grid_size,
@@ -189,7 +179,7 @@ class DistanceConstraint(Constraint):
             ):
                 return False
 
-        # MultiPolygon boundary collision check, do not ignore `INITIAL_LEVEL`.
+        # MultiPolygon boundary collision check, do not ignore `BACKGROUND_LEVEL`.
         dist_dict_boundary = self.__reduce_distances(
             self.__boundary_constraints, levels, False
         )
@@ -202,7 +192,7 @@ class DistanceConstraint(Constraint):
             if (
                 lvl in domain.level_to_subdomain
                 and not DistanceConstraint.check_distance(
-                    polygon,
+                    subdomain,
                     domain.level_to_subdomain[lvl].boundary,
                     dist,
                     grid_size=domain.grid_size,
@@ -210,14 +200,14 @@ class DistanceConstraint(Constraint):
             ):
                 return False
 
-        # Geometry collision check, ignore `INITIAL_LEVEL`.
+        # Geometry collision check, ignore `BACKGROUND_LEVEL`.
         dist_geoms = self.__reduce_distances(self.__geoms_constraints, levels, True)
         geoms_dists = [
             (geom, dist) for (lvl1, geom), dist in dist_geoms.items() if lvl1 == level
         ]
         for geom, dist in geoms_dists:
             if not DistanceConstraint.check_distance(
-                polygon,
+                subdomain,
                 geom,
                 dist,
                 grid_size=domain.grid_size,
@@ -231,11 +221,11 @@ class DistanceConstraint(Constraint):
     def __reduce_distances(
         distance_dict: Dict[tuple[Any, Any], float],
         final_levels: list[Level],
-        ignore_initial_level: bool,
-    ):
+        ignore_background: bool,
+    ):  # TODO: Add type hints for return
         """Resolve the `any` levels in the distance dictionary."""
         reduced_distance_dict: Dict[tuple[Level, Any], float] = dict()
-        if ignore_initial_level:
+        if ignore_background:
 
             def do_update(lvl_pair, d):
                 return BACKGROUND_LEVEL not in lvl_pair and (
