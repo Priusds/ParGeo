@@ -3,7 +3,8 @@ from typing import Mapping
 import matplotlib.pyplot as plt
 
 from pargeo.utils.constants import BACKGROUND_LEVEL
-from pargeo.utils.typing import Color, Level, MultiPolygon, Polygon, SubDomain
+from pargeo.utils.typing_utils import (Color, Level, MultiPolygon, Polygon,
+                                       SubDomain)
 
 
 def plot_legend(

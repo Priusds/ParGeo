@@ -32,8 +32,9 @@ def generate_domain():
 
     domain = Domain(domain)
     constraint = DistanceConstraint()
-    constraint.set_distance(0.05, [1], ["any"], to_boundary=True)
-    constraint.set_distance(0.2, "any", P)
+    # constraint.set_distance(1, "any", 0.05, to_boundary=True)
+    constraint.set_distance("any", 2, 0.002, to_boundary=True)
+    constraint.show()
 
     # constraint.set_level_distance(0.05, 1, 2)
 
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     domain = generate_domain()
 
     domain.plot()
-
+    quit()
     write_geo(
         domain=domain,
         file_name="stellar_samples_constrains",

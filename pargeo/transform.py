@@ -4,7 +4,8 @@ from typing import Any, Callable
 
 from pargeo.domain import Domain, Transform
 from pargeo.utils.geometry_utils import repeat
-from pargeo.utils.typing import Level, MultiPolygon, Polygon, SubDomain, Vector
+from pargeo.utils.typing_utils import (Level, MultiPolygon, Polygon, SubDomain,
+                                       Vector)
 
 
 class Periodic(Transform):
@@ -166,14 +167,9 @@ class Repeat(Transform):
         """Initialize a Repeat object.
 
         Args:
-            v_dir: Direction vector. Will be normalized.
-            v_scalar: Repeat distance.
-            v_rep: Number of repeats.
-
-            Note: Either all None or none of them.
-            w_dir: Direction vector. Will be normalized.
-            w_scalar: Repeat distance.
-            w_rep: list[int]
+            repeat_info: Some info
+            repeat_info_2: Some info
+            excluded_levels: Levels to exclude from the transformation.
         """
         if repeat_info_2 is None:
             repeat_info_2 = ((0, 0), 0, 0, False)
@@ -186,11 +182,12 @@ class Repeat(Transform):
         """Apply the repeat transform to the SubDomain.
 
         Args:
-        subdomain: The SubDomain to transform.
-        level: The Level of the transformation.
-        domain: The Domain of the transformation.
-        **kwargs: Additional keyword arguments for the transformation.
-            clip (bool): If True, clips the repeated elements to the domain. Default is False.
+            subdomain: The SubDomain to transform.
+            level: The Level of the transformation.
+            domain: The Domain of the transformation.
+            **kwargs: Additional keyword arguments for the transformation.
+
+                clip (bool): If True, clips the repeated elements to the domain. Default is False.
 
         Returns:
             SubDomain: The transformed SubDomain.

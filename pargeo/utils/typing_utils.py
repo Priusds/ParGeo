@@ -1,3 +1,4 @@
+"""Utilities for type checking and type hinting."""
 from typing import Union
 
 from shapely.geometry import (GeometryCollection, LinearRing, LineString,
@@ -13,7 +14,7 @@ Level = int
 Vector = tuple[float, float]
 Color = Union[str, tuple[int, int, int], tuple[int, int, int, int]]
 
-Shapely_Geometry = Union[
+SHAPELY_GEOMETRIES = (
     Point,
     LineString,
     Polygon,
@@ -22,4 +23,15 @@ Shapely_Geometry = Union[
     MultiPolygon,
     GeometryCollection,
     LinearRing,
-]
+)
+
+ShapelyGeometry = (
+    Point
+    | LineString
+    | Polygon
+    | MultiPoint
+    | MultiLineString
+    | MultiPolygon
+    | GeometryCollection
+    | LinearRing
+)

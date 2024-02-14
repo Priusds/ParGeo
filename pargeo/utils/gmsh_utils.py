@@ -1,5 +1,5 @@
 """Module for mesh creation using gmsh."""
-from enum import IntEnum
+
 from itertools import groupby
 from pathlib import Path
 from typing import NamedTuple, Sequence, TypedDict
@@ -9,12 +9,7 @@ from shapely import Polygon
 
 from pargeo.domain import Domain
 
-
-class PhysicalDimension(IntEnum):
-    """Dimensions allowed for physical groups and/or meshes."""
-
-    two = 2
-    three = 3
+PHISICAL_DIMENSION = 2
 
 
 class Point(NamedTuple):
@@ -52,7 +47,6 @@ class PlaneSurface(NamedTuple):
 class PhysicalGroup(NamedTuple):
     """Group of entities belonging to the same physical group."""
 
-    dim: PhysicalDimension
     entity_tags: Sequence[int]
     tag: int
 
@@ -83,10 +77,9 @@ class GmshEntities(TypedDict):
     volumes: Sequence[Volume]
 
 
-def __mesh(
+def write_msh_from_entities(
     gmsh_entities: GmshEntities,
     file_name: Path | str,
-    dim: PhysicalDimension = PhysicalDimension.two,
     write_geo: bool = True,
     correct_curve_loops: bool = False,
     save_all: bool = False,
@@ -97,14 +90,13 @@ def __mesh(
     Args:
         gmsh_entities: Entities that represent the geometry.
         file_name: Path of the saved mesh, the extension is added automatically.
-        dim: Dimension of the mesh. Allowed values are 2 or 3.
         write_geo: Whether or not the .GEO file is saved too.
         correct_line_loops: Apparently gmsh offeres the possibility to correct
             line loops. TODO: Check if it is useful.
         save_all: If False only mesh elements are saved that belong to some
             physical group, as long there is at least one physical group.
     """
-    assert dim in {2, 3}
+
     file_name = Path(file_name)
     gmsh.initialize()
     gmsh.model.add(file_name.name)
@@ -134,13 +126,13 @@ def __mesh(
     # Add physical groups
     for physical_group in gmsh_entities["physical_groups"]:
         gmsh.model.geo.addPhysicalGroup(
-            dim=physical_group.dim,
+            dim=PHISICAL_DIMENSION,
             tag=physical_group.tag,
             tags=physical_group.entity_tags,
         )
 
     gmsh.model.geo.synchronize()
-    gmsh.model.mesh.generate(dim)
+    gmsh.model.mesh.generate(PHISICAL_DIMENSION)
 
     # Choose Dolfin compatible version
     gmsh.option.setNumber("Mesh.MshFileVersion", 2)
@@ -159,7 +151,7 @@ def __mesh(
     gmsh.finalize()
 
 
-def __write_geo(
+def write_geo_from_entities(
     file_name: Path | str,
     gmsh_entities: GmshEntities,
     correct_curve_loops: bool = False,
@@ -203,7 +195,7 @@ def __write_geo(
 
     for physical_group in gmsh_entities["physical_groups"]:
         gmsh.model.geo.addPhysicalGroup(
-            dim=physical_group.dim,
+            dim=PHISICAL_DIMENSION,
             tag=physical_group.tag,
             tags=physical_group.entity_tags,
         )
@@ -216,7 +208,7 @@ def __write_geo(
     gmsh.finalize()
 
 
-def __bubble_to_entities(
+def polygon_to_entities(
     polygon: Polygon,
     level: int,
     point_tag: int,
@@ -320,7 +312,6 @@ def __bubble_to_entities(
     ]
     physical_groups = [
         PhysicalGroup(
-            dim=PhysicalDimension.two,
             entity_tags=[plane_surface_tag],
             tag=physical_group_tag,
         )
@@ -345,7 +336,7 @@ def __bubble_to_entities(
     )
 
 
-def __domain_to_entities(domain: Domain) -> GmshEntities:
+def domain_to_entities(domain: Domain) -> GmshEntities:
     """Convert a domain to gmsh entities."""
     all_entities_list = []
 
@@ -365,7 +356,7 @@ def __domain_to_entities(domain: Domain) -> GmshEntities:
                 line_tag,
                 curve_loop_tag,
                 plane_surface_tag,
-            ) = __bubble_to_entities(
+            ) = polygon_to_entities(
                 polygon, level, point_tag, line_tag, curve_loop_tag, plane_surface_tag
             )
             all_entities_list.append(gmsh_entities)
@@ -377,9 +368,7 @@ def __domain_to_entities(domain: Domain) -> GmshEntities:
 
     for tag, physical_group in groupby(physical_groups, lambda x: x.tag):
         entity_tags = [s.entity_tags[0] for s in physical_group]
-        physical_groups_merged.append(
-            PhysicalGroup(dim=PhysicalDimension.two, entity_tags=entity_tags, tag=tag)
-        )
+        physical_groups_merged.append(PhysicalGroup(entity_tags=entity_tags, tag=tag))
 
     gmsh_entities_all: GmshEntities = {
         "points": [i for ent in all_entities_list for i in ent["points"]],
@@ -393,33 +382,3 @@ def __domain_to_entities(domain: Domain) -> GmshEntities:
         "volumes": [],
     }
     return gmsh_entities_all
-
-
-def write_geo(
-    domain: Domain,
-    file_name: Path | str,
-    correct_curve_loops: bool = False,
-) -> None:
-    """Convert a domain to GmshEntities."""
-    gmsh_entities = __domain_to_entities(domain)
-    __write_geo(file_name, gmsh_entities, correct_curve_loops)
-
-
-def mesh(
-    domain: Domain,
-    file_name: Path | str,
-    dim: PhysicalDimension = PhysicalDimension.two,
-    write_geo: bool = True,
-    correct_curve_loops: bool = False,
-    save_all: bool = False,
-) -> None:
-    """Mesh the domain using gmsh."""
-    gmsh_entities = __domain_to_entities(domain)
-    __mesh(
-        gmsh_entities,
-        file_name,
-        dim,
-        write_geo,
-        correct_curve_loops,
-        save_all,
-    )

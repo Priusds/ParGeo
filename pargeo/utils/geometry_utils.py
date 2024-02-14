@@ -6,8 +6,8 @@ from shapely import union_all
 from shapely.affinity import translate as shapely_translate
 
 from pargeo.utils.constants import DEFAULT_GRID_SIZE
-from pargeo.utils.typing import (GeometryCollection, MultiPolygon, Polygon,
-                                 SubDomain, Vector)
+from pargeo.utils.typing_utils import (GeometryCollection, MultiPolygon,
+                                       Polygon, SubDomain, Vector)
 
 
 def discretize_ellipse(

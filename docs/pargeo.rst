@@ -1,6 +1,15 @@
 pargeo package
 ==============
 
+Module contents
+---------------
+
+.. automodule:: pargeo
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 Submodules
 ----------
 
@@ -28,10 +37,10 @@ pargeo.geometry module
    :undoc-members:
    :show-inheritance:
 
-pargeo.gmsh\_utils module
--------------------------
+pargeo.gmsh\_api module
+-----------------------
 
-.. automodule:: pargeo.gmsh_utils
+.. automodule:: pargeo.gmsh_api
    :members:
    :undoc-members:
    :show-inheritance:
@@ -40,14 +49,6 @@ pargeo.transform module
 -----------------------
 
 .. automodule:: pargeo.transform
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: pargeo
    :members:
    :undoc-members:
    :show-inheritance:
