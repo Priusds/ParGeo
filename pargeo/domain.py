@@ -175,7 +175,7 @@ class Domain:
         """Present levels in sorted order."""
         return sorted(self.__level_to_subdomain.keys())
 
-    def add(
+    def add_subdomain(
         self,
         subdomain: SubDomain,
         level: Level,
@@ -371,6 +371,8 @@ class Domain:
         title: str = "Domain",
         color_holes: bool = False,
         color_hole_boundaries: bool = True,
+        make_legend: bool = True,
+        safe_file: str | None = None,
     ) -> None:
         """Plot the domain."""
         colormap = DefaultColors.get_color_map(self.levels, self.holes, color_holes)
@@ -384,8 +386,11 @@ class Domain:
                 plot_tree_rec(child)
 
         plt.title(title)
-        plot_legend(self.holes, colormap, Domain.background_level)
+        if make_legend:
+            plot_legend(self.holes, colormap, Domain.background_level)
         plot_tree_rec(self.as_tree().root)
+        if safe_file is not None:
+            plt.savefig(safe_file, dpi=300)
         plt.show()
 
     def as_list(self) -> list[tuple[Polygon, Level]]:

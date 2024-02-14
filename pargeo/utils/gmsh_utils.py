@@ -79,7 +79,7 @@ class GmshEntities(TypedDict):
 
 def write_msh_from_entities(
     gmsh_entities: GmshEntities,
-    file_name: Path | str,
+    file_name: Path,
     write_geo: bool = True,
     correct_curve_loops: bool = False,
     save_all: bool = False,
@@ -97,7 +97,6 @@ def write_msh_from_entities(
             physical group, as long there is at least one physical group.
     """
 
-    file_name = Path(file_name)
     gmsh.initialize()
     gmsh.model.add(file_name.name)
 
@@ -152,7 +151,7 @@ def write_msh_from_entities(
 
 
 def write_geo_from_entities(
-    file_name: Path | str,
+    file_name: Path,
     gmsh_entities: GmshEntities,
     correct_curve_loops: bool = False,
 ):
@@ -168,7 +167,6 @@ def write_geo_from_entities(
             line loops. TODO: Check if it is useful.
     """
     gmsh.initialize()
-    file_name = Path(file_name)
     gmsh.model.add(file_name.name)
 
     for point in gmsh_entities["points"]:

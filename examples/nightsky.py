@@ -4,7 +4,7 @@ import random
 from pargeo.constraint import DistanceConstraint
 from pargeo.domain import Domain
 from pargeo.geometry import NStar, RainDrop, Rectangle
-from pargeo.gmsh_utils import write_geo
+from pargeo.gmsh_api import write_geo
 
 
 def generate_domain():
@@ -21,7 +21,7 @@ def generate_domain():
     alphas = [2 * math.pi * random.random() for _ in range(n_stars)]
 
     constraint = DistanceConstraint()
-    constraint.set_distance(0.01, "any", "any")
+    constraint.set_distance("any", "any", 0.01)
 
     radii_in = [0.04 * random.random() + 0.005 for _ in range(n_stars)]
     radii_out = [3 * r_in for r_in in radii_in]
@@ -30,7 +30,7 @@ def generate_domain():
 
     for M, r_in, r_out, N, alph in zip(midpoints, radii_in, radii_out, Ns, alphas):
         star = NStar(M, r_in, r_out, N, alph).to_polygon()
-        domain.add(star, level=1, constraint=constraint)
+        domain.add_subdomain(star, level=1, constraint=constraint)
 
     n_rain = 200
     midpoints = [
@@ -40,7 +40,7 @@ def generate_domain():
     S = [0.001 * random.random() + 0.005 for _ in range(n_rain)]
     for M, a, scale in zip(midpoints, A, S):
         raindrop = RainDrop(M, a, scale).discretize(128)
-        domain.add(raindrop, level=2, constraint=constraint)
+        domain.add_subdomain(raindrop, level=2, constraint=constraint)
 
     return domain
 

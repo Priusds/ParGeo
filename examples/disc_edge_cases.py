@@ -1,6 +1,6 @@
 from pargeo.domain import Domain
 from pargeo.geometry import Circle, Rectangle
-from pargeo.gmsh_utils import write_geo
+from pargeo.gmsh_api import write_geo
 
 
 def generate_domain():
@@ -21,8 +21,8 @@ def generate_domain():
 
     disc_2 = dh_2.difference(dh_3)
 
-    domain.add(subdomain=disc_2, level=1)
-    domain.add(subdomain=disc_1, level=2)
+    domain.add_subdomain(subdomain=disc_2, level=1)
+    domain.add_subdomain(subdomain=disc_1, level=2)
 
     return domain
 

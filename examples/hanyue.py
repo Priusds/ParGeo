@@ -3,7 +3,7 @@ import random
 from pargeo.constraint import DistanceConstraint
 from pargeo.domain import Domain
 from pargeo.geometry import Rectangle, Stellar
-from pargeo.gmsh_utils import write_geo
+from pargeo.gmsh_api import write_geo
 from pargeo.transform import Periodic
 
 
@@ -13,7 +13,7 @@ def generate_domain():
 
     constraint = DistanceConstraint()
     delta = 0.05
-    constraint.set_distance(delta, "any", "any")
+    constraint.set_distance("any", "any", delta)
 
     # Periodic repeat of geometries of any level with periodic length 1 in both directions
     # here x,y axis direction since alpha = 0.
@@ -28,7 +28,7 @@ def generate_domain():
 
     for mid, rad in zip(midpoints, radii):
         C = Stellar(midpoint=mid, radius=rad).discretize(refs=50)
-        domain.add(
+        domain.add_subdomain(
             subdomain=C,
             level=1,
             transform=transform,
@@ -47,7 +47,7 @@ def subdomain():
     lvl2polygon = domain_whole.level_to_subdomain
 
     level = 1
-    domain.add(lvl2polygon[level], level)
+    domain.add_subdomain(lvl2polygon[level], level)
 
     import matplotlib.pyplot as plt
 

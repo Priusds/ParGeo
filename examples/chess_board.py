@@ -1,6 +1,6 @@
 from pargeo.domain import Domain
 from pargeo.geometry import Rectangle
-from pargeo.gmsh_utils import write_geo
+from pargeo.gmsh_api import write_geo
 
 
 def generate_domain():
@@ -12,7 +12,7 @@ def generate_domain():
     for i in range(N):
         for j in range(N):
             R = Rectangle(midpoint=(i, j), width=1.0, height=1.0).to_polygon()
-            domain.add(subdomain=R, level=(i + j) % 2 + 1)
+            domain.add_subdomain(subdomain=R, level=(i + j) % 2 + 1)
 
     return domain
 

@@ -1,6 +1,6 @@
 from pargeo.domain import Domain
 from pargeo.geometry import Circle
-from pargeo.gmsh_utils import write_geo
+from pargeo.gmsh_api import write_geo
 
 
 def generate_domain():
@@ -14,7 +14,7 @@ def generate_domain():
 
     for lvl, rad in zip(level, radii):
         C = Circle(midpoint=(0, 0), radius=rad).discretize(refs=50)
-        domain.add(subdomain=C, level=lvl)
+        domain.add_subdomain(subdomain=C, level=lvl)
 
     return domain
 

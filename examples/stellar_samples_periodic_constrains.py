@@ -3,7 +3,7 @@ import random
 
 from pargeo.domain import Domain
 from pargeo.geometry import Circle, Rectangle, Stellar
-from pargeo.gmsh_utils import write_geo
+from pargeo.gmsh_api import write_geo
 from pargeo.transform import Periodic
 
 
@@ -19,9 +19,9 @@ def generate_simple_domain():
 
     transform = Periodic("any", 0.3, 0.5)
 
-    domain.add(c, level=1, transform=transform)
+    domain.add_subdomain(c, level=1, transform=transform)
 
-    domain.add(S, level=2, transform=transform)
+    domain.add_subdomain(S, level=2, transform=transform)
 
     return domain
 
@@ -38,9 +38,9 @@ def generate_variation_domain():
 
     transform = Periodic([1, 4], [0.07, 0.1], [0.2, 0.15], alpha=math.pi / 4)
 
-    domain.add(c, level=4, transform=transform)
+    domain.add_subdomain(c, level=4, transform=transform)
 
-    domain.add(S, level=1, transform=transform)
+    domain.add_subdomain(S, level=1, transform=transform)
 
     return domain
 
@@ -66,7 +66,7 @@ def generate_domain():
 
     for mid, rad, lvl in zip(midpoints, radii, levels):
         C = Stellar(midpoint=mid, radius=rad).discretize(refs=50)
-        domain.add(
+        domain.add_subdomain(
             subdomain=C,
             level=lvl,
             transform=transform,

@@ -2,7 +2,7 @@ import math
 
 from pargeo.domain import Domain
 from pargeo.geometry import Circle, Rectangle, Stellar
-from pargeo.gmsh_utils import write_geo
+from pargeo.gmsh_api import write_geo
 from pargeo.transform import Periodic
 
 
@@ -21,8 +21,8 @@ def generate_domain():
     # r22 = Rectangle(midpoint=(0., 0.05), width=0.05, height=0.05).to_polygon()
 
     transform = Periodic("any", 0.1, 0.2, alpha=math.pi / 3)
-    domain.add(r11, level=2, transform=transform)
-    domain.add(r12, level=1, transform=transform)
+    domain.add_subdomain(r11, level=2, transform=transform)
+    domain.add_subdomain(r12, level=1, transform=transform)
     # domain.add(r21, level=2, transform=transform)
     # domain.add(r22, level=2, transform=transform)
 
@@ -39,9 +39,9 @@ def generate_football_domain():
 
     transform = Periodic()
     transform.__set_periodicty("any", 0.25, 0.25)
-    domain.add(c1, level=2, transform=transform)
+    domain.add_subdomain(c1, level=2, transform=transform)
 
-    domain.add(c2, level=1, transform=transform)
+    domain.add_subdomain(c2, level=1, transform=transform)
 
     return domain
 

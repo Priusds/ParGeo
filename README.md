@@ -8,6 +8,8 @@
 
 Generate complex two-dimensional geometries for simulations based on mesh discretizations.
 
+![ParGeo Logo](images/logo.png)
+
 # Overview
 
 With ParGeo you can create complex _domains_, where a domain is a two-dimensional geometry which is described by a collection of shapely [Polygons](https://shapely.readthedocs.io/en/stable/reference/shapely.Polygon.html#shapely.Polygon) and [MultiPolygons](https://shapely.readthedocs.io/en/stable/reference/shapely.MultiPolygon.html#shapely.MultiPolygon) called _subdomains_.

@@ -10,5 +10,5 @@ def test_simple():
     c = Circle(midpoint=(0, 0), radius=1).discretize(refs=4)
     r = Rectangle(midpoint=(1.5, 0.0), width=1, height=0.5).discretize()
 
-    topo.add(subdomain=c, level=2)
-    topo.add(subdomain=r, level=1)
+    topo.add_subdomain(subdomain=c, level=2)
+    topo.add_subdomain(subdomain=r, level=1)

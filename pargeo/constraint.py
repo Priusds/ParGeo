@@ -202,7 +202,7 @@ class DistanceConstraint(Constraint):
         if ignore_background:
 
             def do_update(lvl1, lvl2, dist):
-                return background_level not in lvl1, lvl2 and (
+                return background_level not in (lvl1, lvl2) and (
                     lvl1,
                     lvl2 not in reduced_distance_dict
                     or reduced_distance_dict[lvl1, lvl2] < dist,

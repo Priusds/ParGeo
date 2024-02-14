@@ -7,6 +7,8 @@ ifndef VIRTUAL_ENV
 $(error "This Makefile needs to be run inside a Python virtual environment.")
 endif
 
+.PHONY: format lint tests docs clean install pip_install update_requirements
+
 # Install pargeo using poetry
 install:
 	poetry install
@@ -38,4 +40,9 @@ tests:
 docs:
 	sphinx-apidoc -o docs pargeo && cd docs && make html
 
-.PHONY: format lint tests docs
+# Delete all .GEO and .MSH files
+clean:
+	find . -name "*.geo_unrolled" -type f -delete
+	find . -name "*.msh" -type f -delete
+
+

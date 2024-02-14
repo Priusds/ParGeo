@@ -3,7 +3,7 @@ import random
 
 from pargeo.domain import Domain
 from pargeo.geometry import Rectangle, Stellar
-from pargeo.gmsh_utils import write_geo
+from pargeo.gmsh_api import write_geo
 
 # Define the domain and create a domain
 domain = Rectangle(midpoint=(0, 0), width=1, height=1).to_polygon()
@@ -24,7 +24,7 @@ radii = [min(min_r, r * 0.5) for r in unif_samples[2::3]]
 
 for mid, rad, lvl in zip(midpoints, radii, levels):
     C = Stellar(midpoint=mid, radius=rad).to_polygon(refs=50)
-    domain.add(subdomain=C, level=lvl, clip=False)
+    domain.add_subdomain(subdomain=C, level=lvl, clip=False)
 
 domain.plot()
 write_geo(

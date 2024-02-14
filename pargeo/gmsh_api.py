@@ -13,7 +13,7 @@ def write_geo(
 ) -> None:
     """Convert a domain to GmshEntities."""
     gmsh_entities = domain_to_entities(domain)
-    write_geo_from_entities(file_name, gmsh_entities, correct_curve_loops)
+    write_geo_from_entities(Path(file_name), gmsh_entities, correct_curve_loops)
 
 
 def write_mesh(
@@ -27,7 +27,7 @@ def write_mesh(
     gmsh_entities = domain_to_entities(domain)
     write_msh_from_entities(
         gmsh_entities,
-        file_name,
+        Path(file_name),
         write_geo,
         correct_curve_loops,
         save_all,
