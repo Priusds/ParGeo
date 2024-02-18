@@ -37,8 +37,7 @@ from shapely import GeometryCollection
 
 from pargeo.utils.constants import BACKGROUND_LEVEL, DEFAULT_GRID_SIZE
 from pargeo.utils.plot import plot_legend, plot_polygon
-from pargeo.utils.typing_utils import (Color, Level, MultiPolygon, Polygon,
-                                       SubDomain)
+from pargeo.utils.typing_utils import Color, Level, MultiPolygon, Polygon, SubDomain
 
 
 class Transform(Protocol):

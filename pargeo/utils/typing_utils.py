@@ -1,9 +1,16 @@
 """Utilities for type checking and type hinting."""
 from typing import Union
 
-from shapely.geometry import (GeometryCollection, LinearRing, LineString,
-                              MultiLineString, MultiPoint, MultiPolygon, Point,
-                              Polygon)
+from shapely.geometry import (
+    GeometryCollection,
+    LinearRing,
+    LineString,
+    MultiLineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
 
 # This is imported in the other modules.
 GeometryCollection

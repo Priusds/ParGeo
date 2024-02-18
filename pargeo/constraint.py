@@ -16,8 +16,12 @@ from itertools import product
 from typing import Any, Dict, Literal, overload
 
 from pargeo.domain import Constraint, Domain
-from pargeo.utils.typing_utils import (SHAPELY_GEOMETRIES, Level,
-                                       ShapelyGeometry, SubDomain)
+from pargeo.utils.typing_utils import (
+    SHAPELY_GEOMETRIES,
+    Level,
+    ShapelyGeometry,
+    SubDomain,
+)
 
 IntraConstraintDict = Dict[tuple[Level | Literal["any"], Level | Literal["any"]], float]
 

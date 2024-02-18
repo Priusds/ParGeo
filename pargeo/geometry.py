@@ -20,9 +20,11 @@ import math
 import random
 from abc import ABC, abstractmethod
 
-from pargeo.utils.geometry_utils import (discretize_ellipse,
-                                         polar_to_cartesian,
-                                         trigonometric_function)
+from pargeo.utils.geometry_utils import (
+    discretize_ellipse,
+    polar_to_cartesian,
+    trigonometric_function,
+)
 from pargeo.utils.typing_utils import Polygon
 
 

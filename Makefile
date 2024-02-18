@@ -24,8 +24,7 @@ update_requirements:
 
 # Run code formatter
 format:
-	black pargeo tests examples
-	isort pargeo tests examples
+	ruff format pargeo tests examples
 
 #Run linter and type checker
 lint:

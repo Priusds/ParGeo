@@ -1,9 +1,11 @@
 from pathlib import Path
 
 from pargeo.domain import Domain
-from pargeo.utils.gmsh_utils import (domain_to_entities,
-                                     write_geo_from_entities,
-                                     write_msh_from_entities)
+from pargeo.utils.gmsh_utils import (
+    domain_to_entities,
+    write_geo_from_entities,
+    write_msh_from_entities,
+)
 
 
 def write_geo(

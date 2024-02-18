@@ -4,8 +4,7 @@ from typing import Any, Callable
 
 from pargeo.domain import Domain, Transform
 from pargeo.utils.geometry_utils import repeat
-from pargeo.utils.typing_utils import (Level, MultiPolygon, Polygon, SubDomain,
-                                       Vector)
+from pargeo.utils.typing_utils import Level, MultiPolygon, Polygon, SubDomain, Vector
 
 
 class Periodic(Transform):
