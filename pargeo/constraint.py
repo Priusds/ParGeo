@@ -23,9 +23,9 @@ from pargeo.utils.typing_utils import (
     SubDomain,
 )
 
-IntraConstraintDict = Dict[tuple[Level | Literal["any"], Level | Literal["any"]], float]
+IntraConstraintDict = Dict[tuple[Level | Literal["all"], Level | Literal["all"]], float]
 
-InterConstraintDict = Dict[tuple[Level | Literal["any"], ShapelyGeometry], float]
+InterConstraintDict = Dict[tuple[Level | Literal["all"], ShapelyGeometry], float]
 
 
 class DistanceConstraint(Constraint):
@@ -47,8 +47,8 @@ class DistanceConstraint(Constraint):
 
     def set_distance(
         self,
-        obj_1: Level | Literal["any"],
-        obj_2: Level | Literal["any"] | ShapelyGeometry,
+        obj_1: Level | Literal["all"],
+        obj_2: Level | Literal["all"] | ShapelyGeometry,
         distance: float,
         to_boundary=False,
     ):
@@ -65,12 +65,12 @@ class DistanceConstraint(Constraint):
 
             obj_1: The first object. Allowed values are:
                 - int: The level of the domain multipolygon.
-                - str: The string "any" to indicate any level.
-                - list[int | "any"]: A list of the above values.
+                - str: The string "all" to indicate all level.
+                - list[int | "all"]: A list of the above values.
 
             obj_2: The second object. Allowed values are:
                 - int: The level of the domain multipolygon.
-                - str: The string "any" to indicate any level.
+                - str: The string "all" to indicate all level.
                 - Geometry: A shapely Geometry object.
                 - list[int | str | Geometry]: A list of the above values.
 
@@ -78,11 +78,11 @@ class DistanceConstraint(Constraint):
                 This is useful if inclusions are allowed.
         """
         # Validate input.
-        if not (isinstance(obj_1, int) or obj_1 == "any"):
-            raise ValueError("`obj_1` must be a level or 'any'")
+        if not (isinstance(obj_1, int) or obj_1 == "all"):
+            raise ValueError("`obj_1` must be a level or 'all'")
 
-        if not (isinstance(obj_2, (int, SHAPELY_GEOMETRIES)) or obj_2 == "any"):
-            raise ValueError("`obj_1` must be a level or 'any' or a shapely Geometry.")
+        if not (isinstance(obj_2, (int, SHAPELY_GEOMETRIES)) or obj_2 == "all"):
+            raise ValueError("`obj_1` must be a level or 'all' or a shapely Geometry.")
 
         # Set distance constraints to shapely Geometry objects.
         if isinstance(obj_2, SHAPELY_GEOMETRIES):
@@ -113,7 +113,7 @@ class DistanceConstraint(Constraint):
             levels.append(level)
 
         # MultiPolygon collision check, ignores background.
-        dist_dict_poly = self.__any_to_lvl(
+        dist_dict_poly = self.__all_to_lvl(
             self.__polygon_constraints, levels, True, background_level
         )
         lvls_dists = [
@@ -129,7 +129,7 @@ class DistanceConstraint(Constraint):
                     return False
 
         # MultiPolygon boundary collision check, DOESN'T ignore the backgroud.
-        dist_dict_boundary = self.__any_to_lvl(
+        dist_dict_boundary = self.__all_to_lvl(
             self.__boundary_constraints, levels, False, background_level
         )
         lvls_dists = [
@@ -144,7 +144,7 @@ class DistanceConstraint(Constraint):
                     return False
 
         # Geometry collision check, ignores the background.
-        dist_geoms = self.__any_to_lvl(
+        dist_geoms = self.__all_to_lvl(
             self.__geoms_constraints, levels, True, background_level
         )
         geoms_dists = [
@@ -171,7 +171,7 @@ class DistanceConstraint(Constraint):
             print(f"    {lvl1} - {geom}: {dist}")
 
     @overload
-    def __any_to_lvl(
+    def __all_to_lvl(
         self,
         distance_dict: IntraConstraintDict,
         final_levels: list[Level],
@@ -181,7 +181,7 @@ class DistanceConstraint(Constraint):
         ...
 
     @overload
-    def __any_to_lvl(
+    def __all_to_lvl(
         self,
         distance_dict: InterConstraintDict,
         final_levels: list[Level],
@@ -190,7 +190,7 @@ class DistanceConstraint(Constraint):
     ) -> Dict[tuple[Level, ShapelyGeometry], float]:
         ...
 
-    def __any_to_lvl(
+    def __all_to_lvl(
         self,
         distance_dict: IntraConstraintDict | InterConstraintDict,
         final_levels: list[Level],
@@ -199,7 +199,7 @@ class DistanceConstraint(Constraint):
     ) -> (
         Dict[tuple[Level, Level], float] | Dict[tuple[Level, ShapelyGeometry], float]
     ):  # TODO: Add type hints for return
-        """Replace `any` with the actual levels."""
+        """Replace `all` with the actual levels."""
         reduced_distance_dict: Dict[tuple[Level, Level], float] | Dict[
             tuple[Level, ShapelyGeometry], float
         ] = dict()
@@ -223,15 +223,15 @@ class DistanceConstraint(Constraint):
 
         for (lvl_1, lvl_2), dist in distance_dict.items():
             match lvl_1, lvl_2:
-                case "any", "any":
+                case "all", "all":
                     for lvl_1_, lvl_2_ in product(final_levels, repeat=2):
                         if do_update(lvl_1_, lvl_2_, dist):
                             reduced_distance_dict[lvl_1_, lvl_2_] = dist
-                case "any", _:
+                case "all", _:
                     for lvl in final_levels:
                         if do_update(lvl, lvl_2, dist):
                             reduced_distance_dict[(lvl, lvl_2)] = dist  # type: ignore
-                case _, "any":
+                case _, "all":
                     for lvl in final_levels:
                         if do_update(lvl_1, lvl, dist):
                             reduced_distance_dict[(lvl_1, lvl)] = dist  # type: ignore

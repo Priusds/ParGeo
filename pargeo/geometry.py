@@ -160,7 +160,7 @@ class Circle(StarLike):
 
 class Ellipse(StarLike):
     def __init__(
-        self, midpoint: tuple[float, float], axis: tuple[float, float], angle: float
+        self, midpoint: tuple[float, float], axis: tuple[float, float], angle: float = 0
     ) -> None:
         self.axis = axis
         self.angle = angle
@@ -184,7 +184,7 @@ class Stellar(StarLike):
         self,
         midpoint: tuple[float, float],
         radius: float,
-        coefficient: list[tuple[float, float]] = [],
+        coefficient: list[tuple[float, float]] | None = None,
     ):
         """Creates a star-like geometry.
 
@@ -197,7 +197,7 @@ class Stellar(StarLike):
         """
         self.midpoint = midpoint
         self.radius = radius
-        if len(coefficient) == 0:
+        if coefficient is None:
             coefficient = self.generate_coefficients()
 
         self.coefficient = coefficient
@@ -223,7 +223,7 @@ class RainDrop(StarLike):
 
     def __init__(self, midpoint: tuple[float, float], a: float, scale: float):
         super().__init__(midpoint)
-        if not 0.5 < a and a < 1:
+        if not (0.5 <= a <= 1):
             raise ValueError(f"Value of a must be between 0.5 and 1, but got {a}.")
         self._a = a
         self._scale = scale

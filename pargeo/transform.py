@@ -12,18 +12,18 @@ class Periodic(Transform):
 
     def __init__(
         self,
-        levels: int | list[int] | str = "any",
+        levels: int | list[int] | str = "all",
         x_length: float | list[float] = float("inf"),
         y_length: float | list[float] = float("inf"),
         alpha: float | list[float] = 0,
     ):
         """Define the Periodic transform.
 
-        Each level can have its own periodicity. If levels is "any" then all levels
+        Each level can have its own periodicity. If levels is "all" then all levels
         are treaded equally and the periodicity is applied to all levels.
 
         Args:
-            levels: Levels to apply the periodicity. If "any" then the periodicity
+            levels: Levels to apply the periodicity. If "all" then the periodicity
                 is applied to all levels. If a list of levels is given then the
                 periodicity can be specified for each level individually.
 
@@ -43,10 +43,10 @@ class Periodic(Transform):
         x_length = x_length if isinstance(x_length, list) else [x_length]
         y_length = y_length if isinstance(y_length, list) else [y_length]
         alpha = alpha if isinstance(alpha, list) else [alpha]
-        self.any = False
-        self.any_xlength = 0.0
-        self.any_ylength = 0.0
-        self.any_alpha = 0.0
+        self.all = False
+        self.all_xlength = 0.0
+        self.all_ylength = 0.0
+        self.all_alpha = 0.0
 
         self.__lvl2xlength = {}
         self.__lvl2ylength = {}
@@ -55,29 +55,29 @@ class Periodic(Transform):
         # Validate input
         n_levels = 0
         if isinstance(levels, str):
-            if levels == "any":
+            if levels == "all":
                 if not (len(x_length) == 1 and len(y_length) == 1 and len(alpha) == 1):
                     raise ValueError(
-                        "If levels is 'any' then x_length, y_length and alpha must be"
+                        "If levels is 'all' then x_length, y_length and alpha must be"
                         "floats."
                     )
-                self.any = True
+                self.all = True
                 n_levels = 1
-                self.any_xlength = x_length[0]
-                self.any_ylength = y_length[0]
-                self.any_alpha = alpha[0]
+                self.all_xlength = x_length[0]
+                self.all_ylength = y_length[0]
+                self.all_alpha = alpha[0]
             else:
                 raise ValueError(
-                    f"Levels specification as string must be 'any' but given {levels}."
+                    f"Levels specification as string must be 'all' but given {levels}."
                 )
         elif isinstance(levels, int):
             levels_.append(levels)
             if not (len(x_length) == 1 and len(y_length) == 1 and len(alpha) == 1):
                 raise ValueError(
-                    "If levels is 'any' then x_length, y_length and alpha must be"
+                    "If levels is 'all' then x_length, y_length and alpha must be"
                     "floats."
                 )
-            self.any = False
+            self.all = False
             n_levels = 1
         elif isinstance(levels, list):
             n_levels = len(levels)
@@ -85,12 +85,12 @@ class Periodic(Transform):
             x_length = x_length * n_levels if len(x_length) == 1 else x_length
             y_length = y_length * n_levels if len(y_length) == 1 else y_length
             alpha = alpha * n_levels if len(alpha) == 1 else alpha
-            self.any = False
+            self.all = False
         else:
             raise ValueError(
-                f"levels must be int, list[int] or 'any' but given {levels}."
+                f"levels must be int, list[int] or 'all' but given {levels}."
             )
-        if not self.any:
+        if not self.all:
             self.__lvl2xlength = dict(zip(levels_, x_length))
             self.__lvl2ylength = dict(zip(levels_, y_length))
             self.__lvl_2_alpha = dict(zip(levels_, alpha))
@@ -104,8 +104,8 @@ class Periodic(Transform):
         self, level: int | str, x_length: float, y_length: float, alpha: float
     ):
         """Validate the input for the periodicity."""
-        if not isinstance(level, int) and level != "any":
-            raise ValueError(f"level must be int or `any` but given {level}.")
+        if not isinstance(level, int) and level != "all":
+            raise ValueError(f"level must be int or `all` but given {level}.")
         if x_length <= 0:
             raise ValueError(f"x_length must be positive float but given {x_length}.")
         if y_length <= 0:
@@ -116,7 +116,7 @@ class Periodic(Transform):
     def update(self, level: int, x_length: float, y_length: float, alpha: float):
         """Update the periodic behavior of the transform.
 
-        Note: If level is "any" then the periodicity is applied to all levels, meaning
+        Note: If level is "all" then the periodicity is applied to all levels, meaning
         all levels are overwritten.
         """
         self.__validate_input(level, x_length, y_length, alpha)
@@ -129,12 +129,12 @@ class Periodic(Transform):
     ) -> SubDomain:
         """Apply the periodicity to the polygon."""
         # Check if the polygon is affected by the periodicity.
-        if level not in self.affected_levels and not self.any:
+        if level not in self.affected_levels and not self.all:
             return subdomain
 
-        x_length = self.__lvl2xlength[level] if not self.any else self.any_xlength
-        y_length = self.__lvl2ylength[level] if not self.any else self.any_ylength
-        alpha = self.__lvl_2_alpha[level] if not self.any else self.any_alpha
+        x_length = self.__lvl2xlength[level] if not self.all else self.all_xlength
+        y_length = self.__lvl2ylength[level] if not self.all else self.all_ylength
+        alpha = self.__lvl_2_alpha[level] if not self.all else self.all_alpha
 
         span: float = (
             domain.profile.bounds[2]
