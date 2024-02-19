@@ -1,25 +1,18 @@
 from pargeo.domain import Domain
 from pargeo.geometry import Circle, Rectangle
-from pargeo.gmsh_api import write_geo
 
 
 def generate_domain():
-    d_1 = Rectangle(midpoint=(0.0, 0), width=2, height=2).to_polygon()
-
-    dh_1 = Circle(midpoint=(0.0, 0.0), radius=0.5).discretize(refs=50)
-
-    dh_2 = Circle(midpoint=(0.0, 0.0), radius=0.2).discretize(refs=50)
-
-    dh_3 = Circle(midpoint=(0.0, 0.0), radius=0.125).discretize(refs=50)
-
-    cutout = Circle(midpoint=(0.0, 0.0), radius=0.25).discretize(refs=50)
-
+    d_1 = Rectangle(midpoint=(0.0, 0), width=1.1, height=1.1).to_polygon()
     domain = d_1
     domain = Domain(domain)
 
-    disc_1 = dh_1.difference(cutout)
-
-    disc_2 = dh_2.difference(dh_3)
+    c1 = Circle(midpoint=(0.0, 0.0), radius=0.5).discretize(refs=50)
+    c3 = Circle(midpoint=(0.0, 0.0), radius=0.2).discretize(refs=50)
+    c4 = Circle(midpoint=(0.0, 0.0), radius=0.125).discretize(refs=50)
+    c2 = Circle(midpoint=(0.0, 0.0), radius=0.25).discretize(refs=50)
+    disc_1 = c1 - c2
+    disc_2 = c3 - c4
 
     domain.add_subdomain(subdomain=disc_2, level=1)
     domain.add_subdomain(subdomain=disc_1, level=2)
@@ -30,5 +23,3 @@ def generate_domain():
 if __name__ == "__main__":
     domain = generate_domain()
     domain.plot("Disc Edge Case")
-
-    write_geo(domain=domain, file_name="edge_cases", correct_curve_loops=True)

@@ -2,7 +2,6 @@ import math
 
 from pargeo.domain import Domain
 from pargeo.geometry import Circle, Ellipse, Rectangle, Stellar
-from pargeo.gmsh_api import write_mesh
 
 
 def generate_domain():
@@ -91,7 +90,4 @@ def generate_domain():
 
 if __name__ == "__main__":
     domain = generate_domain()
-
     domain.plot("Edge Cases")
-
-    write_mesh(domain=domain, file_name="edge_cases", correct_curve_loops=True)

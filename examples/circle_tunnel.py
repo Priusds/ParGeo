@@ -1,6 +1,5 @@
 from pargeo.domain import Domain
 from pargeo.geometry import Circle
-from pargeo.gmsh_api import write_geo
 
 
 def generate_domain():
@@ -9,8 +8,10 @@ def generate_domain():
 
     domain = Domain(C)
 
-    radii = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
-    level = [i + 1 for i in range(len(radii))]
+    n_radii = 10
+    diff = 1.0 / (n_radii)
+    radii = [1 - r * diff for r in range(n_radii)]
+    level = [i + 1 for i in range(n_radii)]
 
     for lvl, rad in zip(level, radii):
         C = Circle(midpoint=(0, 0), radius=rad).discretize(refs=50)
@@ -21,7 +22,4 @@ def generate_domain():
 
 if __name__ == "__main__":
     domain = generate_domain()
-
     domain.plot("Circle Tunnel")
-
-    write_geo(domain, file_name="circle_tunnel", correct_curve_loops=True)

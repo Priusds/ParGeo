@@ -28,8 +28,8 @@ format:
 
 #Run linter and type checker
 lint:
-	ruff pargeo tests
-	mypy pargeo tests
+	ruff pargeo tests examples
+	mypy pargeo tests examples
 # Run tests
 tests:
 	pytest tests

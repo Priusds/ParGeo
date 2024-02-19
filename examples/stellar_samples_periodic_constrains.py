@@ -17,7 +17,7 @@ def generate_simple_domain():
     rand_radius = min(0.09, random.random() * 0.5)
     S = Stellar(midpoint=rand_midpoint, radius=rand_radius).discretize(refs=50)
 
-    transform = Periodic("any", 0.3, 0.5)
+    transform = Periodic("all", 0.3, 0.5)
 
     domain.add_subdomain(c, level=1, transform=transform)
 

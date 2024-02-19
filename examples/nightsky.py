@@ -4,7 +4,6 @@ import random
 from pargeo.constraint import DistanceConstraint
 from pargeo.domain import Domain
 from pargeo.geometry import NStar, RainDrop, Rectangle
-from pargeo.gmsh_api import write_geo
 
 
 def generate_domain():
@@ -21,7 +20,7 @@ def generate_domain():
     alphas = [2 * math.pi * random.random() for _ in range(n_stars)]
 
     constraint = DistanceConstraint()
-    constraint.set_distance("any", "any", 0.01)
+    constraint.set_distance("all", "all", 0.01)
 
     radii_in = [0.04 * random.random() + 0.005 for _ in range(n_stars)]
     radii_out = [3 * r_in for r_in in radii_in]
@@ -48,9 +47,3 @@ def generate_domain():
 if __name__ == "__main__":
     domain = generate_domain()
     domain.plot("Night Sky")
-
-    write_geo(
-        domain=domain,
-        file_name="stellar_samples_periodic_constrains",
-        correct_curve_loops=True,
-    )
