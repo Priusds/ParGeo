@@ -11,7 +11,7 @@ endif
 
 # Install pargeo using poetry
 install:
-	poetry install
+	poetry install --with dev
 
 # Install pargeo using pip
 pip_install:
