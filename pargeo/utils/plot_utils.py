@@ -56,12 +56,15 @@ def plot_polygon(
         plt.show()
 
 
-def plot_subdomain(subdomain: SubDomain):
-    color = "blue"
-    boundary_color = "black"
-    boundary_style = "-"
-    linewidth = 1.0
-    show = True
+def plot_subdomain(
+    subdomain: SubDomain,
+    color="blue",
+    boundary_color="black",
+    boundary_style="-",
+    linewidth=1.0,
+    show: bool = True,
+):
+    """Plot a subdomain."""
     if isinstance(subdomain, MultiPolygon):
         for polygon in subdomain.geoms:
             plot_polygon(polygon, color, boundary_color, boundary_style, linewidth)

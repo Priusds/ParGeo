@@ -11,7 +11,7 @@ endif
 
 # Install pargeo using poetry
 install:
-	poetry install
+	poetry install --with dev
 
 # Install pargeo using pip
 pip_install:
@@ -28,9 +28,8 @@ format:
 
 #Run linter and type checker
 lint:
-	ruff pargeo tests/test_topology.py
-	mypy pargeo tests/test_topology.py
-
+	ruff pargeo tests
+	mypy pargeo tests
 # Run tests
 tests:
 	pytest tests
