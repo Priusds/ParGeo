@@ -1,6 +1,6 @@
-name: Python application test with pytest
+name: Pytest
 
-on: [push]
+on: push
 
 jobs:
   build:
@@ -21,4 +21,4 @@ jobs:
         pip install -e .
     - name: Test with pytest
       run: |
-        pytest
+        pytest tests
