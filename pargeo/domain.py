@@ -29,15 +29,15 @@ Example:
 from __future__ import annotations
 
 from collections import UserDict
-from typing import Any, Mapping, Protocol, Sequence
+from typing import Any, Mapping, Protocol
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
+
 from shapely import GeometryCollection
 
 from pargeo.utils.constants import BACKGROUND_LEVEL, DEFAULT_GRID_SIZE
-from pargeo.utils.plot_utils import plot_legend, plot_polygon
-from pargeo.utils.typing_utils import Color, Level, MultiPolygon, Polygon, SubDomain
+from pargeo.utils.plot_utils import plot_legend, plot_polygon, DefaultColors, Color
+from pargeo.utils.typing_utils import Level, MultiPolygon, Polygon, SubDomain
 
 
 class Transform(Protocol):
@@ -173,6 +173,12 @@ class Domain:
     def levels(self) -> list[Level]:
         """Present levels in sorted order."""
         return sorted(self.__level_to_subdomain.keys())
+
+    @property
+    def subdomains(self) -> list[SubDomain]:
+        """Return a list of all subdomains."""
+        subdomains = [subdomain for subdomain, _ in self.as_list()]
+        return subdomains
 
     def add_subdomain(
         self,
@@ -372,9 +378,13 @@ class Domain:
         color_hole_boundaries: bool = True,
         make_legend: bool = True,
         safe_file: str | None = None,
+        color_map: Mapping[Level, Color] | None = None,
     ) -> None:
         """Plot the domain."""
-        colormap = DefaultColors.get_color_map(self.levels, self.holes, color_holes)
+        if color_map is None:
+            colormap = DefaultColors.get_color_map(
+                self.levels, self.holes, color_holes, self.background_level
+            )
 
         def plot_tree_rec(node: Node) -> None:
             """Recursively plot the domain."""
@@ -533,12 +543,14 @@ class Node(UserDict):
         color_hole_boundaries: bool,
         holes: set[int],
         show: bool = False,
+        boundary_color: Color | None = None,
     ):
         """Plot the node."""
         is_hole = self.data["level"] in holes
         color = colormap[self.data["level"]]
         polygon = self.data["polygon"]
-        boundary_color = DefaultColors.boundary
+        if boundary_color is None:
+            boundary_color = DefaultColors.boundary
 
         if not is_hole:
             plot_polygon(polygon, color, boundary_color, "-", 1.0, show)
@@ -547,33 +559,3 @@ class Node(UserDict):
                 plot_polygon(polygon, color, boundary_color, "--", 0.5, show)
             else:
                 plot_polygon(polygon, color, "none", "-", 1.0, show)
-
-
-class DefaultColors:
-    """Default colors for plotting."""
-
-    boundary = "black"
-    domain_boundary = "black"
-    domain = "silver"
-    hole = "white"
-    interior_filling = "white"
-    inter_hole_bound = "white"
-
-    @staticmethod
-    def get_color_map(
-        levels: Sequence[int], holes: set[int], color_holes=False
-    ) -> Mapping[Level, Color]:
-        """Get a color map for the levels."""
-        lvl2cl = dict()
-        level_set = set(levels)
-        if Domain.background_level in level_set:
-            lvl2cl[Domain.background_level] = DefaultColors.domain
-            level_set.remove(Domain.background_level)
-        if len(level_set) > 0:
-            norm = Normalize(vmin=min(level_set), vmax=max(level_set))
-            for lvl in level_set:
-                if lvl in holes and not color_holes:
-                    lvl2cl[lvl] = DefaultColors.hole
-                else:
-                    lvl2cl[lvl] = plt.cm.cool(norm(lvl))  # type: ignore
-        return lvl2cl

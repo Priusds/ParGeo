@@ -1,9 +1,12 @@
-from typing import Mapping
+from typing import Mapping, Sequence, Union
 
 import matplotlib.pyplot as plt
 
 from pargeo.utils.constants import BACKGROUND_LEVEL
-from pargeo.utils.typing_utils import Color, Level, MultiPolygon, Polygon, SubDomain
+from pargeo.utils.typing_utils import Level, MultiPolygon, Polygon, SubDomain
+from matplotlib.colors import Normalize
+
+Color = Union[str, tuple[int, int, int], tuple[int, int, int, int]]
 
 
 def plot_legend(
@@ -72,3 +75,36 @@ def plot_subdomain(
         plot_polygon(subdomain, color, boundary_color, boundary_style, linewidth)
     if show:
         plt.show()
+
+
+class DefaultColors:
+    """Default colors for plotting."""
+
+    boundary = "black"
+    domain_boundary = "black"
+    domain = "silver"
+    hole = "white"
+    interior_filling = "white"
+    inter_hole_bound = "white"
+
+    @staticmethod
+    def get_color_map(
+        levels: Sequence[int],
+        holes: set[int],
+        color_holes=False,
+        background_level: int = BACKGROUND_LEVEL,
+    ) -> Mapping[Level, Color]:
+        """Get a color map for the levels."""
+        lvl2cl = dict()
+        level_set = set(levels)
+        if background_level in level_set:
+            lvl2cl[background_level] = DefaultColors.domain
+            level_set.remove(background_level)
+        if len(level_set) > 0:
+            norm = Normalize(vmin=min(level_set), vmax=max(level_set))
+            for lvl in level_set:
+                if lvl in holes and not color_holes:
+                    lvl2cl[lvl] = DefaultColors.hole
+                else:
+                    lvl2cl[lvl] = plt.cm.cool(norm(lvl))  # type: ignore
+        return lvl2cl

@@ -19,7 +19,7 @@ SubDomain = Union[Polygon, MultiPolygon]
 Level = int
 
 Vector = tuple[float, float]
-Color = Union[str, tuple[int, int, int], tuple[int, int, int, int]]
+
 
 SHAPELY_GEOMETRIES = (
     Point,
