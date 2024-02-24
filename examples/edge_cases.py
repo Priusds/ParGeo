@@ -5,7 +5,7 @@ from pargeo.geometry import Circle, Ellipse, Rectangle, Stellar
 
 
 def generate_domain():
-    """Generate a domain with a few edge cases."""
+    """Generate a domain with a some edge cases."""
     # Make the domain
     d_1 = Rectangle(midpoint=(0.0, 0), width=2, height=2).to_polygon()
 

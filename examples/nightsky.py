@@ -7,13 +7,13 @@ from pargeo.geometry import NStar, RainDrop, Rectangle
 
 
 def generate_domain():
+    """Generate a domain with stars and raindrops."""
     domain = Rectangle(midpoint=(0.0, 0.0), width=2, height=1).to_polygon()
     domain = Domain(domain)
 
     random.random()
 
     n_stars = 100
-    # random.seed(0)
     midpoints = [
         (2 * random.random() - 1, random.random() - 0.5) for _ in range(n_stars)
     ]

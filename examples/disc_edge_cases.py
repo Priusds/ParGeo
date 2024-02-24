@@ -3,6 +3,7 @@ from pargeo.geometry import Circle, Rectangle
 
 
 def generate_domain():
+    """Generate a domain with two discs."""
     d_1 = Rectangle(midpoint=(0.0, 0), width=1.1, height=1.1).to_polygon()
     domain = d_1
     domain = Domain(domain)
