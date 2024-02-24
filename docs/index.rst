@@ -104,15 +104,14 @@ following BibTeX entry:
    year = {2024}
    }
 
-modules
--------
+Contents
+--------
 
 .. toctree::
-   :maxdepth: 4
-   :caption: Contents:
+   :maxdepth: 1
 
    modules
-
+   notebooks/getting-started
 
 Indices and tables
 ------------------

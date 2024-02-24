@@ -37,6 +37,8 @@ tests:
 # Build documentation
 docs:
 	sphinx-apidoc -o docs pargeo && cd docs && make html
+html:
+	rm -r docs/_build && cd docs && make html
 
 # Delete all .GEO and .MSH files
 clean:

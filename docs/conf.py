@@ -15,22 +15,27 @@ release = "0.2.0"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "myst_nb",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
     "sphinx.ext.duration",
     "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
 ]
 
 templates_path = ["_templates"]
+source_suffix = ['.rst', '.ipynb', '.md']
+
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
-    "special-members": "__init__,__call__",
+    "special-members": "__call__",
     "undoc-members": True,
     "exclude-members": "__weakref__",
 }
+autodoc_typehints = "description"
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -38,3 +43,4 @@ autodoc_default_options = {
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
+

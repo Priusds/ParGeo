@@ -14,7 +14,13 @@ def plot_legend(
     colormap: Mapping[Level, Color],
     background_level: Level = BACKGROUND_LEVEL,
 ):
-    """Make a legend."""
+    """Make a legend.
+
+    Args:
+        holes (set[int]): The holes.
+        colormap (Mapping[Level, Color]): The color map.
+        background_level (Level, optional): The background level. Defaults to BACKGROUND_LEVEL.
+    """
     handles = []
     descriptions = []
     for lvl, color in colormap.items():
@@ -42,7 +48,16 @@ def plot_polygon(
     linewidth: float,
     show: bool = False,
 ):
-    """Plot a polygon."""
+    """Plot a polygon.
+
+    Args:
+        polygon (Polygon): The polygon to plot.
+        color (Color): The fill color of the polygon.
+        boundary_color (Color): The color of the boundary.
+        boundary_style (str): The style of the boundary.
+        linewidth (float): The width of the line.
+        show (bool, optional): Whether to show the plot. Defaults to `False`.
+    """
     x, y = polygon.exterior.xy
     plt.fill(x, y, color=color)
 
@@ -67,7 +82,17 @@ def plot_subdomain(
     linewidth=1.0,
     show: bool = True,
 ):
-    """Plot a subdomain."""
+    """Plot the subdomain.
+
+    Args:
+        subdomain (SubDomain): The subdomain to plot.
+        color (str, optional): The fill color of the subdomain. Defaults to `"blue"`.
+        boundary_color (str, optional): The color of the boundary. Defaults to `"black`".
+        boundary_style (str, optional): The style of the boundary. Defaults to `"-"`.
+        linewidth (float, optional): The width of the line. Defaults to `1.0`.
+        show (bool, optional): Whether to show the plot (using Matplotlib).
+            Defaults to `True`.
+    """
     if isinstance(subdomain, MultiPolygon):
         for polygon in subdomain.geoms:
             plot_polygon(polygon, color, boundary_color, boundary_style, linewidth)
@@ -94,7 +119,14 @@ class DefaultColors:
         color_holes=False,
         background_level: int = BACKGROUND_LEVEL,
     ) -> Mapping[Level, Color]:
-        """Get a color map for the levels."""
+        """Get a color map for the levels.
+
+        Args:
+            levels (Sequence[int]): The levels.
+            holes (set[int]): The holes.
+            color_holes (bool, optional): Whether to color the holes. Defaults to `False`.
+            background_level (int, optional): The background level. Defaults to `BACKGROUND_LEVEL`.
+        """
         lvl2cl = dict()
         level_set = set(levels)
         if background_level in level_set:

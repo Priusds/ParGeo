@@ -52,12 +52,12 @@ class Transform(Protocol):
         self, subdomain: SubDomain, level: Level, domain: Domain, **kwargs
     ) -> SubDomain:
         """
-        Apply the transformation to the given SubDomain.
+        Applies the transformation to the given SubDomain.
 
         Args:
-            subdomain: The SubDomain to transform.
-            level: The Level of the subdomain.
-            domain: The underlying domain.
+            subdomain (SubDomain): The SubDomain to transform.
+            level (Level): The Level of the subdomain.
+            domain (Domain): The underlying domain.
             **kwargs: Additional keyword arguments for the transformation.
 
         Returns:
@@ -78,12 +78,12 @@ class Constraint(Protocol):
         self, subdomain: SubDomain, level: Level, domain: Domain, **kwargs
     ) -> bool:
         """
-        Apply the constraint to the given SubDomain.
+        Applies the constraint to the given SubDomain.
 
         Args:
-            subdomain: The SubDomain to apply the constraint to.
-            level: The Level of the SubDomain.
-            domain: The underlying domain.
+            subdomain (SubDomain): The SubDomain to apply the constraint to.
+            level (Level): The Level of the SubDomain.
+            domain (Domain): The underlying domain.
             **kwargs: Additional keyword arguments for the constraint.
 
         Returns:
@@ -119,14 +119,13 @@ class Domain:
         """Initialize the domain.
 
         Args:
-            background: This subdomain is the background of the domain
+            background (SubDomain): This subdomain is the background of the domain
                 and is associated with the level `Domain.background_level`.
 
-            holes: Set of levels that are considered as holes.
-                This can be changed at any time through `set_holes`.
+            holes (set[Level], optional): Set of levels that are considered as holes.
+                Can be changed at any time using the `set_holes` method. Defaults to `set()`.
 
-            grid_size: The `grid_size` value that is passed to shapely when
-                performing geometrical operations.
+            grid_size (float, optional): Used `grid_size` for shapely geometry manipulating operations.
         """
         # Make sure background is a SubDomain
         if not isinstance(background, (Polygon, MultiPolygon)):
@@ -152,7 +151,7 @@ class Domain:
         return self.__holes
 
     def set_holes(self, new_holes: set[Level]):
-        """Redefine self.holes."""
+        """Set `self.holes`."""
         self.__holes = new_holes
 
     @property
@@ -190,30 +189,28 @@ class Domain:
         **kwargs: Any,
     ) -> bool:
         """
-        Add subdomain to the domain.
+        Adds a subdomain to the domain.
 
-        Before adding the subdomain do:
-
-        1. Transform the incoming subdomain
-        2. (Optionally) clip the transformed subdomain
-        3. Check if constraints are met.
-        4. Only if the check is passed proceed with adding the subdomain
+        This method performs the following steps before potentially adding the subdomain:
+            1. Transforms the incoming subdomain using `transform`.
+            2. If clip is `True`, clips the subdomain to the domain's profile.
+            3. If `constraint` are given, only proceede if these are met.
+            4. Add the subdomain.
 
         Args:
-            subdomain: The subdomain that should be added.
-
-            level: The associated level to the subdomain.
-
-            transform: Transform the subdomain before adding it.
-                If will call `transform(subdomain, level, self)`.
-
-            constraint: Will be called to check if the subdomain is added.
+            subdomain (SubDomain): The subdomain to be added.
+            level (Level): The associated level of the subdomain.
+            transform (Transform): A function to transform the subdomain before adding it.
+                It will call `transform(subdomain, level, self)`.
+            constraint (Constraint): A function to check if the subdomain should be added.
                 It will call `constraints(subdomain, level, self)`.
+            clip (bool): If `True`, clips the subdomain to the background.
 
-            clip: If `True` clip the subdomain to the background.
-
-        Note: If `level == Domain.background_level` and `clip == True` then the
+        Note: If `level == Domain.background_level` and `clip == True`, then the
             background might be modified.
+
+        Returns:
+            bool: True if the subdomain was added, False otherwise.
         """
         if level < Domain.background_level:
             raise ValueError(
@@ -380,7 +377,18 @@ class Domain:
         safe_file: str | None = None,
         color_map: Mapping[Level, Color] | None = None,
     ) -> None:
-        """Plot the domain."""
+        """Plot the domain.
+
+        Args:
+            title (str, optional): Title of the plot. Defaults to "Domain".
+            color_holes (bool, optional): If `True`, the holes are colored. Defaults to `False`.
+            color_hole_boundaries (bool, optional): If `True`, the boundaries of the holes are colored.
+                Defaults to `True`.
+            make_legend (bool, optional): If `True`, a legend is added to the plot. Defaults to `True`.
+            safe_file (str, optional): If given, the plot is saved to the file. Defaults to `None`.
+            color_map (Mapping[Level, Color], optional): A mapping of levels to colors.
+                If `None`, the default color map is used. Defaults to `None`.
+        """
         if color_map is None:
             colormap = DefaultColors.get_color_map(
                 self.levels, self.holes, color_holes, self.background_level
@@ -403,7 +411,7 @@ class Domain:
         plt.show()
 
     def as_list(self) -> list[tuple[Polygon, Level]]:
-        """Return a lists of (Polygon, Level) tuples, representig all subdomains."""
+        """Return a list of all subdomains with their levels."""
         polyongs_levels = []
         for level, running_polygon in self.__level_to_subdomain.items():
             if isinstance(running_polygon, MultiPolygon):

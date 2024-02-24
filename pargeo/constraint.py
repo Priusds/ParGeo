@@ -50,32 +50,17 @@ class DistanceConstraint(Constraint):
         obj_1: Level | Literal["all"],
         obj_2: Level | Literal["all"] | ShapelyGeometry,
         distance: float,
-        to_boundary=False,
+        to_boundary: bool = False,
     ):
-        """Set variusous distance constraints.
+        """Set distance constraint.
 
-        Distance constraints can be set between domain multipolygons with each
-        other and between domain multipolygons and geometry objects. A geometry object
-        is a shapely geometry object, e.g. shapely.Point, shapely.LineString, ect.
+        If one of the objects is `"all"`, the distance constraint is set for all levels.
 
         Args:
-            distance: Required distance between `obj_1` and `obj_2`.
-                If a list of distances is given, the length of the list must
-                either match the length of `obj_1` or `obj_2` or be single-valued.
-
-            obj_1: The first object. Allowed values are:
-                - int: The level of the domain multipolygon.
-                - str: The string "all" to indicate all level.
-                - list[int | "all"]: A list of the above values.
-
-            obj_2: The second object. Allowed values are:
-                - int: The level of the domain multipolygon.
-                - str: The string "all" to indicate all level.
-                - Geometry: A shapely Geometry object.
-                - list[int | str | Geometry]: A list of the above values.
-
-            to_boundary: If `True`, the distance is measured to the boundary.
-                This is useful if inclusions are allowed.
+            distance (float): Minimal distance between `obj_1` and `obj_2`.
+            obj_1 (Level | Literal["all"]): The first object.
+            obj_2 (Level | Literal["all"] | ShapelyGeometry): The second object.
+            to_boundary (bool): If `True`, the distance is measured to the boundary. Defaults to `False`.
         """
         # Validate input.
         if not (isinstance(obj_1, int) or obj_1 == "all"):
@@ -104,7 +89,13 @@ class DistanceConstraint(Constraint):
     def __call__(
         self, subdomain: SubDomain, level: Level, domain: Domain, **kwargs: Any
     ) -> bool:
-        """Compute the distance constraint."""
+        """Compute the distance constraint.
+
+        Args:
+            subdomain (SubDomain): The subdomain to check.
+            level (Level): The level of the subdomain.
+            domain (Domain): The domain to check against.
+        """
         # Get all present levels of `domain`.
         levels = domain.levels
         grid_size = domain.grid_size
