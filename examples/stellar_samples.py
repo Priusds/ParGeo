@@ -4,7 +4,7 @@ from pargeo.domain import Domain
 from pargeo.geometry import Rectangle, Stellar
 
 
-def generate_domain(n_stellars=200):
+def generate_domain(n_stellars: int = 200) -> Domain:
     """Generate a domain with stellars."""
     domain = Rectangle(midpoint=(0, 0), width=1, height=1).to_polygon()
     domain = Domain(domain)

@@ -6,14 +6,13 @@ from pargeo.domain import Domain
 from pargeo.geometry import NStar, RainDrop, Rectangle
 
 
-def generate_domain():
+def generate_domain(n_stars: int = 100, n_rain: int = 200) -> Domain:
     """Generate a domain with stars and raindrops."""
     domain = Rectangle(midpoint=(0.0, 0.0), width=2, height=1).to_polygon()
     domain = Domain(domain)
 
     random.random()
 
-    n_stars = 100
     midpoints = [
         (2 * random.random() - 1, random.random() - 0.5) for _ in range(n_stars)
     ]
@@ -31,7 +30,6 @@ def generate_domain():
         star = NStar(M, r_in, r_out, N, alph).to_polygon()
         domain.add_subdomain(star, level=1, constraint=constraint)
 
-    n_rain = 200
     midpoints = [
         (2 * random.random() - 1, random.random() - 0.5) for _ in range(n_rain)
     ]
