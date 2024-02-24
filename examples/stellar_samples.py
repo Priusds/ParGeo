@@ -4,7 +4,7 @@ from pargeo.domain import Domain
 from pargeo.geometry import Rectangle, Stellar
 
 
-def generate_domain(n_stellars = 200):
+def generate_domain(n_stellars=200):
     """Generate a domain with stellars."""
     domain = Rectangle(midpoint=(0, 0), width=1, height=1).to_polygon()
     domain = Domain(domain)
@@ -12,7 +12,7 @@ def generate_domain(n_stellars = 200):
     levels_unique, weights = zip(*[(1, 5), (2, 4), (3, 3), (4, 2)])
 
     # Sample the levels
-    
+
     levels = random.choices(levels_unique, weights=weights, k=n_stellars)
     unif_samples = [random.random() for _ in range(3 * n_stellars)]
     midpoints = [

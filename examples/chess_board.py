@@ -5,9 +5,7 @@ from pargeo.geometry import Rectangle
 def generate_domain(n_cells: int = 8) -> Domain:
     """Generate a domain with a chess board pattern."""
     R = Rectangle(
-        midpoint=((n_cells - 1) / 2, (n_cells - 1) / 2),
-        width=n_cells,
-        height=n_cells
+        midpoint=((n_cells - 1) / 2, (n_cells - 1) / 2), width=n_cells, height=n_cells
     ).to_polygon()
 
     domain = Domain(R, holes={1})
