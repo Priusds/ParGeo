@@ -1,6 +1,6 @@
 name: Publish Python to PyPI and TestPyPI
 
-on: pull_request
+on: push
 
 jobs:
   build:

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pargeo"
-version = "0.3.1"
+version = "0.3.2"
 description = "Generate complex two-dimensional geometries for simulations based on mesh discretizations."
 authors = [
     "Till Schäfer <tillschaefer96@hotmail.it>", 
