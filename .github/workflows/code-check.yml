@@ -1,0 +1,30 @@
+name: Code Check
+
+on: pull_request
+
+jobs:
+  check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+    - name: Install pipx
+      run: python -m pip install pipx
+    - name: Install Poetry
+      run: pipx install poetry
+    - name: Install Gmsh dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install libglu1
+    - name: Install project dependencies
+      run: poetry install --with dev
+    - name: Run tests
+      run: poetry run pytest tests
+    - uses: chartboost/ruff-action@v1
+    - name: Run Mypy for type checking
+      run: poetry run mypy pargeo
