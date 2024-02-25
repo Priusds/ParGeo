@@ -10,9 +10,9 @@ Example:
     >>> from pargeo.domain import Domain
     >>> from pargeo.geometry import Rectangle, Circle
     <BLANKLINE>
-    >>> domain = Rectangle(midpoint=(0, 0), width=1, height=1).to_polygon()
+    >>> domain = Rectangle(center=(0, 0), width=1, height=1).to_polygon()
     >>> domain = Domain(domain, holes={1})
-    >>> hole = Circle(midpoint=(.5, .5), radius=.1).to_polygon()
+    >>> hole = Circle(center=(.5, .5), radius=.1).to_polygon()
     >>> domain.add(polygon=hole, level=1)
 
 """
@@ -25,7 +25,7 @@ from pargeo.utils.geometry_utils import (
     polar_to_cartesian,
     trigonometric_function,
 )
-from pargeo.utils.typing_utils import Polygon
+from pargeo.utils.typing_utils import Polygon, Vector
 
 
 class Geometry(ABC):
@@ -37,30 +37,45 @@ class Geometry(ABC):
         pass
 
 
-class Rectangle(Geometry):
-    """Rectangular geometry."""
+class Box(Geometry):
+    """Box geometry."""
 
-    def __init__(self, midpoint: tuple[float, float], width: float, height: float):
+    def __init__(self, left_bottom: Vector, right_top: Vector):
         """Creates a rectangle.
 
         Args:
-            midpoint: The midpoint.
-            width: Width of the rectangle.
-            height: Height of the rectangle.
+            left_bottom (tuple): The (x, y) coordinates of the left bottom corner.
+            right_top (tuple): The (x, y) coordinates of the right top corner.
         """
-        self.midpoint = midpoint
-        self.width = width
-        self.height = height
+        self.left_bottom = left_bottom
+        self.right_top = right_top
+        self.center = tuple(right_top[i] - left_bottom[i] for i in range(2))
+        self.width = right_top[0] - left_bottom[0]
+        self.height = right_top[1] - left_bottom[1]
+
+    @classmethod
+    def from_center(cls, center: Vector, width: float, height: float):
+        """
+        Creates a box from the center.
+
+        Args:
+            center (tuple): The (x, y) coordinates of the center of the box.
+            width (float): The width of the box.
+            height (float): The height of the box.
+
+        Returns:
+            Box: The created box object.
+        """
+        left_bottom = (center[0] - width / 2, center[1] - height / 2)
+        right_top = (center[0] + width / 2, center[1] + height / 2)
+        return cls(left_bottom, right_top)
 
     def to_polygon(self) -> Polygon:
         """Return the corners of the rectangle in counter-clockwise order."""
-        midpoint = self.midpoint
-        width = self.width
-        height = self.height
-        p0 = (midpoint[0] - width / 2, midpoint[1] - height / 2)
-        p1 = (midpoint[0] + width / 2, midpoint[1] - height / 2)
-        p2 = (midpoint[0] + width / 2, midpoint[1] + height / 2)
-        p3 = (midpoint[0] - width / 2, midpoint[1] + height / 2)
+        p0 = self.left_bottom
+        p1 = (self.right_top[0], self.left_bottom[1])
+        p2 = self.right_top
+        p3 = (self.left_bottom[0], self.right_top[1])
 
         return Polygon([p0, p1, p2, p3])
 
@@ -70,7 +85,7 @@ class NStar(Geometry):
 
     def __init__(
         self,
-        midpoint: tuple[float, float],
+        center: Vector,
         radius_in: float,
         radius_out: float,
         n_peaks: int,
@@ -79,7 +94,7 @@ class NStar(Geometry):
         """Make an NStar.
 
         Args:
-            midpoint: The midpoint.
+            center: The center.
             radius_in: The inner radius.
             radius_out: The outer radius.
             N: Number of points.
@@ -89,7 +104,7 @@ class NStar(Geometry):
             raise ValueError(
                 "The parameter setting radius_in > radius_out not allowed."
             )
-        self._midpoint = midpoint
+        self._center = center
         self._inner_radius = radius_in
         self._outer_radius = radius_out
         self._n_peaks = n_peaks
@@ -109,8 +124,8 @@ class NStar(Geometry):
             polar_to_cartesian(angle, self._outer_radius) for angle in angles_out
         ]
 
-        # Translate to midpoint
-        mx, my = self._midpoint
+        # Translate to center
+        mx, my = self._center
         coords_in = [(x + mx, y + my) for x, y in coords_in]
         coords_out = [(x + mx, y + my) for x, y in coords_out]
 
@@ -126,12 +141,12 @@ class NStar(Geometry):
 class StarLike(Geometry):
     """Abstract class for star-like geometries."""
 
-    def __init__(self, midpoint: tuple[float, float]) -> None:
-        self.midpoint = midpoint
+    def __init__(self, center: Vector) -> None:
+        self.center = center
 
     @abstractmethod
     def radius_at(self, angle: float) -> float:
-        """Returns the distance at a given angle to the midpoint."""
+        """Returns the distance at a given angle to the center."""
         raise NotImplementedError
 
     def to_polygon(self, refs: int) -> Polygon:
@@ -142,7 +157,7 @@ class StarLike(Geometry):
         # TODO: also give angles as alternative.
         angles = [i * 2 * math.pi / refs for i in range(refs)]
         radii = [self.radius_at(angle) for angle in angles]
-        mx, my = self.midpoint
+        mx, my = self.center
 
         coords = [polar_to_cartesian(angle, rad) for angle, rad in zip(angles, radii)]
 
@@ -150,21 +165,19 @@ class StarLike(Geometry):
 
 
 class Circle(StarLike):
-    def __init__(self, midpoint: tuple[float, float], radius) -> None:
+    def __init__(self, center: Vector, radius) -> None:
         self.radius = radius
-        super().__init__(midpoint)
+        super().__init__(center)
 
     def radius_at(self, angle: float) -> float:
         return self.radius
 
 
 class Ellipse(StarLike):
-    def __init__(
-        self, midpoint: tuple[float, float], axis: tuple[float, float], angle: float = 0
-    ) -> None:
+    def __init__(self, center: Vector, axis: Vector, angle: float = 0) -> None:
         self.axis = axis
         self.angle = angle
-        super().__init__(midpoint)
+        super().__init__(center)
 
     def radius_at(self, angle: float) -> float:
         # TODO: Check if this is correct
@@ -174,7 +187,7 @@ class Ellipse(StarLike):
         )
 
     def discretize(self, refs) -> Polygon:
-        return discretize_ellipse(self.midpoint, self.axis, self.angle, refs)
+        return discretize_ellipse(self.center, self.axis, self.angle, refs)
 
 
 class Stellar(StarLike):
@@ -182,20 +195,20 @@ class Stellar(StarLike):
 
     def __init__(
         self,
-        midpoint: tuple[float, float],
+        center: Vector,
         radius: float,
         coefficient: list[tuple[float, float]] | None = None,
     ):
         """Creates a star-like geometry.
 
         Args:
-            midpoint: The midpoint.
+            center: The center.
             radius: Approximately the average radius.
             coefficient: numpy array of shape (n, 2) with n > 0.
                 Hint: for smooth stellar holes, you can çhoose k from {.1, .2}
                 and then `coeffients = np.random.uniform(-k, k, (int(1/k), 2))`
         """
-        self.midpoint = midpoint
+        self.center = center
         self.radius = radius
         if coefficient is None:
             coefficient = self.generate_coefficients()
@@ -221,8 +234,8 @@ class Stellar(StarLike):
 class RainDrop(StarLike):
     """Raindrop geometry."""
 
-    def __init__(self, midpoint: tuple[float, float], a: float, scale: float):
-        super().__init__(midpoint)
+    def __init__(self, center: Vector, a: float, scale: float):
+        super().__init__(center)
         if not (0.5 <= a <= 1):
             raise ValueError(f"Value of a must be between 0.5 and 1, but got {a}.")
         self._a = a
@@ -248,7 +261,7 @@ class RainDrop(StarLike):
             self._a * math.cos(angle) + (1 - self._a + self._a * math.cos(angle)) / den
             for den, angle in zip(denominators, angles)
         ]
-        mx, my = self.midpoint
+        mx, my = self.center
         return Polygon(
             [
                 (mx + self._scale * x, my + self._scale * y)

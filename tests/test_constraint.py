@@ -1,5 +1,5 @@
 from pargeo.constraint import DistanceConstraint
-from pargeo.geometry import Rectangle
+from pargeo.geometry import Box
 
 
 def test_distance_constraint(domain):
@@ -7,10 +7,10 @@ def test_distance_constraint(domain):
     constraint.set_distance(obj_1=1, obj_2=1, distance=0.1)
     constraint.set_distance(obj_1=3, obj_2="all", distance=0.1)
 
-    subdomain1 = Rectangle(midpoint=(0, 0), width=0.1, height=0.1).to_polygon()
-    subdomain2 = Rectangle(midpoint=(0.05, 0.05), width=0.1, height=0.1).to_polygon()
-    subdomain3 = Rectangle(midpoint=(0.05, 0.05), width=0.1, height=0.1).to_polygon()
-    subdomain4 = Rectangle(midpoint=(0.06, 0.04), width=0.1, height=0.1).to_polygon()
+    subdomain1 = Box(midpoint=(0, 0), width=0.1, height=0.1).to_polygon()
+    subdomain2 = Box(midpoint=(0.05, 0.05), width=0.1, height=0.1).to_polygon()
+    subdomain3 = Box(midpoint=(0.05, 0.05), width=0.1, height=0.1).to_polygon()
+    subdomain4 = Box(midpoint=(0.06, 0.04), width=0.1, height=0.1).to_polygon()
 
     domain.add_subdomain(subdomain1, 1)
     assert not domain.add_subdomain(

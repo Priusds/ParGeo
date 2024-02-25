@@ -26,8 +26,8 @@ Following features support you with the domain-generating process:
 
     Following geometries are provided:
 
-    - Rectangle
-    - Circle / Ellipse
+    - Box
+    - Circle & Ellipse
     - Stellar
     - NStar
     - Raindrop 
@@ -62,7 +62,33 @@ pip install pargeo
 
 ## Basic Usage
 
-Here's a quick example of how to use ParGeo.
+Here's a simple example of how to use ParGeo.
+
+```python
+from pargeo import write_mesh
+from pargeo.domain import Domain
+from pargeo.geometry import Box, Circle, Stellar
+
+# Create a domain
+background = Box((0, 0), (1, 1)).to_polygon()
+domain = Domain(background)
+
+# Add some subdomains
+subdomain = Circle((0.3, 0.5), 0.3).to_polygon(refs=50)
+domain.add_subdomain(subdomain=subdomain, level=1)
+
+subdomain = Circle((0.7, 0.5), 0.3).to_polygon(refs=50)
+domain.add_subdomain(subdomain=subdomain, level=1)
+
+subdomain = Stellar((0.5, 0.3), 0.2).to_polygon(refs=50)
+domain.add_subdomain(subdomain=subdomain, level=2)
+
+# Plot the domain
+domain.plot()
+
+# Mesh the domain using Gmsh and write the .MSH file
+write_mesh(domain, "basic_usage")
+```
 
 
 ## Cite
@@ -71,11 +97,11 @@ If you use ParGeo in your research, please cite it. You can use the following Bi
 
 ```bibtex
 @software{Schafer_ParGeo_2024,
-author = {Schäfer, Till and Gruhlke, Robert},
-month = feb,
-title = {{ParGeo}},
-url = {https://github.com/Priusds/ParGeo},
-version = {0.2.0},
-year = {2024}
+    author = {Schäfer, Till and Gruhlke, Robert},
+    month = feb,
+    title = {{ParGeo}},
+    url = {https://github.com/Priusds/ParGeo},
+    version = {0.2.0},
+    year = {2024}
 }
 ```

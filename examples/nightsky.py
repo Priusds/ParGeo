@@ -3,12 +3,12 @@ import random
 
 from pargeo.constraint import DistanceConstraint
 from pargeo.domain import Domain
-from pargeo.geometry import NStar, RainDrop, Rectangle
+from pargeo.geometry import NStar, RainDrop, Box
 
 
 def generate_domain(n_stars: int = 100, n_rain: int = 200) -> Domain:
     """Generate a domain with stars and raindrops."""
-    domain = Rectangle(midpoint=(0.0, 0.0), width=2, height=1).to_polygon()
+    domain = Box((-1, -0.5), (1, 0.5)).to_polygon()
     domain = Domain(domain)
 
     random.random()

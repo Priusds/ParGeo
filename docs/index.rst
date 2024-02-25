@@ -7,7 +7,7 @@ Welcome to ParGeo's documentation!
 ==================================
 
 `Overview <#overview>`__ \| `Installation <#installation>`__ \| `Basic
-Usage <#basic-usage>`__ \| `Cite <#cite>`__ \| `Contents <#contents>`__ \| `Indices and tables <#indices-and-tables>`__
+Usage <#basic-usage>`__ \| `Cite <#cite>`__
 
 Generate complex two-dimensional geometries for simulations based on
 mesh discretizations.
@@ -85,7 +85,7 @@ Install the latest version of ParGeo from PyPI using pip:
 Basic Usage
 -----------
 
-Here’s a quick example of how to use ParGeo.
+Here's a quick example of how to use ParGeo.
 
 Cite
 ----
@@ -96,26 +96,19 @@ following BibTeX entry:
 .. code:: bibtex
 
    @software{Schafer_ParGeo_2024,
-   author = {Schäfer, Till and Gruhlke, Robert},
-   month = feb,
-   title = {{ParGeo}},
-   url = {https://github.com/Priusds/ParGeo},
-   version = {0.2.0},
-   year = {2024}
+      author = {Schäfer, Till and Gruhlke, Robert},
+      month = feb,
+      title = {{ParGeo}},
+      url = {https://github.com/Priusds/ParGeo},
+      version = {0.2.0},
+      year = {2024}
    }
 
-Contents
---------
 
 .. toctree::
+   :hidden:
    :maxdepth: 1
 
    modules
    notebooks/getting-started
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
 

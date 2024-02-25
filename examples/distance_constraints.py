@@ -4,12 +4,12 @@ import shapely
 
 from pargeo.constraint import DistanceConstraint
 from pargeo.domain import Domain
-from pargeo.geometry import Rectangle, Stellar
+from pargeo.geometry import Box, Stellar
 
 
 def generate_domain(n_stellar: int = 200) -> Domain:
     """Generate domain with stellars and distance constraint."""
-    domain = Rectangle(midpoint=(0.5, 0.5), width=1, height=1).to_polygon()
+    domain = Box((0, 0), (1, 1)).to_polygon()
 
     P = shapely.Point(0.5, 0.5)
 
@@ -23,7 +23,7 @@ def generate_domain(n_stellar: int = 200) -> Domain:
     radii = [min((0.09, random.random() * 0.1)) for _ in range(n_stellar)]
 
     for mid, rad, lvl in zip(midpoints, radii, levels):
-        C = Stellar(midpoint=mid, radius=rad).discretize(refs=50)
+        C = Stellar(center=mid, radius=rad).discretize(refs=50)
         domain.add_subdomain(
             subdomain=C,
             level=lvl,
