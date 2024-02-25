@@ -13,3 +13,5 @@ python:
     # Equivalent to 'pip install .'
     - method: pip
       path: .
+  install:
+    - requirements: docs/requirements.txt
