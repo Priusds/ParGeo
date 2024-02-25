@@ -1,7 +1,7 @@
-API Reference
-=============
+pargeo
+======
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
    pargeo

@@ -28,14 +28,6 @@ pargeo.geometry module
    :undoc-members:
    :show-inheritance:
 
-pargeo.gmsh\_api module
------------------------
-
-.. automodule:: pargeo.gmsh_api
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pargeo.transform module
 -----------------------
 

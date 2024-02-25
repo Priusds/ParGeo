@@ -7,7 +7,7 @@ Welcome to ParGeo's documentation!
 ==================================
 
 `Overview <#overview>`__ \| `Installation <#installation>`__ \| `Basic
-Usage <#basic-usage>`__ \| `Cite <#cite>`__ \| `modules <#modules>`__ \| `Indices and tables <#indices-and-tables>`__
+Usage <#basic-usage>`__ \| `Cite <#cite>`__ \| `Contents <#contents>`__ \| `Indices and tables <#indices-and-tables>`__
 
 Generate complex two-dimensional geometries for simulations based on
 mesh discretizations.
