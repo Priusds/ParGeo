@@ -1,16 +1,17 @@
-.. ParGeo documentation master file, created by
-   sphinx-quickstart on Mon Feb 12 16:24:42 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to ParGeo's documentation!
-==================================
+ParGeo
+======
 
 `Overview <#overview>`__ \| `Installation <#installation>`__ \| `Basic
-Usage <#basic-usage>`__ \| `Cite <#cite>`__
+Usage <#basic-usage>`__ \| `Cite <#cite>`__ \|
+`Documentation <https://pargeo.readthedocs.io/en/latest/>`__
 
 Generate complex two-dimensional geometries for simulations based on
 mesh discretizations.
+
+.. figure:: _static/logo.png
+   :alt: ParGeo Logo
+
+   ParGeo Logo
 
 Overview
 ========
@@ -42,8 +43,8 @@ Following features support you with the domain-generating process:
 
    Following geometries are provided:
 
-   -  Rectangle
-   -  Circle / Ellipse
+   -  Box
+   -  Circle & Ellipse
    -  Stellar
    -  NStar
    -  Raindrop
@@ -85,7 +86,33 @@ Install the latest version of ParGeo from PyPI using pip:
 Basic Usage
 -----------
 
-Here's a quick example of how to use ParGeo.
+Here’s a simple example of how to use ParGeo.
+
+.. code:: python
+
+   from pargeo import write_mesh
+   from pargeo.domain import Domain
+   from pargeo.geometry import Box, Circle, Stellar
+
+   # Create a domain
+   background = Box((0, 0), (1, 1)).to_polygon()
+   domain = Domain(background)
+
+   # Add some subdomains
+   subdomain = Circle((0.3, 0.5), 0.3).to_polygon(refs=50)
+   domain.add_subdomain(subdomain=subdomain, level=1)
+
+   subdomain = Circle((0.7, 0.5), 0.3).to_polygon(refs=50)
+   domain.add_subdomain(subdomain=subdomain, level=1)
+
+   subdomain = Stellar((0.5, 0.3), 0.2).to_polygon(refs=50)
+   domain.add_subdomain(subdomain=subdomain, level=2)
+
+   # Plot the domain
+   domain.plot()
+
+   # Mesh the domain using Gmsh and write the .MSH file
+   write_mesh(domain, "basic_usage")
 
 Cite
 ----
@@ -96,14 +123,13 @@ following BibTeX entry:
 .. code:: bibtex
 
    @software{Schafer_ParGeo_2024,
-      author = {Schäfer, Till and Gruhlke, Robert},
-      month = feb,
-      title = {{ParGeo}},
-      url = {https://github.com/Priusds/ParGeo},
-      version = {0.2.0},
-      year = {2024}
+       author = {Schäfer, Till and Gruhlke, Robert},
+       month = feb,
+       title = {{ParGeo}},
+       url = {https://github.com/Priusds/ParGeo},
+       version = {0.2.0},
+       year = {2024}
    }
-
 
 .. toctree::
    :hidden:

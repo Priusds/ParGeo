@@ -8,7 +8,7 @@
 
 Generate complex two-dimensional geometries for simulations based on mesh discretizations.
 
-![ParGeo Logo](images/logo.png)
+![ParGeo Logo](docs/_static/logo.png)
 
 # Overview
 
