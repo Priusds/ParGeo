@@ -126,7 +126,7 @@ following BibTeX entry:
        month = feb,
        title = {{ParGeo}},
        url = {https://github.com/Priusds/ParGeo},
-       version = {0.2.4},
+       version = {0.3.1},
        year = {2024}
    }
 
