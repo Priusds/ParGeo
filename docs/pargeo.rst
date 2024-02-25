@@ -1,5 +1,14 @@
-pargeo package
-==============
+The ParGeo Package
+==================
+
+Module contents
+---------------
+
+.. automodule:: pargeo
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Submodules
 ----------
@@ -32,14 +41,6 @@ pargeo.transform module
 -----------------------
 
 .. automodule:: pargeo.transform
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: pargeo
    :members:
    :undoc-members:
    :show-inheritance:
