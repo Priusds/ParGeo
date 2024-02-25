@@ -3,7 +3,7 @@ ParGeo
 
 `Overview <#overview>`__ \| `Installation <#installation>`__ \| `Basic
 Usage <#basic-usage>`__  \| `Getting Started <notebooks/getting-started.ipynb>`__ 
-\| `Documentation <https://pargeo.readthedocs.io/en/latest/>`__ \| `Cite <#cite>`__
+\| `Repository <https://github.com/Priusds/ParGeo>`__ \| `Cite <#cite>`__
 
 Generate complex two-dimensional geometries for simulations based on
 mesh discretizations.
