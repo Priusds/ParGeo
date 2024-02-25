@@ -3,8 +3,9 @@
 [**Overview**](#overview)
 | [**Installation**](#installation)
 | [**Basic Usage**](#basic-usage)
-| [**Cite**](#cite)
+| [**Getting Started**](https://pargeo.readthedocs.io/en/latest/notebooks/getting-started.html)
 | [**Documentation**](https://pargeo.readthedocs.io/en/latest/)
+| [**Cite**](#cite)
 
 Generate complex two-dimensional geometries for simulations based on mesh discretizations.
 
