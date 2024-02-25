@@ -11,7 +11,6 @@ mesh discretizations.
 .. figure:: _static/logo.png
    :alt: ParGeo Logo
 
-   ParGeo Logo
 
 Overview
 ========
