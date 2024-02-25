@@ -18,7 +18,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install libglu1
         python -m pip install --upgrade pip
-        poetry install --with dev
+        pip install .
+        pip install pytest
     - name: Test with pytest
       run: |
         pytest tests
