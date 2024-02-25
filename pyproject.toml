@@ -40,7 +40,7 @@ optional = true
 sphinx = "^7.2.6"
 sphinx-rtd-theme = "^2.0.0"
 sphinxcontrib-napoleon = "0.7"
-myst_nb = "^1.0.0"
+nbsphinx = "0.9.3"
 
 [build-system]
 requires = ["poetry-core"]

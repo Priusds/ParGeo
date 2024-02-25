@@ -15,7 +15,7 @@ release = "0.2.0"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "myst_nb",
+    "nbsphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
@@ -25,7 +25,7 @@ extensions = [
 ]
 
 templates_path = ["_templates"]
-source_suffix = ['.rst', '.ipynb', '.md']
+source_suffix = ['.rst', '.md']
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 autodoc_default_options = {
