@@ -41,6 +41,7 @@ sphinx = "^7.2.6"
 sphinx-rtd-theme = "^2.0.0"
 sphinxcontrib-napoleon = "0.7"
 nbsphinx = "0.9.3"
+sphinx-copybutton = "0.5.2"
 
 [build-system]
 requires = ["poetry-core"]

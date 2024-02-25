@@ -16,6 +16,7 @@ release = "0.2.0"
 
 extensions = [
     "nbsphinx",
+    "sphinx_copybutton",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
@@ -37,10 +38,17 @@ autodoc_default_options = {
 }
 autodoc_typehints = "description"
 
+# Syntax highlighting for jupyter notebook code cells
+def translation_override(lang):
+    if lang in ['ipython', 'ipython2', 'ipython3']:
+        lang = 'python'
+
+    return lang
+
+confluence_lang_transform = translation_override
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
-
