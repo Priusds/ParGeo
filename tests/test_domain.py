@@ -26,4 +26,4 @@ def test_add_subdomain(domain):
         center=(-0.6, -0.6), width=0.12, height=0.12
     ).to_polygon()
     domain.add_subdomain(subdomain, 1)
-    assert len(domain.subdomains) == 7 # 6
+    assert len(domain.subdomains) == 6
