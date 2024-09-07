@@ -7,6 +7,6 @@ authors:
 - family-names: "Schäfer"
   given-names: "Till"
 title: "ParGeo"
-version: 0.2.0
+version: 0.3.4
 date-released: 2024-02-11
 url: "https://github.com/Priusds/ParGeo"
