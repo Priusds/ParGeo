@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "ParGeo"
-copyright = "2024, Till Schäfer, Robert Gruhlke"
-author = "Till Schäfer, Robert Gruhlke"
-release = "0.3.2"
+copyright = "2024, Robert Gruhlke, Till Schäfer"
+author = "Robert Gruhlke, Till Schäfer"
+release = "0.3.3"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
