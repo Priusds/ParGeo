@@ -1,11 +1,11 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
-- family-names: "Schäfer"
-  given-names: "Till"
 - family-names: "Gruhlke"
   given-names: "Robert"
   orcid: "https://orcid.org/0000-0003-3129-9423"
+- family-names: "Schäfer"
+  given-names: "Till"
 title: "ParGeo"
 version: 0.2.0
 date-released: 2024-02-11

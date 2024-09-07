@@ -98,11 +98,11 @@ If you use ParGeo in your research, please cite it. You can use the following Bi
 
 ```bibtex
 @software{Schafer_ParGeo_2024,
-    author = {Schäfer, Till and Gruhlke, Robert},
+    author = {Gruhlke, Robert and Schäfer, Till},
     month = feb,
     title = {{ParGeo}},
     url = {https://github.com/Priusds/ParGeo},
-    version = {0.3.2},
+    version = {0.3.3},
     year = {2024}
 }
 ```
