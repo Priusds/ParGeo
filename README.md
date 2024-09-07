@@ -102,7 +102,7 @@ If you use ParGeo in your research, please cite it. You can use the following Bi
     month = feb,
     title = {{ParGeo}},
     url = {https://github.com/Priusds/ParGeo},
-    version = {0.3.3},
+    version = {0.3.4},
     year = {2024}
 }
 ```
